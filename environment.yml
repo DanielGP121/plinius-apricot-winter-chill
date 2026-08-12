@@ -1,0 +1,37 @@
+# Python side of the pipeline. Four scripts use it: the NetCDF-to-table converter (02), the two
+# CORINE soil filters (05, 07), the AEMET OpenData downloader (21) and the PowerPoint builder (30).
+#
+# Versions are floors rather than pins. The pipeline uses long-stable APIs, and pinning exact builds
+# on a project whose heavy lifting happens on someone else's HPC buys reproducibility that nobody
+# can actually exercise. The three that matter are marked.
+#
+#   conda env create -f environment.yml
+#   conda activate egu_aemet
+name: egu_aemet
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python >=3.11
+  # NetCDF reading (script 02). xarray needs the netcdf4 engine explicitly.
+  - xarray >=2023.1
+  - netcdf4 >=1.6
+  # tables
+  - pandas >=2.0
+  - numpy >=1.24
+  - openpyxl >=3.1          # xlsx written by build_aemet_matching.py
+  # raster and vector, for the CORINE soil filters
+  - rasterio >=1.3
+  - geopandas >=0.13
+  - shapely >=2.0
+  - pyproj >=3.5
+  # figures produced on the Python side
+  - matplotlib >=3.7
+  # the deck builder
+  - python-pptx >=1.0       # matters: the API changed shape before 1.0
+  - pillow >=10.0           # 30_build_pptx.py reads image dimensions to preserve aspect ratio
+  # http
+  - requests >=2.31
+  # 21_aemet_observed_download.py deliberately uses only the standard library, so that the
+  # download can run on the HPC without an environment being built there first.

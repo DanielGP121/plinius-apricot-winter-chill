@@ -1,0 +1,4 @@
+method,anomaly_CP,anomaly_sd,n_stations
+media simple (composicion variable),-3.551,-1.893,50
+panel equilibrado (567 est.),-3.635,-1.935,50
+anomalia por estacion (la que se usa),-3.653,-1.948,50

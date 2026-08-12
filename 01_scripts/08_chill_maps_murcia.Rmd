@@ -1,0 +1,221 @@
+---
+title: "Frío invernal en la Región de Murcia — mapas del test-run (Búlida / Búlida Precoz)"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    fig_width: 11
+    fig_height: 6
+---
+
+```{r setup, include=FALSE}
+# Report that turns the PNACC daily temperature slice into winter-chill maps for the Murcia
+# test-run. Chill is computed by compute_chill_table() (06_chill_murcia.R); everything below is
+# the geographic presentation: CORINE cropland backdrop, Region de Murcia boundary (mapSpain),
+# Safe Winter Chill per station, and the case-study classification against each cultivar's CR.
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, dpi = 130)
+
+suppressWarnings(suppressMessages({
+  library(data.table); library(sf); library(terra); library(mapSpain)
+  library(ggplot2); library(viridis); library(patchwork)
+}))
+
+# --- paths -------------------------------------------------------------------------------
+# Resolved by 00_paths.R. This file is knitted rather than run with Rscript, so `--file=` is not
+# available and the location has to come from knitr::current_input(), which 00_paths.R handles.
+.f <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+.d <- if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]))) else {
+  ci <- try(knitr::current_input(dir = TRUE), silent = TRUE)
+  if (!inherits(ci, "try-error") && !is.null(ci)) dirname(normalizePath(ci)) else getwd()
+}
+source(file.path(.d, "00_paths.R"))
+
+TAB       <- plinius_data("tables", "murcia")
+SLICE_DIR <- file.path(TAB, "chill_slice")
+CHILL_CSV <- file.path(TAB, "chill_murcia.csv")
+STATIONS  <- file.path(TAB, "stations.csv")
+STRICT    <- file.path(TAB, "stations_cultivable_strict.csv")
+BROAD     <- file.path(TAB, "stations_cultivable_broad.csv")
+CLC       <- plinius_clc()
+dir.create(FIG_DIR, recursive = TRUE, showWarnings = FALSE)   # FIG_DIR comes from 00_paths.R
+
+CR_PRECOZ <- 33.7   # chill requirement of 'Bulida Precoz' (chill portions)
+CR_BULIDA <- 47.5   # chill requirement of 'Bulida'
+
+# equal-area CRS for the whole map (CORINE is already EPSG:3035)
+EPSG <- 3035
+```
+
+```{r compute-chill}
+# Load the chill table computed by 06_chill_murcia.R (DM_JOSE, Egea's 1987 dynamic model);
+# otherwise compute it here. Not cached: chill_murcia.csv is the single source of truth, so a
+# re-run of the compute script is picked up on the next knit.
+if (file.exists(CHILL_CSV)) {
+  chill <- fread(CHILL_CSV)
+} else {
+  source(file.path(SCRIPTS_DIR, "06_chill_murcia.R"))
+  chill <- compute_chill_table(SLICE_DIR)
+  fwrite(chill, CHILL_CSV)
+}
+
+scen_levels <- c("observaciones", "historical", "ssp126", "ssp245", "ssp370")
+scen_labels <- c("Observado 1991-2020", "Histórico 1985-2014",
+                 "SSP1-2.6 2041-70", "SSP2-4.5 2041-70", "SSP3-7.0 2041-70")
+chill <- chill[scenario %in% scen_levels]
+chill[, scenario := factor(scenario, levels = scen_levels, labels = scen_labels)]
+```
+
+```{r geo-base}
+# Region de Murcia outline via mapSpain (downloaded and cached on first use). Fallback to a
+# station bounding box if the download is unavailable, so the report still knits offline.
+allst <- fread(STATIONS)
+murcia <- tryCatch(st_transform(esp_get_prov("Murcia"), EPSG), error = function(e) NULL)
+if (is.null(murcia)) {
+  murcia <- st_as_sfc(st_bbox(st_transform(
+    st_as_sf(allst, coords = c("lon", "lat"), crs = 4326), EPSG)))
+}
+muni <- tryCatch(st_transform(esp_get_munic(region = "Murcia"), EPSG), error = function(e) NULL)
+
+# CORINE cropland backdrop: crop to Murcia, keep only strict (211-223) and heterogeneous
+# (241-244) agriculture, and coarsen 100 m -> 1 km so it is a light context layer, not clutter.
+clc <- rast(CLC)
+clc_m <- mask(crop(clc, ext(vect(st_as_sf(murcia)))), vect(st_as_sf(murcia)))
+rcl <- rbind(c(11.5, 17.5, 1), c(18.5, 22.5, 2))   # 12-17 -> 1 (puro), 19-22 -> 2 (heterogéneo)
+crop_cat <- classify(clc_m, rcl, others = NA)
+crop_cat <- aggregate(crop_cat, fact = 10, fun = "modal", na.rm = TRUE)
+bd <- as.data.frame(crop_cat, xy = TRUE)
+names(bd)[3] <- "cropland"
+bd$cropland <- factor(round(bd$cropland), levels = c(1, 2),
+                      labels = c("cultivo (211-223)", "heterogéneo (241-244)"))
+bd <- bd[!is.na(bd$cropland), ]
+```
+
+## De qué va este informe
+
+Test-run de la Región de Murcia: proyecciones AR6 de AEMET (ESD-RegBA, por estaciones)
+convertidas a frío invernal con el modelo dinámico DM_JOSE (parametrización de 1987, script de
+J.A. Egea; chill portions), y el Safe Winter Chill (percentil 10 de la acumulación de frío entre
+inviernos) mapeado sobre el territorio. El caso
+de estudio compara dónde se cumple el requerimiento de frío de 'Búlida' (47.5 CP) y del mutante
+'Búlida Precoz' (33.7 CP). Corte de validación: 3 modelos que abarcan sensibilidad climática
+alta, media y baja (UKESM1-0-LL, MPI-ESM1-2-HR, MIROC6), ventana de futuro cercano 2041-2070.
+
+```{r fig1-context, fig.height=7}
+# Fig 1: which stations sit on cultivable land, over the CORINE cropland backdrop.
+strict <- fread(STRICT)[, .(station_id, strict = cultivable)]
+broad  <- fread(BROAD)[, .(station_id, broad = cultivable)]
+soil <- merge(merge(allst, strict, by = "station_id", all.x = TRUE), broad,
+              by = "station_id", all.x = TRUE)
+soil[, soil_cat := fifelse(strict %in% TRUE, "cultivable (estricto)",
+                    fifelse(broad %in% TRUE, "solo amplio (heterogéneo)", "no cultivable"))]
+soil[, soil_cat := factor(soil_cat,
+     levels = c("cultivable (estricto)", "solo amplio (heterogéneo)", "no cultivable"))]
+soil_sf <- st_transform(st_as_sf(soil, coords = c("lon", "lat"), crs = 4326), EPSG)
+
+f1 <- ggplot() +
+  geom_raster(data = bd, aes(x, y, fill = cropland)) +
+  scale_fill_manual(values = c("cultivo (211-223)" = "#a1d99b",
+                               "heterogéneo (241-244)" = "#fee08b"),
+                    name = "Suelo agrícola\n(CORINE 2018)") +
+  { if (!is.null(muni)) geom_sf(data = muni, fill = NA, color = "grey75", linewidth = 0.2) } +
+  geom_sf(data = st_as_sf(murcia), fill = NA, color = "grey20", linewidth = 0.5) +
+  geom_sf(data = soil_sf, aes(color = soil_cat), size = 2.4, stroke = 0.3) +
+  scale_color_manual(values = c("cultivable (estricto)" = "#1a9850",
+                                "solo amplio (heterogéneo)" = "#fd8d3c",
+                                "no cultivable" = "#737373"), name = "Estación") +
+  coord_sf(crs = EPSG, datum = NA) +
+  labs(title = "Estaciones AEMET y suelo cultivable — Región de Murcia",
+       subtitle = "criterio de referencia: ≥50% de cultivo en 2 km (44 estrictas, 73 amplias, de 123)") +
+  theme_minimal(base_size = 12) +
+  theme(axis.title = element_blank())
+ggsave(file.path(FIG_DIR, "fig1_contexto_suelo.png"), f1, width = 9, height = 7.5, dpi = 150)
+f1
+```
+
+## Safe Winter Chill por escenario (mediana de ensemble)
+
+```{r fig2-swc}
+# Ensemble collapse: median SWC across models per scenario and station ("ensemble, not mean").
+ens <- chill[, .(swc_med = median(safe_winter_chill_P10),
+                 n_models = .N,
+                 n_ok_precoz = sum(safe_winter_chill_P10 >= CR_PRECOZ),
+                 n_ok_bulida = sum(safe_winter_chill_P10 >= CR_BULIDA)),
+             by = .(scenario, station_id, lon, lat)]
+ens_sf <- st_transform(st_as_sf(ens, coords = c("lon", "lat"), crs = 4326), EPSG)
+
+f2 <- ggplot() +
+  geom_sf(data = st_as_sf(murcia), fill = "grey96", color = "grey55", linewidth = 0.25) +
+  geom_sf(data = ens_sf, aes(color = swc_med), size = 1.7) +
+  scale_color_viridis_c(name = "SWC\n(P10, CP)", option = "D") +
+  facet_wrap(~scenario, nrow = 1) +
+  coord_sf(crs = EPSG, datum = NA) +
+  labs(title = "Safe Winter Chill: mediana de ensemble por escenario",
+       subtitle = "chill portions acumuladas (P10 entre inviernos); 3 modelos, futuro 2041-2070") +
+  theme_minimal(base_size = 11) +
+  theme(axis.title = element_blank(), axis.text = element_blank())
+ggsave(file.path(FIG_DIR, "fig2_swc_ensemble.png"), f2, width = 13, height = 5, dpi = 150)
+f2
+```
+
+## Caso de estudio: ¿dónde cumple cada cultivar su requerimiento de frío?
+
+```{r fig3-casestudy}
+# The poster figure: classify each station (ensemble median SWC) against both cultivars' CR.
+ens[, case := fifelse(swc_med >= CR_BULIDA, "cumplen ambas",
+              fifelse(swc_med >= CR_PRECOZ, "solo 'Búlida Precoz'", "ninguna"))]
+ens[, case := factor(case, levels = c("cumplen ambas", "solo 'Búlida Precoz'", "ninguna"))]
+case_sf <- st_transform(st_as_sf(ens, coords = c("lon", "lat"), crs = 4326), EPSG)
+
+f3 <- ggplot() +
+  geom_sf(data = st_as_sf(murcia), fill = "grey96", color = "grey55", linewidth = 0.25) +
+  geom_sf(data = case_sf, aes(color = case), size = 1.9) +
+  scale_color_manual(values = c("cumplen ambas" = "#2166ac",
+                                "solo 'Búlida Precoz'" = "#f4a582",
+                                "ninguna" = "#b2182b"), name = "") +
+  facet_wrap(~scenario, nrow = 1) +
+  coord_sf(crs = EPSG, datum = NA) +
+  labs(title = "¿Dónde se cumple el requerimiento de frío?",
+       subtitle = "mediana de ensemble; 'Búlida' 47.5 CP, 'Búlida Precoz' 33.7 CP") +
+  theme_minimal(base_size = 11) +
+  theme(axis.title = element_blank(), axis.text = element_blank())
+ggsave(file.path(FIG_DIR, "fig3_case_study.png"), f3, width = 13, height = 5, dpi = 150)
+f3
+```
+
+```{r case-table}
+# Share of stations in each class per scenario, as a quick read of the maps above.
+tab <- ens[, .(estaciones = .N,
+               cumplen_ambas = sum(case == "cumplen ambas"),
+               solo_precoz   = sum(case == "solo 'Búlida Precoz'"),
+               ninguna       = sum(case == "ninguna")), by = scenario]
+knitr::kable(tab, caption = "Estaciones por clase y escenario (mediana de ensemble)")
+```
+
+## Distribución del Safe Winter Chill por escenario y modelo
+
+```{r fig4-boxplots, fig.height=6}
+# Model spread behind the ensemble, with each cultivar's CR as a reference line.
+f4 <- ggplot(chill, aes(scenario, safe_winter_chill_P10, fill = model)) +
+  geom_boxplot(outlier.size = 0.4, position = position_dodge(0.8), linewidth = 0.3) +
+  geom_hline(yintercept = CR_BULIDA, color = "#2166ac", linewidth = 0.7) +
+  geom_hline(yintercept = CR_PRECOZ, color = "#b2182b", linetype = "dashed", linewidth = 0.7) +
+  annotate("text", x = 0.7, y = CR_BULIDA + 1.5, label = "Búlida 47.5", hjust = 0,
+           size = 3, color = "#2166ac") +
+  annotate("text", x = 0.7, y = CR_PRECOZ - 1.8, label = "B. Precoz 33.7", hjust = 0,
+           size = 3, color = "#b2182b") +
+  scale_fill_brewer(palette = "Set2", name = "Modelo") +
+  labs(title = "Safe Winter Chill por escenario y modelo (todas las estaciones)",
+       y = "SWC (P10, chill portions)", x = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+ggsave(file.path(FIG_DIR, "fig4_distribucion_swc.png"), f4, width = 10, height = 6, dpi = 150)
+f4
+```
+
+```{r session, results='asis'}
+cat("<hr><small>Figuras guardadas en <code>02_outputs/figures_chill/</code>. ",
+    "Frío calculado con chillR (modelo dinámico DM_JOSE, param. 1987 de J.A. Egea) por <code>06_chill_murcia.R</code>; ",
+    "datos PNACC AR6 ESD-RegBA extraídos con <code>02_pnacc_to_tables.py</code>.</small>", sep = "")
+```

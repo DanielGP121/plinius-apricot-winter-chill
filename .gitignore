@@ -1,0 +1,87 @@
+# ---------------------------------------------------------------------------------------
+# Written before `git init`, on purpose. Several of the exclusions below are not tidiness:
+# they are personal data, third-party material without a redistribution licence, and a private
+# meeting transcript. Once any of that lands in a commit, removing it later does not remove it
+# from the history.
+#
+# Verify before the first commit:
+#   git add -A --dry-run | less          # read the whole list
+#   git check-ignore -v administrativo abstract 00_data 01_scripts/DM_JOSE.R
+# ---------------------------------------------------------------------------------------
+
+# --- must never be published ------------------------------------------------------------
+# Registration forms and an invoice, carrying personal and financial details of two people.
+administrativo/
+# Submission drafts, with a co-author's address in the metadata.
+abstract/
+# The project's internal working documents. Not secret, but not for this audience either: they are
+# Obsidian notes written for the next working session, so they carry [[wikilinks]] that GitHub
+# renders as literal text, HPC account names and paths, raw meeting notes containing candid
+# judgements about third parties, and a photograph of a personal notebook. What a reader of this
+# repository needs is in README.md, 00_data/README.md and THIRD_PARTY.md, written for them.
+info/
+handoffs/
+_log.md
+
+# Smoke-test output from a --maxst run. No script reads it.
+chill_maxst40.csv
+
+# Third-party code without a licence to redistribute. DM_JOSE.R is the Dynamic Model under the
+# Fishman et al. (1987) parametrisation, written by J.A. Egea; 00_data/README.md explains how to
+# obtain it and 00_paths.R fails with instructions when it is absent.
+01_scripts/DM_JOSE.R
+CP_Tdiarias.zip
+
+# Station coordinates compiled by the regional agrometeorological services, received through a
+# third party. No terms of transfer, so neither they nor anything that reproduces them.
+00_data/*.xlsx
+02_outputs/matching_regional_to_aemet.*
+02_outputs/regional_stations_elevation.csv
+02_outputs/matching_map.png
+
+# --- credentials --------------------------------------------------------------------------
+.env
+.Renviron
+
+# --- external data (gigabytes, third-party licences; see 00_data/README.md) ----------------
+00_data/*
+!00_data/README.md
+!00_data/stations_obs.txt
+
+# --- generated output ----------------------------------------------------------------------
+# Everything under 02_outputs/ is regenerable from the scripts, and the chill tables run to 153 MB.
+# Only the small summary tables that back a figure or a claim are versioned, listed one by one so
+# that a new output has to be added deliberately rather than swept in.
+02_outputs/*
+!02_outputs/talk_numbers_cropland.csv
+!02_outputs/cropland_threshold_sweep.csv
+!02_outputs/cropland_threshold_check.csv
+!02_outputs/cropland_threshold_meta.csv
+!02_outputs/cieza_seasons.csv
+!02_outputs/cieza_parametrisation_gap.csv
+!02_outputs/cieza_check_summary.csv
+!02_outputs/api_vs_archive_summary.csv
+!02_outputs/api_vs_archive_threshold_sweep.csv
+!02_outputs/api_vs_archive_by_station.csv
+!02_outputs/observed_annual_series.csv
+!02_outputs/observed_long_record_summary.csv
+!02_outputs/observed_panel_sensitivity.csv
+!02_outputs/observed_swc_by_window.csv
+!02_outputs/observed_spliced_swc.csv
+!02_outputs/observed_spliced_summary.csv
+!02_outputs/aemet_station_inventory_public.csv
+
+# The deck: 26 MB of embedded figures, rebuilt in two minutes by scripts 29 and 30.
+03_presentacion/
+
+# --- caches and editor droppings -----------------------------------------------------------
+__pycache__/
+*.pyc
+*_cache/
+*_files/
+.Rhistory
+.RData
+.Rproj.user/
+.Ruserdata
+.DS_Store
+Thumbs.db
