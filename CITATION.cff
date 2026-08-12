@@ -8,11 +8,12 @@ authors:
   - given-names: Daniel
     family-names: González-Palazón
     affiliation: Estación Experimental de Aula Dei (EEAD-CSIC), Zaragoza, Spain
-    # orcid: 'https://orcid.org/XXXX-XXXX-XXXX-XXXX'   # TODO: fill in before publishing
+    orcid: 'https://orcid.org/0009-0001-2810-9468'
   - given-names: José A.
     family-names: Egea
-    # affiliation and orcid: to be confirmed with the co-author before this file is published
-repository-code: 'https://github.com/DanielGP121/REPO-NAME'   # TODO: set once the repository exists
+    affiliation: Centro de Edafología y Biología Aplicada del Segura (CEBAS-CSIC), Murcia, Spain
+    # orcid: pending, to be added once confirmed with the co-author
+repository-code: 'https://github.com/DanielGP121/plinius-apricot-winter-chill'
 abstract: >-
   Code for an agroclimatic analysis of winter chill accumulation in Spain, computed with the
   Dynamic Model under the Fishman et al. (1987) parametrisation. It combines the PNACC AR6 climate
