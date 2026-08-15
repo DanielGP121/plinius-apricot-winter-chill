@@ -1,0 +1,105 @@
+# El orden de agregación {#agregacion}
+
+```{r agregacion-setup, include = FALSE}
+source("_common.R")
+```
+
+Este es el capítulo por el que un lector técnico puede desmontar el trabajo con una sola pregunta, y
+por eso va con el orden numerado y explícito.
+
+Del capítulo anterior sale una cifra de frío por **estación, modelo y temporada**. Del mapa final
+sale una clase por celda. Entre una cosa y otra hay cinco reducciones, y **el orden en que se hacen
+cambia el resultado**.
+
+## Las seis operaciones, en el orden real
+
+1. **Frío por temporada.** Modelo dinámico sobre cada invierno de cada estación y cada modelo
+   climático.
+2. **Percentil 10 entre las temporadas de la ventana.** Eso es el Safe Winter Chill. Se hace
+   *dentro* de cada combinación de estación y modelo.
+3. **Mediana entre los `r i_es(metrica("pipeline_diagram_numbers", "n_models"))` modelos.** Ahora sí,
+   un valor por estación.
+4. **Interpolación** de esos puntos a la rejilla de 1 km.
+5. **Máscara de suelo cultivable.**
+6. **Clasificación** contra los dos umbrales.
+
+## Por qué el orden no es cuestión de gusto
+
+Un percentil no conmuta con una mediana. Tomar el P10 de cada modelo y luego la mediana entre
+modelos **no da lo mismo** que juntar todas las temporadas de todos los modelos y sacar un P10 de la
+pila.
+
+Y no es una sutileza teórica. El trabajo se encontró de frente con un caso hermano en el horizonte
+2021-2040, esta vez sobre el eje de agregación y no sobre el estadístico: la diferencia entre
+escenarios medida tomando primero la mediana **entre modelos** es de
+`r cp(metrica("talk_key_numbers", "nearterm_order_models_first_CP"), 2)`, y medida tomando primero la
+mediana **entre estaciones** es de
+`r cp(metrica("talk_key_numbers", "nearterm_order_stations_first_CP"), 2)`. **Cambia de signo.**
+
+Nótese que ese ejemplo compara dos medianas por ejes distintos, no un percentil contra una mediana:
+mide sensibilidad al eje de agregación, que es un primo del problema y no el problema mismo. Sirve
+igual para lo que importa aquí, que es que la elección no es inocua. Y en ese caso concreto no hay
+nada que salvar: a ese horizonte no hay señal que medir, y el orden decide qué ruido se ve
+(capítulo \@ref(modelos)).
+
+El capítulo \@ref(modelos) desarrolla ese caso, porque produce la pregunta más incómoda de la
+charla.
+
+## Por qué el percentil 10 y no la media
+
+A un agricultor no le sirve saber que un año normal trae frío suficiente. El año malo le arruina la
+cosecha igual. El Safe Winter Chill se define como el percentil 10 precisamente para responder a la
+pregunta que importa: **de cada diez inviernos, ¿cuánto frío trae el segundo peor?**
+
+```{r agregacion-swc, fig.cap = pie("El concepto de Safe Winter Chill sobre una estación real: la distribución de temporadas y dónde cae el percentil 10.", "34_method_figures.R", "ggplot2 4.0.2")}
+knitr::include_graphics(figura("fig35_swc_concept.png"))
+```
+
+Esto tiene un coste que hay que declarar: **un percentil 10 necesita temporadas suficientes para ser
+un decil de verdad**. Con 20 temporadas el P10 es prácticamente el segundo valor más bajo, y por
+tanto más inestable que con 30. Por eso las comparaciones entre registros de distinta longitud
+nunca se hacen sobre el SWC agregado, sino temporada a temporada.
+
+## Las ventanas
+
+Siete, y conviene distinguirlas por lo que hacen. Cuatro tesela el periodo 1995-2100 y son las que
+producen los mapas de futuro. Las otras tres existen para contrastar: dos del registro observado
+(1995-2020 para el contraste directo con el modelo, y 1991-2020 para las anomalías de la serie
+larga) y una del histórico simulado de CMIP6, que acaba en 2014 porque ahí acaba el experimento.
+
+```{r agregacion-ventanas}
+v <- data.table::copy(tabla("season_attrition_by_window"))
+data.table::setorder(v, periodo)
+knitr::kable(
+  v[, .(Ventana = window, Periodo = periodo,
+        `Temporadas posibles` = i_es(nominal), `Conservadas` = i_es(kept),
+        `Descartadas` = i_es(lost))],
+  booktabs = TRUE, align = "llrrr")
+```
+
+Las cuatro ventanas de futuro y presente (1995-2020, 2021-2040, 2041-2070, 2071-2100) tesela
+1995-2100 sin solapes y sin huecos, y eso costó pensarlo. La base se para en 2020 y no en 2025
+aunque haya dato hasta 2025: si llegara a 2025 compartiría cinco años con la ventana siguiente, y
+restar una de otra cancelaría por construcción una cuarta parte del cambio a corto plazo, con lo que
+las dos primeras décadas parecerían artificialmente planas.
+
+El descarte por completitud, que es la única pérdida real de esta etapa, se concentra entero en la
+ventana de fin de siglo y supone
+`r pct(100 * sum(tabla("season_attrition_by_window")$lost) / sum(tabla("season_attrition_by_window")$nominal), 2)`
+de las temporadas posibles.
+
+## Qué se pierde en el escalón 3
+
+La mediana entre modelos es la reducción más agresiva de la cadena: once números se convierten en
+uno, y con ellos desaparece toda la información sobre cuánto se parecen entre sí. El mapa resultante
+**no es la salida de ningún modelo**: es un estadístico de once superficies, y no existe ningún
+mundo posible en el que el clima se parezca exactamente a él.
+
+Por eso esa dispersión se recupera aparte y tiene capítulo propio. Tirarla sin recuperarla sería el
+error más grave que podría cometer este trabajo.
+
+```{r agregacion-codigo, results = "asis"}
+codigo("19_cropland_viability_national.R", seccion = 1,
+       titulo = "dónde ocurre exactamente el escalón 3",
+       resumen = "Una línea de `data.table`: la mediana por situación y estación. Ahí se pierden los once modelos.")
+```

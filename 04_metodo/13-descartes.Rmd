@@ -1,0 +1,96 @@
+# Lo que se descartó, y lo que salió mal {#descartes}
+
+```{r descartes-setup, include = FALSE}
+source("_common.R")
+```
+
+Un método sólo se entiende del todo si se sabe qué alternativas había y por qué se dejaron. Y un
+trabajo sólo es creíble si cuenta también los fallos que tuvo, porque los que no se cuentan son los
+que el lector supone que siguen ahí.
+
+## Decisiones y alternativas descartadas
+
+| Se eligió | En vez de | Por qué |
+| --- | --- | --- |
+| Todas las estaciones AEMET filtradas por suelo cultivable | Las 270 estaciones regionales | Las 270 llegaban con el frío ya procesado y sin datos brutos |
+| AR6 con SSP1-2.6, 2-4.5 y 3-7.0 | Incluir SSP5-8.5 | La bibliografía reciente no lo considera plausible |
+| Estaciones | Rejilla regular | El producto viene por estaciones, y justifica el trabajo paralelo sobre interpolación óptima |
+| 100 % AEMET | Mezclar con PTI-Clima | Sin proyecciones no compensa reconciliar resoluciones que difieren al doble |
+| Fishman 1987 vía `DM_JOSE` | Los valores por defecto de `chillR` (1988) | Los requerimientos se midieron con la de 1987 (capítulo \@ref(dinamico)) |
+| Descarga por THREDDS | El formulario web | URL predecible, corre en el HPC, y sirve más estaciones |
+| Titular en superficie cultivable | Porcentaje de estaciones | Las estaciones se agolpan; contar puntos no estima territorio (capítulo \@ref(superficie)) |
+| IDW con máscara de 50 km | Kriging | Es el método publicado del coautor, y aquí está mejor sostenido |
+| Base 1995-2020 | Base 1995-2025 | Con 2025 el solape cancelaría una cuarta parte del cambio a corto plazo |
+| Panel 2021-2040 agregado | Tres paneles separados | Los escenarios no se distinguen a ese horizonte (capítulo \@ref(modelos)) |
+| Sin corrección de sesgo | Corregir contra el observado | Ya venía corregido, y gastaría las observaciones dos veces |
+
+## Los fallos, y qué enseñó cada uno
+
+Cinco costaron tiempo real. Los tres primeros están documentados desde antes; los dos últimos
+salieron al escribir este documento, que es en sí mismo un argumento a favor de escribirlo.
+
+### La guarda de CORINE que dejó de funcionar sola
+
+La selección de clases comprobaba la tabla de atributos del ráster buscando una columna llamada
+`GRID_CODE`. Versiones antiguas de `terra` devolvían `NULL` ahí y la comprobación pasaba de largo;
+`terra` 1.9 devuelve una tabla con columnas `Value` y `LABEL3`, y la comprobación abortó. **El
+script dejó de poder reproducir sus propias figuras sin que cambiara una línea de él.**
+
+La lección quedó incorporada: ahora la selección se verifica contra las **etiquetas** de las clases,
+que dicen lo que se está seleccionando y son estables entre versiones, en vez de contra el nombre de
+una columna.
+
+### Ceuta y Melilla estirando todos los mapas
+
+El contorno del país incluía las dos ciudades autónomas, lo que llevaba el extremo sur del marco
+300 km más abajo y deformaba la proporción de cada mapa. Se midió su suelo agrícola: 0,00 km². Se
+restringió la **visualización**, dejando el análisis intacto.
+
+### Las 278 estaciones de Murcia que eran 154
+
+Un recuento hecho sobre filas en vez de sobre estaciones. La tabla canónica tiene
+`r i_es(metrica("pipeline_diagram_numbers", "n_stations_proj"))` estaciones pero más tripletes
+(id, longitud, latitud), porque la mitad observada trae las coordenadas con otra precisión;
+deduplicar por el triplete cuenta filas. Hay ahora una comprobación en el script que lo caza.
+
+### El área de celda que valía 1 y no valía 1
+
+El más instructivo de los cinco, y el más reciente.
+
+Al construir la rejilla, `terra` respeta la extensión pedida y ajusta la resolución para que quepa
+un número entero de celdas. La celda real mide 1.000,32 × 999,99 m, así que su área es
+`r n_es(metrica("cropland_threshold_meta", "cell_km2"), 5)` km². Siete scripts multiplicaban por 1.
+
+Resultado: **toda cifra de superficie del trabajo estuvo un
+`r pct(100 * (metrica("cropland_threshold_meta", "cell_km2") - 1), 3)` por debajo** hasta el 14 de
+agosto de 2026. La superficie cultivable nacional pasó de 229.604 a
+`r km2(SUPERFICIE_CULTIVABLE)` al corregirlo.
+
+Lo instructivo no es el error, que es pequeño y no cambia ninguna conclusión. Es **por qué ninguna
+comprobación lo detectó**. El proyecto tenía una autocomprobación cruzada entre dos scripts que
+reproducía las cifras publicadas con 0,00 km² de discrepancia, y seguía pasando: las dos cifras
+estaban igual de bajas. *Un test de consistencia no es un test de corrección.*
+
+Ningún porcentaje del trabajo cambió al corregirlo, porque el sesgo afectaba por igual al numerador
+y al denominador. Sólo se movieron los valores absolutos.
+
+### La cifra escrita a mano
+
+Al barrer el proyecto buscando restos del número antiguo apareció un `229604` **literal** dentro de
+un script de figuras. Habría seguido dibujando la cifra vieja mientras todas las tablas decían la
+nueva.
+
+De ahí sale la regla que gobierna este documento y que está declarada en el resumen: ninguna cifra
+se escribe a mano, todas se leen de las tablas al generar el texto. No es pedantería: es la única
+forma de que una cifra no pueda quedarse atrás en silencio.
+
+## Lo que sigue abierto
+
+- **La parametrización de los requerimientos**, pendiente de confirmar con David Ruiz. Es la
+  incertidumbre mayor del trabajo (capítulo \@ref(dinamico)).
+- **Una referencia** que justifique excluir SSP5-8.5, pendiente con J.A. Egea.
+- **Las sumas de verificación** de los 88 NetCDF, para congelar la versión de los datos
+  (capítulo \@ref(descarga)).
+- **La selección de clases de CORINE en el script 28**, que sigue teniendo su propia regla en línea
+  en vez de usar el módulo compartido. El conjunto de códigos coincide, pero llega a él por un
+  camino frágil.

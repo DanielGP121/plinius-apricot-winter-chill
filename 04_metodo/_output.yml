@@ -1,0 +1,12 @@
+bookdown::bs4_book:
+  theme:
+    primary: "#2c7bb6"
+  repo: null
+  css: style.css
+
+bookdown::pdf_book:
+  latex_engine: xelatex
+  keep_tex: false
+  toc_depth: 2
+  includes:
+    in_header: preamble.tex

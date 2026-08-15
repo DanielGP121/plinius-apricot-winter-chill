@@ -1,0 +1,26 @@
+book_filename: "metodo_bulida"
+output_dir: "_book"
+delete_merged_file: true
+language:
+  label:
+    fig: "Figura "
+    tab: "Tabla "
+  ui:
+    chapter_name: "Capítulo "
+rmd_files:
+  - "index.Rmd"
+  - "01-glosario.Rmd"
+  - "02-pregunta.Rmd"
+  - "03-panorama.Rmd"
+  - "04-datos.Rmd"
+  - "05-descarga.Rmd"
+  - "06-horario.Rmd"
+  - "07-modelo-dinamico.Rmd"
+  - "08-agregacion.Rmd"
+  - "09-superficie.Rmd"
+  - "10-resultados.Rmd"
+  - "11-modelos.Rmd"
+  - "12-calasparra.Rmd"
+  - "13-descartes.Rmd"
+  - "14-referencia.Rmd"
+  - "15-entorno.Rmd"

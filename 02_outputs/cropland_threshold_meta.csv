@@ -1,5 +1,5 @@
 metric,value
-total_cropland_km2,229603.9
-cell_km2,1
+total_cropland_km2,229675.9
+cell_km2,1.00031358047819
 idw_radius_m,50000
 n_thresholds,117

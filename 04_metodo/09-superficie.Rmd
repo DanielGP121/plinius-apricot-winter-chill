@@ -1,0 +1,160 @@
+# De puntos a superficie {#superficie}
+
+```{r superficie-setup, include = FALSE}
+source("_common.R")
+```
+
+Hasta aquí todo son puntos: `r i_es(metrica("pipeline_diagram_numbers", "n_stations_proj"))`
+estaciones con un número cada una. Los resultados, en cambio, se dan en kilómetros cuadrados. Este
+capítulo es el puente, y es el único paso del trabajo que se defiende con un número propio en vez de
+con una cita.
+
+## Por qué superficie y no estaciones
+
+Podría reportarse "el X % de las estaciones deja de cumplir". Sería más fácil y sería peor.
+
+Las estaciones meteorológicas no están repartidas al azar: se agolpan en valles, poblaciones y
+aeropuertos, y hay `r i_es(nrow(tabla("idw_colocated")))` coordenadas de esta red con **dos
+estaciones distintas en el mismo punto**. Contar puntos no estima territorio; estima dónde puso
+AEMET sus termómetros.
+
+La diferencia no es teórica. Sobre estaciones, la proporción de suelo que rescata el mutante entre
+modelos va del
+`r pct(metrica("model_spread_numbers", "station_rescued_min_pct"))` al
+`r pct(metrica("model_spread_numbers", "station_rescued_max_pct"))`; sobre superficie va del
+`r pct(metrica("model_spread_numbers", "km2_rescued_min_pct"))` al
+`r pct(metrica("model_spread_numbers", "km2_rescued_max_pct"))`. Son dos bases distintas y dan dos
+respuestas distintas, y confundirlas fue uno de los errores que este documento vino a corregir.
+
+## La interpolación
+
+Se usa IDW, distancia inversa ponderada: cada celda recibe la media de las estaciones que tiene
+cerca, pesada por el inverso del cuadrado de la distancia.
+
+| Parámetro | Valor | Por qué |
+| --- | --- | --- |
+| Radio | 50 km | Más allá, una estación no dice nada útil sobre una celda |
+| Potencia | 2 | El estándar; el peso cae con el cuadrado de la distancia |
+| Vecinos máximos | 12 | A partir de ahí el resultado apenas se mueve |
+| Celda | 1 km | La resolución de trabajo |
+| Proyección | EPSG:3035 | Equiárea, así que sumar celdas da área de verdad |
+
+No es una elección de este trabajo: **replica el método de Egea et al. (2022)**, que interpoló así y
+enmascaró a 50 km de la estación más próxima. Aquella red tenía 270 estaciones y ésta tiene
+`r i_es(metrica("pipeline_diagram_numbers", "n_stations_proj"))`, así que el método está aquí mejor
+sostenido que en el trabajo que lo publicó.
+
+```{r superficie-cadena, fig.cap = pie("Las tres piezas de este capítulo: los puntos, la superficie interpolada y la máscara de cultivo.", "34_method_figures.R", "ggplot2 4.0.2 · patchwork")}
+knitr::include_graphics(figura("fig36_method_chain.png"))
+```
+
+## Cuánto se equivoca
+
+Replicar un método publicado justifica la elección, pero no dice cuánto se acierta. Eso hasta ahora
+no estaba medido en el proyecto, y ahora sí.
+
+El procedimiento es el más simple que hay: se esconde una estación, se predice su valor desde las
+demás con exactamente los mismos parámetros, y se compara con lo que esa estación midió. Se repite
+con todas.
+
+```{r superficie-cv, fig.cap = pie("Validación cruzada dejando una estación fuera. El error se mide EN las estaciones, que se agolpan en valles; entre ellas es mayor que lo que dice la figura.", "41_idw_crossval.R", "ggplot2 4.0.2 · patchwork")}
+knitr::include_graphics(figura("fig52_idw_crossval.png"))
+```
+
+Sobre la línea base, el error cuadrático medio es de
+`r cp(cifra("idw_crossval_summary", "presente_present", "rmse_CP"), 2)`, con un error absoluto
+mediano de `r cp(cifra("idw_crossval_summary", "presente_present", "mae_CP"), 2)` y un sesgo de
+`r cp(cifra("idw_crossval_summary", "presente_present", "bias_CP"), 3)`, prácticamente nulo.
+
+La forma útil de leerlo es contra los `r cp(CR_HUECO)` que separan a las dos variedades: el error de
+la superficie es el
+`r pct(cifra("idw_crossval_summary", "presente_present", "pct_of_gap"), 0)` de esa diferencia. No
+tumba la clasificación, pero sí significa que **la frontera entre clases tiene un grosor**.
+
+### Cuánto suelo cae dentro de ese grosor
+
+Un error en chill portions no dice todavía cuánto mapa hay que poner en duda. La traducción a
+territorio es directa: contar el suelo agrícola cuyo SWC está a menos de un error de un umbral.
+
+```{r superficie-banda}
+bd <- data.table::copy(tabla("idw_threshold_band"))
+data.table::setorder(bd, km2_near_any)
+knitr::kable(
+  bd[situation %in% c("presente_present", "ssp245_far", "ssp370_far"),
+     .(Situación = situation, `RMSE` = cp(rmse_CP, 2),
+       `Suelo dentro de la franja` = km2(km2_near_any),
+       `% del cultivable` = pct(pct_near_any))],
+  booktabs = TRUE, align = "lrrr")
+```
+
+En la línea base son `r km2(cifra("idw_threshold_band", "presente_present", "km2_near_any"))`, el
+`r pct(cifra("idw_threshold_band", "presente_present", "pct_near_any"))` del suelo agrícola. A fin de
+siglo bajo SSP3-7.0 la franja crece hasta
+`r km2(cifra("idw_threshold_band", "ssp370_far", "km2_near_any"))`, el
+`r pct(cifra("idw_threshold_band", "ssp370_far", "pct_near_any"))`, porque el calentamiento arrastra
+a media España hacia los umbrales y ahí es donde el error muerde.
+
+Eso **no** es un intervalo de confianza de la cifra titular, y no se debe leer como tal: es el suelo
+donde la respuesta está al alcance del error, que es la afirmación más débil que los datos sostienen.
+Pero es la cifra que hay que tener en la cabeza al mirar el mapa de fin de siglo, y sale de la tabla
+[`idw_threshold_band.csv`](../02_outputs/idw_threshold_band.csv).
+
+Por escenario, el error va de `r cp(min(tabla("idw_crossval_summary")$rmse_CP), 2)` a
+`r cp(max(tabla("idw_crossval_summary")$rmse_CP), 2)`, creciendo con el calentamiento.
+
+### Tres avisos sobre esa cifra
+
+**Se mide donde hay termómetros.** La red es tan densa que ninguna estación tiene su vecina a más de
+27 km, así que la validación no dice nada de las celdas realmente aisladas, que son justo las peores.
+
+**Hay un suelo por debajo del cual no se puede bajar.** En `r i_es(nrow(tabla("idw_colocated")))`
+coordenadas de esta red hay dos códigos de estación distintos. Donde los dos tienen registro medido
+(`r i_es(tabla("idw_colocated")[todos_obs == TRUE & !is.na(spread_obs), .N])` casos, sobre las mismas
+26 temporadas), **sus observaciones discrepan entre sí
+`r cp(median(tabla("idw_colocated")[todos_obs == TRUE]$spread_obs, na.rm = TRUE), 2)` de mediana**.
+Ninguna interpolación puede predecir un punto mejor de lo que coinciden allí los propios
+instrumentos.
+
+Conviene no confundir esa cifra con la que sale de las series simuladas en esas mismas coordenadas,
+que es mayor y no mide lo mismo. Como el producto proyectado se calibra contra el registro de cada
+estación, dos códigos en el mismo punto de los que **sólo uno** tiene observaciones producen series
+distintas por razones de calibración y no de instrumento. El desacuerdo máximo de todo el conjunto,
+`r cp(max(tabla("idw_colocated")$spread), 2)` entre
+`r tabla("idw_colocated")[which.max(spread)]$stations`, es precisamente uno de esos casos y **no** es
+un suelo de ruido: es un aviso sobre la procedencia de esas dos series.
+
+**El IDW no sabe de altitud, y se nota.** El residuo tiene pendiente con la cota: la interpolación
+sobreestima el frío en el llano y lo subestima en alto. Es el modo en que este método falla en un
+país montañoso, está cuantificado en el tercer panel de la figura, y no está corregido.
+
+## La máscara de cultivo
+
+Sobre la superficie interpolada se recorta el suelo agrícola de CORINE. Cada celda de 1 km aporta
+**su fracción de cultivo**, no una celda entera: una celda medio agrícola cuenta medio kilómetro
+cuadrado.
+
+De ahí sale el denominador de todo el trabajo, `r km2(SUPERFICIE_CULTIVABLE)`, que es el
+`r pct(100 * SUPERFICIE_CULTIVABLE / tabla("attrition_funnel_numbers")[paso == "España peninsular y Baleares", valor])`
+del país.
+
+```{r superficie-codigo, results = "asis"}
+codigo("19_cropland_viability_national.R", seccion = 4,
+       titulo = "la interpolación, la máscara y la clasificación",
+       resumen = paste("Las tres operaciones de este capítulo caben en una docena de líneas. Nótese",
+                       "`cell_km2`, que tiene su propia historia en el capítulo siguiente."))
+```
+
+## El área de una celda, que no vale 1
+
+Una nota que parece pedante y que costó un día entero.
+
+Al construir la rejilla se pide una resolución de 1.000 m sobre la extensión de España. `terra`
+respeta la extensión y ajusta la resolución para que quepa un número entero de celdas, así que la
+celda real mide 1.000,32 × 999,99 m y **no** 1.000 × 1.000. En una proyección equiárea eso significa
+que cada celda vale `r n_es(metrica("cropland_threshold_meta", "cell_km2"), 5)` km², no 1.
+
+Durante meses, siete scripts multiplicaron por 1. El efecto es un
+`r pct(100 * (metrica("cropland_threshold_meta", "cell_km2") - 1), 3)` de subestimación en **toda**
+cifra de superficie del trabajo. Se corrigió el 14 de agosto de 2026 y la historia completa está en
+el capítulo \@ref(descartes), porque dice algo sobre cómo fallan estos errores: ninguna comprobación
+del proyecto lo detectó, porque todas comparaban cifras que estaban igual de bajas.

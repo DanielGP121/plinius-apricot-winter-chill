@@ -47,7 +47,9 @@ IDW_NMAX   <- 12                            # neighbours per cell; beyond this I
 # Paths come from 00_paths.R: it derives the repository root from its own location and demands
 # PLINIUS_DATA for anything that lives outside the repository.
 .f <- grep("^--file=", commandArgs(FALSE), value = TRUE)
-source(file.path(if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]))) else getwd(), "00_paths.R"))
+.dir <- if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]))) else getwd()
+source(file.path(.dir, "00_paths.R"))
+source(file.path(.dir, "00_corine.R"))
 
 CHILL <- out_path("chill_all_windows.csv")   # built by 22_merge_chill_tables.R
 CLC   <- plinius_clc()
@@ -116,21 +118,12 @@ tmpl <- rast(ext(vect(spain)), resolution = RES_M, crs = paste0("EPSG:", EPSG))
 cat("3. suelo cultivable CORINE\n")
 clc <- rast(CLC)
 clc_c <- crop(clc, ext(project(vect(spain), crs(clc))))
-codes <- levels(clc_c)[[1]]
-# The raster attribute table is the reliable way to map CLC classes; the numeric fallback below
-# holds only for this particular GeoTIFF. A RAT that exists but lacks GRID_CODE means a different
-# product, and quietly falling through to the fallback would select the wrong cells (or none), send
-# total_crop_km2 to zero, and turn every percentage downstream into NaN without a single error.
-if (!is.null(codes) && !("GRID_CODE" %in% names(codes)))
-  stop(sprintf("the CORINE raster carries an attribute table without GRID_CODE (columns: %s).\n",
-               paste(names(codes), collapse = ", ")),
-       "  This is not the CLC2018 100 m product the class mapping was written for.")
-crop_ids <- if (!is.null(codes)) codes$ID[codes$GRID_CODE %in% c(12:17, 19:22)] else NULL
-isc <- if (length(crop_ids)) clc_c %in% crop_ids else (clc_c >= 12 & clc_c <= 22 & clc_c != 18)
-isc <- as.numeric(isc)
+# Class selection and its verification live in 00_corine.R, shared with 31_scenario_frames.R so the
+# animation and the static maps cannot end up measuring different territory.
+isc <- corine_crop_mask(clc_c)
 cropfrac <- resample(isc, tmpl, method = "average")     # share of each 1 km cell that is cropland
 cropfrac <- mask(cropfrac, vect(spain))
-cell_km2 <- (RES_M / 1000)^2
+cell_km2 <- cell_area_km2(cropfrac)   # not (RES_M/1000)^2; see 00_corine.R
 total_crop_km2 <- global(cropfrac, "sum", na.rm = TRUE)[1, 1] * cell_km2
 # Spain has of the order of 2e5 km2 of cropland. A total near zero means the class selection matched
 # nothing, and every percentage computed from it downstream would be NaN in a file that still gets

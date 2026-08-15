@@ -1,0 +1,160 @@
+# Cuánto creerse esto {#modelos}
+
+```{r modelos-setup, include = FALSE}
+source("_common.R")
+```
+
+El capítulo \@ref(agregacion) dejó una deuda: en el escalón 3 se tiran once números y se queda uno.
+Aquí se paga.
+
+## Los once modelos, cada uno por su cuenta
+
+La cadena entera se ha repetido **una vez por cada modelo climático**, en vez de sólo sobre la
+mediana.
+
+Las cuentas conviene tenerlas juntas porque se parecen y no son lo mismo. De las quince situaciones
+del capítulo \@ref(resultados), `r i_es(data.table::uniqueN(tabla("per_model_cropland_km2")$situation))`
+son simuladas y por tanto se pueden repetir modelo a modelo; las otras cuatro son observadas o
+agregadas y no tienen once versiones. De ahí salen
+`r i_es(data.table::uniqueN(tabla("per_model_cropland_km2")$situation))` × `r i_es(metrica("pipeline_diagram_numbers", "n_models"))` =
+**`r i_es(nrow(tabla("per_model_cropland_km2")))` combinaciones** de modelo y situación en
+`per_model_cropland_km2.csv`.
+
+Eso es distinto de las `r i_es(nrow(tabla("pipeline_runs")))` corridas del motor de frío del capítulo
+\@ref(referencia), que se cuentan por ventana temporal y no por situación: una misma ventana alimenta
+varias situaciones. Y distinto también de las quince situaciones, que incluyen las observadas.
+
+```{r modelos-rango, fig.cap = pie("Los kilómetros cuadrados que rescata el mutante, modelo a modelo, sobre las dos bases posibles.", "37_model_figures.R", "ggplot2 4.0.2")}
+knitr::include_graphics(figura("fig41_per_model_range.png"))
+```
+
+A fin de siglo bajo SSP3-7.0, la proporción del suelo perdido que el mutante recupera va del
+`r pct(metrica("model_spread_numbers", "km2_rescued_min_pct"))`
+(`r metrica("model_spread_numbers", "km2_rescued_min_model")`) al
+`r pct(metrica("model_spread_numbers", "km2_rescued_max_pct"))`
+(`r metrica("model_spread_numbers", "km2_rescued_max_model")`), con mediana
+`r pct(metrica("model_spread_numbers", "km2_rescued_median_pct"))`. **Ningún modelo baja de un
+tercio.** Ese es el resultado honesto: el número exacto depende del modelo, pero ninguno desmiente
+la conclusión.
+
+## "Acuerdo" son tres preguntas distintas
+
+Aquí hay una confusión que el proyecto arrastró un tiempo y que conviene deshacer, porque las tres
+respuestas son muy distintas y citar la peor sin decir cuál es hace parecer que los modelos no
+respaldan nada.
+
+| La pregunta | La respuesta |
+| --- | --- |
+| ¿Coinciden en la **clase** de cada celda a fin de siglo? | `r pct(metrica("model_spread_numbers", "agree_class_far"))` |
+| ¿Coinciden en el **signo del cambio** a fin de siglo? | `r pct(metrica("model_spread_numbers", "agree_sign_far"))` |
+| ¿Coinciden en el **signo del cambio** a corto plazo (2021-2040)? | `r pct(metrica("model_spread_numbers", "agree_sign_nearterm"))` |
+
+Las tres salen de [`model_spread_numbers.csv`](../02_outputs/model_spread_numbers.csv), y el detalle
+celda a celda de las once situaciones está en
+[`model_agreement_summary.csv`](../02_outputs/model_agreement_summary.csv).
+
+La tercera es la mala, y es real: **a corto plazo los modelos ni siquiera coinciden en la dirección
+del cambio.** No es un defecto del análisis, es el estado del conocimiento a ese horizonte.
+
+```{r modelos-acuerdo, fig.cap = pie("Acuerdo entre modelos celda a celda, con la convención de sombreado del AR6: color donde al menos el 80 % coincide, diagonales donde no.", "37_model_figures.R", "ggplot2 4.0.2 · terra 1.9.34")}
+knitr::include_graphics(figura("fig39_model_agreement_far.png"))
+```
+
+Todos los mapas de proyección del trabajo llevan ese rayado. Un mapa de mediana sin su medida de
+acuerdo es una afirmación sin intervalo.
+
+## Por qué SSP3-7.0 pierde menos que SSP2-4.5 a corto plazo
+
+Es la pregunta que cualquiera hace al ver el panel de 2021-2040, y tiene respuesta.
+
+A ese horizonte, la diferencia entre escenarios es de
+`r cp(metrica("talk_key_numbers", "nearterm_spread_scenarios_CP"), 1)` sobre las estaciones
+marginales, mientras que la diferencia **entre modelos** es de
+`r cp(metrica("talk_key_numbers", "nearterm_spread_models_CP"), 1)`. Los modelos discrepan cinco
+veces más de lo que discrepan los escenarios.
+
+Y como se vio en el capítulo \@ref(agregacion), el signo del resultado depende del orden de
+agregación: `r cp(metrica("talk_key_numbers", "nearterm_order_models_first_CP"), 2)` tomando la
+mediana entre modelos primero,
+`r cp(metrica("talk_key_numbers", "nearterm_order_stations_first_CP"), 2)` tomándola entre
+estaciones primero. Un test de signos sobre qué escenario sale más frío da
+p = `r n_es(metrica("talk_key_numbers", "nearterm_sign_test_p"), 2)`, que es exactamente lo que se
+espera de una moneda.
+
+**No hay señal que medir a ese horizonte.** Por eso el panel de 2021-2040 se presenta agregando los
+tres escenarios: separarlos invitaría a leer ruido como efecto de escenario.
+
+## Por qué no se corrigió el sesgo
+
+Es la otra pregunta incómoda, y la respuesta tiene una figura detrás.
+
+```{r modelos-sesgo, fig.cap = pie("Sesgo de cada modelo frente al observado, sobre la misma ventana y las mismas estaciones.", "38_method_figures.R", "ggplot2 4.0.2")}
+knitr::include_graphics(figura("fig43_model_bias.png"))
+```
+
+Medido sobre el mismo periodo y las mismas
+`r i_es(metrica("method_chain_numbers", "n_bias_stations"))` estaciones, el sesgo de los once
+modelos va de `r cp(metrica("method_chain_numbers", "bias_min_CP"), 2)` a
+`r cp(metrica("method_chain_numbers", "bias_max_CP"), 2)`, un rango de
+`r cp(metrica("method_chain_numbers", "bias_range_CP"), 2)` sobre una variable cuya mediana nacional
+es de `r cp(cifra("talk_numbers_cropland", "presente_present", "swc_median"), 1)` en la línea base
+(columna `swc_median` de `talk_numbers_cropland.csv`). La mediana del ensemble se desvía
+`r cp(metrica("method_chain_numbers", "bias_ensemble_CP"), 2)`. Todas estas cifras están en
+[`method_chain_numbers.csv`](../02_outputs/method_chain_numbers.csv).
+
+### Qué mide cada cifra de dispersión
+
+Por el trabajo circulan varias y no son la misma. Conviene tenerlas juntas:
+
+| Cifra | Qué compara | Sobre qué |
+| --- | --- | --- |
+| `r cp(metrica("method_chain_numbers", "bias_range_CP"), 1)` | El modelo más sesgado contra el menos sesgado, frente al observado | Las `r i_es(metrica("method_chain_numbers", "n_bias_stations"))` estaciones comunes, 1995-2020 |
+| `r cp(metrica("talk_key_numbers", "nearterm_spread_models_CP"), 1)` | El modelo más frío contra el más cálido, a corto plazo | Las `r i_es(metrica("talk_key_numbers", "nearterm_marginal_stations"))` estaciones marginales, 2021-2040 |
+| `r cp(metrica("talk_key_numbers", "nearterm_spread_scenarios_CP"), 1)` | El escenario más frío contra el más cálido, a corto plazo | Las mismas estaciones marginales |
+| `r pct(metrica("model_spread_numbers", "km2_rescued_min_pct"))` a `r pct(metrica("model_spread_numbers", "km2_rescued_max_pct"))` | El modelo que menos rescata contra el que más | Superficie, sobre la pérdida total (no la atribuible) |
+
+"Estaciones marginales" son las que quedan cerca de un umbral en la línea base, que es donde un
+cambio pequeño en CP mueve superficie; sobre el conjunto entero la dispersión se diluye y no dice
+nada útil.
+
+Tres razones para no corregir:
+
+**Ya estaba corregido.** El producto ESD-RegBA llega regionalizado y ajustado contra el observado
+(capítulo \@ref(datos)). Volver a corregir sería corregir dos veces.
+
+**Gastaría las observaciones dos veces.** El producto se calibró contra estas mismas estaciones, así
+que usarlas otra vez para corregir y luego presentar el contraste como validación sería circular.
+Por eso el contraste del capítulo \@ref(datos) se presenta como consistencia y no como validación
+independiente.
+
+**Movería menos que la parametrización.** Un rango de
+`r cp(metrica("method_chain_numbers", "bias_range_CP"), 1)` es menos de lo que separa a las dos
+parametrizaciones del modelo dinámico (6,94 CP, capítulo \@ref(dinamico)).
+
+Y aunque se corrigiera, la **dirección** del resultado no dependería de ello: comparando cada modelo
+consigo mismo, o sea el futuro contra su propia línea base, cualquier sesgo constante se cancela en
+la resta, y la pérdida sigue estando ahí.
+
+Ese argumento tiene un límite que conviene no esconder, el mismo del capítulo \@ref(horario): **los
+kilómetros cuadrados que se reportan no salen de una resta**, salen de comparar un valor absoluto
+contra dos umbrales fijos. Un sesgo residual de un chill portion no se cancela ahí: mueve la frontera
+entre clases y con ella la superficie. Los `r cp(metrica("method_chain_numbers", "bias_range_CP"), 2)`
+de rango entre modelos hay que leerlos contra los
+`r km2(cifra("idw_threshold_band", "ssp370_far", "km2_near_any"))` que están a menos de un error de
+interpolación de un umbral (capítulo \@ref(superficie)): son las dos caras de la misma fragilidad.
+
+```{r modelos-delta, fig.cap = pie("Cambio del Safe Winter Chill entre la línea base y fin de siglo, cada modelo contra su propio pasado.", "38_method_figures.R", "ggplot2 4.0.2")}
+knitr::include_graphics(figura("fig45_delta_vs_absolute.png"))
+```
+
+## Lo que sigue sin saberse
+
+**La circularidad de la validación**, ya dicha: ESD-RegBA se calibró contra estas estaciones.
+
+**El supuesto de estacionariedad** del downscaling, heredado y no verificable.
+
+**El error de la interpolación entre estaciones**, acotado sólo donde hay estaciones
+(capítulo \@ref(superficie)).
+
+**La parametrización de los requerimientos**, pendiente de confirmar. Es la incertidumbre mayor del
+trabajo y no está resuelta.

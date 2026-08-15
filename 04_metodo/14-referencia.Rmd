@@ -1,0 +1,120 @@
+# Referencia: qué hace cada script {#referencia}
+
+```{r referencia-setup, include = FALSE}
+source("_common.R")
+```
+
+Este capítulo no se lee: se consulta. La tabla de abajo **se genera escaneando el directorio de
+scripts** cada vez que se compila el documento, así que no puede quedarse desfasada como se quedó la
+lista que había antes en las notas del proyecto, que se paró en el script 30 mientras el directorio
+llegaba al 41.
+
+La columna "Qué hace" viene **literal de la cabecera de cada fichero y por tanto en inglés**, que es
+el idioma del código en este proyecto. Traducirla aquí obligaría a mantener dos versiones y una de
+las dos envejecería; se prefiere que sea evidente de dónde sale.
+
+## Los scripts
+
+```{r referencia-scripts}
+# Built by reading the files, never by hand. The description is the first line of prose in the
+# header block, which is a convention every script in this project follows; the outputs come from
+# grepping the write calls. A script that grows a new output appears here without anyone editing
+# this chapter.
+fs <- list.files(SCR, pattern = "\\.(R|Rmd|py|sh)$", full.names = TRUE)
+fs <- fs[!grepl("legacy|__pycache__", fs)]
+
+# Two comment conventions, because the project has two languages: R and bash open with a `#` header
+# block, Python with a module docstring. Reading only the first left eight rows blank, all of them
+# Python, in a table whose whole selling point is that it cannot go stale.
+desc_de <- function(f) {
+  l <- readLines(f, warn = FALSE, encoding = "UTF-8")
+  txt <- if (grepl("\\.py$", f) && any(grepl('^"""', l))) {
+    q <- grep('^"""', l)
+    # Two docstring styles live in this project: the text can start on the line of the opening
+    # quotes or on the next one. Reading only from the next line dropped the first sentence of
+    # four scripts, which is precisely the sentence that says what they do.
+    primera <- trimws(sub('^"""', "", l[q[1]]))
+    fin <- if (length(q) >= 2) q[2] - 1L else min(q[1] + 6L, length(l))
+    cuerpo <- if (fin > q[1]) l[(q[1] + 1L):fin] else character(0)
+    paste(c(primera, cuerpo), collapse = " ")
+  } else {
+    h <- grep("^#+ *[A-Za-zÁÉÍÓÚÑ]", l)
+    h <- h[h <= 15]
+    if (!length(h)) "" else paste(sub("^#+ *", "", l[h[seq_len(min(3, length(h)))]]), collapse = " ")
+  }
+  txt <- trimws(gsub("\\s+", " ", txt))
+  if (!nzchar(txt)) return("")
+  # Cut at a sentence end rather than mid-word, so the column reads as prose and not as debris.
+  if (nchar(txt) > 130) {
+    p <- gregexpr("\\. ", substr(txt, 1, 150))[[1]]
+    txt <- if (p[1] > 0) substr(txt, 1, max(p)) else paste0(substr(txt, 1, 127), "…")
+  }
+  txt
+}
+
+salidas_de <- function(f) {
+  l <- readLines(f, warn = FALSE, encoding = "UTF-8")
+  # Figures: only the lines that actually save one, so a script that merely mentions a figure in a
+  # comment does not get credited with producing it.
+  fl <- l[grepl("ggsave|savefig|png\\(", l)]
+  figs <- sort(unique(unlist(regmatches(fl, gregexpr("fig[0-9]+", fl)))))
+  wl <- l[grepl("fwrite|write\\.csv|to_csv|writeRaster", l)]
+  csvs <- unique(unlist(regmatches(wl, gregexpr("[a-z_0-9]+\\.csv", wl))))
+  paste(c(if (length(figs)) paste(head(figs, 6), collapse = ", "),
+          if (length(csvs)) paste(head(csvs, 3), collapse = ", ")), collapse = " · ")
+}
+
+ref <- data.table::rbindlist(lapply(fs, function(f) data.table::data.table(
+  Script = basename(f),
+  Líneas = length(readLines(f, warn = FALSE)),
+  `Qué hace` = desc_de(f),
+  Produce = salidas_de(f))))
+data.table::setorder(ref, Script)
+knitr::kable(ref, booktabs = TRUE, align = "lrll")
+```
+
+## Dónde corre cada cosa
+
+Sólo dos scripts se ejecutan fuera del portátil, y son los que mueven los gigabytes:
+
+- `14_ladon_download_thredds.sh` descarga los 88 NetCDF en el HPC.
+- `15_chill_national_parallel.R` calcula el frío allí mismo, en paralelo por estación, con punto de
+  control por combinación para que un corte cueste como mucho la combinación en curso.
+
+Los dos se suben como ficheros sueltos y por eso no dependen del resolvedor de rutas compartido.
+Todo lo demás corre en local sobre las tablas que bajan de allí.
+
+## Las corridas del motor de frío
+
+"Once modelos" resume `r i_es(nrow(tabla("pipeline_runs")))` ejecuciones distintas. El desglose
+completo:
+
+```{r referencia-runs}
+r <- tabla("pipeline_runs")
+tab <- r[, .(Modelos = data.table::uniqueN(model)), by = .(Escenario = scenario, Periodo = periodo)]
+data.table::setorder(tab, Escenario, Periodo)
+knitr::kable(tab, booktabs = TRUE, align = "llr")
+```
+
+## Las tablas canónicas
+
+La regla del proyecto: **ninguna cifra que se proyecte puede faltar en una de estas tablas**. Si
+hace falta citar algo que no está, se añade al script que la genera, no se calcula aparte.
+
+```{r referencia-tablas}
+tt <- data.table::data.table(
+  Fichero = c("chill_all_windows.csv", "talk_numbers_cropland.csv", "per_model_cropland_km2.csv",
+              "idw_crossval_summary.csv", "idw_colocated.csv", "season_attrition_by_window.csv",
+              "station_walkthrough_km2.csv", "observed_annual_series.csv", "pipeline_runs.csv"),
+  `Qué contiene` = c(
+    "La tabla canónica del frío: una fila por estación, modelo y situación",
+    "Superficie por clase y situación. De aquí sale toda cifra de km² que se proyecte",
+    "Lo mismo, desglosado modelo a modelo",
+    "Error de la interpolación por situación",
+    "Las coordenadas con dos estaciones y cuánto discrepan",
+    "Temporadas posibles, conservadas y descartadas por ventana",
+    "El entorno de 50 km de Calasparra, por clase",
+    "Los 50 inviernos observados con su ranking",
+    "Las corridas de modelo, escenario y ventana"))
+knitr::kable(tt, booktabs = TRUE)
+```

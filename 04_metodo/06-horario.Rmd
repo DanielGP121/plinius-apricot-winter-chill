@@ -1,0 +1,88 @@
+# De diario a horario {#horario}
+
+```{r horario-setup, include = FALSE}
+source("_common.R")
+```
+
+Este es el paso que casi nunca se cuenta, y hasta que se escribió este documento tampoco estaba
+contado aquí. Merece capítulo propio por una razón sencilla: **es donde entra la única suposición
+fuerte de toda la primera mitad de la cadena.**
+
+## El problema
+
+AEMET entrega dos números por día y estación: la temperatura máxima y la mínima. El modelo dinámico
+no funciona con eso. Necesita saber cuánto tiempo pasó la planta a cada temperatura, o sea una serie
+horaria.
+
+Entre dos números al día y veinticuatro hay veintidós que no existen y hay que reconstruir.
+
+## Cómo se reconstruyen
+
+`chillR` lo hace por dentro, y lo hace a partir de la latitud. Con la latitud y el día del año
+calcula la hora del orto y del ocaso, y con eso arma una curva idealizada: temperatura ascendente
+desde el amanecer, máxima por la tarde, descenso exponencial durante la noche hasta el mínimo justo
+antes del amanecer siguiente.
+
+Es decir: **la latitud de cada estación no es un dato de localización, es un parámetro del
+cálculo**. Cambiar la latitud de una estación cambia el frío que se le atribuye, aunque las
+temperaturas sean las mismas.
+
+En el código, ese paso está en el argumento `latitude` de una sola llamada:
+
+```{r horario-codigo, results = "asis"}
+codigo("15_chill_national_parallel.R", funcion = "chill_station",
+       titulo = "el corazón del cálculo, donde ocurre todo lo de este capítulo y el siguiente",
+       resumen = paste("`fix_weather` ordena y comprueba la serie, `tempResponse_daily_list`",
+                       "reconstruye las horas a partir de la latitud y aplica el modelo, y",
+                       "`DM_JOSE` es la parametrización. Tres líneas para dos capítulos de texto."))
+```
+
+## Por qué importa tanto
+
+Porque el modelo dinámico **no es lineal en la temperatura**. Tiene un óptimo alrededor de los 8 °C
+y deja de acumular por encima de 14 °C, así que lo que cuenta no es la media del día sino cuántas
+horas pasó cerca del óptimo. Dos días con la misma máxima y la misma mínima pero con distinta forma
+de curva acumulan frío distinto.
+
+Un ejemplo de la propia documentación de `chillR` da la medida del asunto: en un huerto de
+California donde se midieron 12,2 chill portions, interpolar linealmente entre máxima y mínima daba
+23,1, casi el doble, mientras que la reconstrucción idealizada daba 13,6. El método de
+reconstrucción no es un detalle de implementación: es la diferencia entre acertar y equivocarse por
+un factor de dos.
+
+## Qué se hereda al aceptarlo
+
+Tres cosas, y conviene decirlas juntas:
+
+**La curva es idealizada, no medida.** Un día de niebla persistente o un frente que entra por la
+tarde rompen la forma supuesta. El error que eso introduce no está cuantificado en este trabajo, y
+no lo está en casi ninguno que use este método.
+
+**Se aplica igual al observado y al proyectado**, y eso salva la mitad del problema. Sea cual sea el
+sesgo que introduce la reconstrucción, lo introduce en los dos lados por igual, así que las
+diferencias entre periodos y entre modelos no lo llevan dentro.
+
+Pero conviene decir cuál es la otra mitad, porque es la limitación más incómoda del trabajo y no se
+arregla con ese argumento: **la clasificación no es una diferencia, es una comparación absoluta**
+contra `r cp(CR_BULIDA)` y `r cp(CR_PRECOZ)`. Ahí no se cancela nada. Si la reconstrucción horaria
+desplazara sistemáticamente el frío calculado, todos los km² de este trabajo se desplazarían con él,
+y el ejemplo de California de más abajo sugiere que ese desplazamiento puede ser de un 10 %.
+
+Lo único que sostiene esa comparación es que los umbrales se midieran con la misma cadena, que es
+justo el supuesto pendiente del capítulo \@ref(dinamico). Las dos limitaciones son en realidad la
+misma, vista desde dos sitios.
+
+**Se asume que es el mismo método con el que se midieron los requerimientos.** Comparar el frío del
+territorio con esos umbrales sólo tiene sentido si las dos cifras se han construido igual. Ese
+supuesto está pendiente de confirmación y es la incertidumbre mayor del trabajo; el capítulo
+\@ref(dinamico) lo desarrolla y lo cuantifica.
+
+## Una comprobación que sí se hizo
+
+No se puede validar la reconstrucción horaria sin datos horarios, que no hay. Lo que sí se hizo fue
+comprobar el resultado final contra un instrumento que no es de la red AEMET: un huerto del CEBAS en
+Cieza con su propio registro. Si el procesado estuviera introduciendo algo raro, ahí se vería.
+
+```{r horario-cieza, fig.cap = pie("Cuatro registros de dos redes distintas, estandarizados. La caída reciente aparece en las dos, así que no sale del procesado de AEMET.", "27_cieza_independent_check.R", "ggplot2 4.0.2")}
+knitr::include_graphics(figura("fig26_01_independent_records.png"))
+```

@@ -1,0 +1,16 @@
+\usepackage{booktabs}
+\usepackage{longtable}
+
+% Deliberately no microtype: it is not in the TeX Live 2024 installation on this machine and
+% installing it would mean a cross-release upgrade of the whole distribution for typographic polish
+% the reader will never notice. If a future machine has it, adding it back is one line.
+%
+% No babel here: pandoc already loads it from `lang: es` in index.Rmd, and declaring it twice is an
+% option clash that stops the build. The decimal comma comes from R's formatC, not from babel.
+
+% Figures in this book are wide panels rather than plots, so they need room and they need to stay
+% near the text that discusses them.
+\usepackage{float}
+\let\origfigure\figure
+\let\endorigfigure\endfigure
+\renewenvironment{figure}[1][2] {\expandafter\origfigure\expandafter[H]} {\endorigfigure}

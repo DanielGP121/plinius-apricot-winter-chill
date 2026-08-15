@@ -1,0 +1,107 @@
+# Los datos, y qué les habían hecho antes {#datos}
+
+```{r datos-setup, include = FALSE}
+source("_common.R")
+```
+
+Cuatro fuentes, ninguna generada aquí. Este capítulo dice qué es cada una, quién la produce, y
+sobre todo **qué procesado traía ya de fábrica**, que es la parte que se suele omitir al contar un
+trabajo de este tipo y la que más condiciona lo que se puede afirmar después.
+
+## Las cuatro fuentes
+
+| Fuente | Quién | Qué aporta | Cobertura |
+| --- | --- | --- | --- |
+| Proyecciones PNACC AR6 | AEMET / consorcio PNACC | Tmax y Tmin diarias simuladas | `r i_es(metrica("pipeline_diagram_numbers", "n_stations_proj"))` estaciones, `r i_es(metrica("pipeline_diagram_numbers", "n_models"))` modelos, `r i_es(metrica("pipeline_diagram_numbers", "n_scenarios"))` escenarios más histórico |
+| Archivo observado PNACC | AEMET | Tmax y Tmin diarias medidas | `r i_es(metrica("pipeline_diagram_numbers", "n_stations_obs"))` estaciones, 1975-2020 |
+| API AEMET OpenData | AEMET | Extensión del observado hasta 2025 | 666 estaciones |
+| CORINE Land Cover 2018 | Copernicus | Usos del suelo | ráster de 100 m, toda Europa |
+
+## Lo que ya venía hecho: el downscaling
+
+Las proyecciones **no son salida bruta de CMIP6**. Los modelos globales trabajan a una resolución
+de decenas o cientos de kilómetros, que para hablar de un valle de Murcia no sirve. El PNACC aplica
+antes un downscaling estadístico, ESD-RegBA, que traduce los campos de gran escala del modelo global
+a series diarias en el punto donde está cada estación, calibrando esa traducción contra el registro
+observado de esa misma estación.
+
+Esto tiene tres consecuencias que hay que decir en voz alta.
+
+**Primera: las series proyectadas ya vienen ajustadas.** No son "lo que dice el modelo global", son
+"lo que dice el modelo global traducido a esta estación con una relación calibrada sobre su
+observado". Buena parte del sesgo del modelo global se ha corregido ahí.
+
+**Segunda: por eso aquí no se aplicó ninguna corrección adicional.** Volver a corregir sobre lo ya
+corregido es un error fácil de cometer y difícil de detectar. El capítulo \@ref(modelos) da la
+cifra que sostiene esa decisión y enseña la figura que la justifica.
+
+**Tercera: se hereda el supuesto de estacionariedad.** El downscaling asume que la relación entre
+el clima de gran escala y el clima local sigue siendo la misma en 2090 que en el periodo de
+calibración. Es un supuesto declarado por los propios autores del método, no es de este trabajo, y
+no se puede verificar. Conviene tenerlo presente al leer las cifras de fin de siglo.
+
+## La bifurcación del portal, que no es un descarte
+
+Aquí hay una trampa que costó tiempo descubrir y que hay que declarar siempre que se cite una cifra
+de superficie.
+
+El portal de AEMET sirve el mismo producto por dos vías, y **no dan el mismo censo de estaciones**.
+La descarga por THREDDS entrega
+`r i_es(metrica("pipeline_diagram_numbers", "n_stations_proj"))`; el formulario web interactivo
+entrega `r i_es(metrica("pipeline_diagram_numbers", "n_stations_obs"))`. Este trabajo usa la
+primera.
+
+No es que se hayan descartado estaciones por calidad: son dos puertas al mismo almacén que no
+enseñan lo mismo. Pero significa que quien intente reproducir esto por el formulario obtendrá otras
+cifras de superficie y creerá que hay un error donde no lo hay. Por eso la vía de descarga va
+declarada explícitamente en el texto de Methods.
+
+## El observado, y por qué son dos
+
+El archivo del PNACC llega hasta 2020 y ahí se acaba. Como parte del interés del trabajo está en
+qué ha pasado en los últimos inviernos, el registro se extendió hasta 2025 con la API pública de
+AEMET, que cubre 666 de esas estaciones.
+
+Antes de juntarlos hubo que comprobar que miden lo mismo. Se compararon temporada a temporada
+sobre los inviernos que las dos fuentes reportan, aplicando a cada una el mismo umbral de
+completitud: el Safe Winter Chill coincide a **0,13 CP** con una correlación espacial de **0,987**.
+Con eso, el empalme es defendible: el archivo pone todas las temporadas hasta 2020 y la API sólo el
+tramo 2021-2025.
+
+Quedan dos limitaciones que van dichas donde se cite el registro extendido. La API acumula esos
+0,13 CP de más sobre el archivo en las temporadas comunes, y ese desfase no se ha podido verificar
+justo en el tramo donde no hay archivo con que compararlo. Y la extensión descansa en 666
+estaciones, no en las `r i_es(metrica("pipeline_diagram_numbers", "n_stations_obs"))` del archivo.
+
+```{r datos-fig, fig.cap = pie("Las dos fuentes observacionales sobre las temporadas que ambas cubren.", "24_observed_api_vs_archive.R", "ggplot2 4.0.2")}
+knitr::include_graphics(figura("fig23_02_api_vs_archive_swc.png"))
+```
+
+## El suelo
+
+CORINE Land Cover 2018, ráster de 100 metros. Se seleccionan las clases 211 a 244, que son las
+agrícolas, quitando la 231 (pastos). El detalle de la selección y por qué está escrita como está
+son cosa del capítulo \@ref(superficie), pero conviene adelantar que esa selección vive en un solo
+fichero compartido por todos los scripts que reportan superficie, precisamente porque es el
+denominador de todas las cifras y dos scripts en desacuerdo sobre ella serían invisibles en la
+salida.
+
+```{r datos-corine, results = "asis"}
+codigo("00_corine.R", funcion = "corine_crop_mask", titulo = "la selección de clases de CORINE",
+       resumen = paste("Elige los códigos de rejilla 12-17 y 19-22, y comprueba que las etiquetas de",
+                       "esas clases dicen lo que tienen que decir, en vez de fiarse del nombre de una",
+                       "columna de la tabla de atributos."))
+```
+
+## Qué se descarta, con recuentos
+
+```{r datos-embudo, fig.cap = pie("Recuentos reales en cada paso. Cada panel tiene su unidad y su escala: mezclarlas haría que la barra de temporadas descartadas pareciera mayor que la de estaciones.", "40_attrition_funnel.R", "ggplot2 4.0.2 · patchwork")}
+knitr::include_graphics(figura("fig51_attrition_funnel.png"))
+```
+
+Lo importante de esa figura es que **en la rama de proyecciones no se descarta ninguna estación**.
+Lo que se descarta son temporadas incompletas, y muy pocas: el filtro exige que una temporada tenga
+dato en al menos el 85 % de sus días, y con ese criterio caen
+`r i_es(sum(tabla("season_attrition_by_window")$lost))` de
+`r i_es(sum(tabla("season_attrition_by_window")$nominal))` temporadas posibles, todas ellas en la
+ventana de fin de siglo.

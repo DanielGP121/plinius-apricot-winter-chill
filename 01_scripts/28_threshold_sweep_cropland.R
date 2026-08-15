@@ -66,6 +66,8 @@ TOL <- 0.5                          # km2 tolerance against the published table
 # PLINIUS_DATA for anything that lives outside the repository.
 .f <- grep("^--file=", commandArgs(FALSE), value = TRUE)
 source(file.path(if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]))) else getwd(), "00_paths.R"))
+source(file.path(SCRIPTS_DIR, "00_corine.R"))   # for cell_area_km2(); this script still selects the
+                                                # CORINE classes with its own inline rule, see § below
 
 # The 1988-minus-1987 gap is measured by script 27, so it is read from that script's output rather
 # than copied here: a literal would keep the old value after any re-run of 27 and nothing would say
@@ -120,7 +122,7 @@ crop_ids <- if (!is.null(codes) && "GRID_CODE" %in% names(codes)) codes$ID[codes
 isc <- if (length(crop_ids)) clc_c %in% crop_ids else (clc_c >= 12 & clc_c <= 22 & clc_c != 18)
 isc <- as.numeric(isc)
 cropfrac <- mask(resample(isc, tmpl, method = "average"), vect(spain))
-cell_km2 <- (RES_M / 1000)^2
+cell_km2 <- cell_area_km2(cropfrac)   # not (RES_M/1000)^2; see 00_corine.R
 cf <- values(cropfrac)[, 1]
 total_km2 <- sum(cf, na.rm = TRUE) * cell_km2
 cat(sprintf("   superficie cultivable nacional: %.0f km2\n", total_km2))

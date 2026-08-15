@@ -85,3 +85,14 @@ __pycache__/
 .Ruserdata
 .DS_Store
 Thumbs.db
+
+# --- the method book ---------------------------------------------------------------------
+# Sources are versioned; the compiled book is not. It is 11 MB of generated HTML and PDF that any
+# clone can rebuild in two minutes, and it would double the size of the repository for nothing.
+04_metodo/_book/
+04_metodo/figuras/
+# Small tables that bookdown copies in because chapters link to them. They are duplicates of
+# 02_outputs/ and get recreated on every render.
+04_metodo/02_outputs/
+# The cold-read audit: candid internal assessment of the document, same category as info/.
+04_metodo/_auditoria_*.md

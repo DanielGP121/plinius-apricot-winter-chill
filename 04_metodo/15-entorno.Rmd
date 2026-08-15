@@ -1,0 +1,184 @@
+# Entorno y reproducción {#entorno}
+
+```{r entorno-setup, include = FALSE}
+source("_common.R")
+```
+
+El último capítulo, también para consultar y no para leer. Es lo que un revisor mira en treinta
+segundos para saber si falta algo.
+
+## Versión de este análisis
+
+```{r entorno-version}
+git <- function(args) {
+  r <- try(system2("git", c("-C", shQuote(ROOT), args), stdout = TRUE, stderr = FALSE), silent = TRUE)
+  if (inherits(r, "try-error") || !length(r)) NA_character_ else r[1]
+}
+v <- data.table::data.table(
+  Qué = c("Documento generado el", "Commit del repositorio", "Rama", "Estado del árbol de trabajo",
+          "Tabla canónica", "Superficie cultivable"),
+  Valor = c(format(Sys.time(), "%Y-%m-%d %H:%M"),
+            substr(ifelse(is.na(git("rev-parse HEAD")), "sin repositorio git", git("rev-parse HEAD")), 1, 12),
+            ifelse(is.na(git("rev-parse --abbrev-ref HEAD")), "—", git("rev-parse --abbrev-ref HEAD")),
+            ifelse(length(suppressWarnings(system2("git", c("-C", shQuote(ROOT), "status", "--porcelain"),
+                                                   stdout = TRUE, stderr = FALSE))) > 0,
+                   "con cambios sin registrar", "limpio"),
+            paste(i_es(metrica("pipeline_diagram_numbers", "n_rows_canonical")), "filas"),
+            km2(SUPERFICIE_CULTIVABLE)))
+knitr::kable(v, booktabs = TRUE)
+```
+
+Si ahí pone "con cambios sin registrar", este documento se generó sobre un estado del código que no
+está guardado en ninguna parte, y por tanto no es reproducible por nadie más. Conviene mirarlo antes
+de enviar el PDF.
+
+## Versiones del software
+
+```{r entorno-sesion}
+p <- c("data.table", "terra", "sf", "ggplot2", "patchwork", "mapSpain", "gstat", "chillR",
+       "bookdown", "knitr")
+inst <- data.table::rbindlist(lapply(p, function(x) data.table::data.table(
+  Paquete = x,
+  Versión = if (requireNamespace(x, quietly = TRUE)) as.character(utils::packageVersion(x)) else "no instalado")))
+knitr::kable(rbind(data.table::data.table(Paquete = "R", Versión = paste(R.version$major, R.version$minor, sep = ".")),
+                   inst), booktabs = TRUE)
+```
+
+Dos versiones mínimas no son precaución sino requisito real, y están declaradas en
+`install_deps.R`: `ggplot2` ≥ 3.4.0, porque `linewidth` sustituyó a `size` para líneas y todos los
+scripts de figuras lo usan, y `terra` ≥ 1.7, porque `interpIDW(..., near = TRUE)` es el corazón de
+los mapas de viabilidad.
+
+El lado Python es un entorno conda declarado en `environment.yml`: `xarray` y `netcdf4` para leer
+los NetCDF, `rasterio`, `geopandas` y `pyproj` para los filtros de suelo, `python-pptx` para el
+montaje de las diapositivas.
+
+En el HPC el entorno es distinto y tiene una trampa documentada: `chillR` no está en conda-forge y
+arrastra una cadena de dependencias espaciales pesadas. Instalarlo directo cuesta una tarde de
+fallos de compilación; instalar antes sus dependencias como binarios de conda-forge y sólo entonces
+`chillR` desde CRAN cuesta minutos. La receta está al final de `install_deps.R`.
+
+## Qué haría falta para reproducir esto
+
+Tres cosas, y sólo una está en el repositorio.
+
+**El código**: sí, salvo `DM_JOSE.R`, que es de J.A. Egea y no se puede redistribuir. El capítulo
+\@ref(dinamico) da las seis constantes para escribir un equivalente.
+
+**Los datos**: no. Son de AEMET y de Copernicus, pesan unos 15 GB y hay que descargarlos de sus
+fuentes. El fichero `00_data/README.md` explica qué va dónde. La ruta a esa carpeta se pasa por la
+variable de entorno `PLINIUS_DATA`; ningún script lleva rutas absolutas dentro.
+
+**La clave de la API de AEMET**: tampoco, y no debe estarlo. Va en `AEMET_API_KEY`.
+
+## El orden
+
+Ojo con una trampa de nombres: el modo `--windows near` produce la ventana **2021-2040**, que en las
+tablas se llama `nearterm`. La de 2041-2070, que en las tablas es `near`, sale del modo por defecto.
+
+```bash
+# --- en el HPC ---
+bash 14_ladon_download_thredds.sh                       # 88 NetCDF, ~15 GB
+D="--data proyecciones_peninsula --obs observado"
+
+Rscript 15_chill_national_parallel.R $D --check         # pre-vuelo: abre los 90 ficheros, no calcula
+Rscript 15_chill_national_parallel.R $D --cores 10      # ~23 h · ventanas ref, near(2041-2070), far, obsref
+Rscript 15_chill_national_parallel.R --data proyecciones_peninsula --windows present \
+        --outdir chill_parts_present --out chill_present.csv --cores 10      # 1995-2020, empalmada
+Rscript 15_chill_national_parallel.R --data proyecciones_peninsula --windows near \
+        --outdir chill_parts_near    --out chill_near.csv    --cores 10      # ojo: es 2021-2040
+Rscript 15_chill_national_parallel.R --data proyecciones_peninsula --windows current \
+        --outdir chill_parts_current --out chill_current.csv --cores 10      # 1995-2025
+Rscript 15_chill_national_parallel.R $D --windows obs \
+        --outdir chill_parts_obs1995 --out chill_obs1995.csv --cores 10      # observado 1995-2020
+
+# el observado temporada a temporada, para el contraste con la API y el registro largo
+Rscript 15_chill_national_parallel.R $D --windows obs --per-season \
+        --outdir chill_parts_obs_seasons --out chill_obs_seasons.csv --cores 10
+Rscript 15_chill_national_parallel.R $D --windows obs --per-season --years 1975,2020 \
+        --outdir chill_parts_obs_seasons_long --out chill_obs_seasons_1975.csv --cores 10
+
+# el observado reciente por API (necesita AEMET_API_KEY en el entorno, nunca en disco)
+python3 21_aemet_observed_download.py --stations stations_recent.txt --out obs_api \
+        --from 1995 --to 2025 --chunk-months 6 --workers 4
+python3 21_aemet_observed_download.py --merge --out obs_api --csv observed_1995_2025.csv
+
+# --- en local, con los CSV descargados a 02_outputs/ ---
+export PLINIUS_DATA=/ruta/a/los/datos
+Rscript 01_scripts/22_merge_chill_tables.R              # -> chill_all_windows.csv
+
+# rama del observado; el orden importa, cada uno consume la salida del anterior
+Rscript 01_scripts/23_chill_from_api.R --cores 8        # -> chill_api_seasons.csv
+Rscript 01_scripts/24_observed_api_vs_archive.R         # -> el contraste de 0,13 CP + fig23
+Rscript 01_scripts/25_splice_observed_1995_2025.R       # -> el empalme hasta 2025 + fig24
+Rscript 01_scripts/26_observed_long_record.R            # -> observed_annual_series.csv + fig25
+Rscript 01_scripts/27_cieza_independent_check.R         # -> los 6,94 CP entre parametrizaciones + fig26
+Rscript 01_scripts/19_cropland_viability_national.R     # -> fig20-22 + talk_numbers_cropland.csv
+Rscript 01_scripts/28_threshold_sweep_cropland.R        # se autocomprueba contra el anterior
+Rscript 01_scripts/36_per_model_stats.R                 # ~3 min, análisis por modelo
+Rscript 01_scripts/41_idw_crossval.R                    # validación de la interpolación
+Rscript 01_scripts/31_scenario_frames.R                 # ~20 min, lo más lento en local
+python  01_scripts/32_make_gifs.py
+Rscript 01_scripts/33_talk_figures.R
+Rscript 01_scripts/34_method_figures.R
+Rscript 01_scripts/37_model_figures.R
+Rscript 01_scripts/38_method_figures.R
+Rscript 01_scripts/39_pipeline_diagram.R
+Rscript 01_scripts/40_attrition_funnel.R
+python  01_scripts/35_build_talk_pptx.py                # y con --annex para el anexo
+```
+
+Y para regenerar este documento:
+
+```bash
+cd 04_metodo
+Rscript -e "bookdown::render_book('.', 'bookdown::bs4_book')"   # web navegable
+Rscript -e "bookdown::render_book('.', 'bookdown::pdf_book')"   # PDF
+```
+
+## Referencias
+
+Las cuatro obras de las que cuelgan las decisiones centrales del trabajo. Se citan por el texto
+completo y no por clave abreviada, porque este documento no pasa por un gestor bibliográfico.
+
+**Fishman, S., Erez, A. y Couvillon, G.A. (1987).** *The temperature dependence of dormancy breaking
+in plants: mathematical analysis of a two-step model involving a cooperative transition.* Journal of
+Theoretical Biology 124(4), 473-483. La parametrización que usa este trabajo (capítulo
+\@ref(dinamico)). Existe una versión de 1988 de los mismos autores, que es la que trae `chillR` por
+defecto y que da resultados 6,94 CP distintos.
+
+**Ruiz, D. et al. (2019).** Cuantificación experimental de los requerimientos de frío de variedades
+de albaricoque, de donde salen los `r cp(CR_BULIDA)` y los `r cp(CR_PRECOZ)`.
+**[pendiente: completar la referencia exacta y comprobar con David Ruiz la parametrización empleada,
+capítulo \@ref(dinamico)].**
+
+**Egea, J.A. et al. (2022).** Front. Plant Sci. 13:842628. El método de interpolación que aquí se
+replica: IDW con máscara de 50 km, sobre 270 estaciones (capítulo \@ref(superficie)).
+
+**Rule, A. et al. (2019).** *Ten simple rules for writing and sharing computational analyses in
+Jupyter Notebooks.* PLoS Computational Biology 15(7): e1007007. De donde viene la regla de declarar
+arriba y visibles las variables que gobiernan el análisis (capítulo \@ref(glosario)).
+
+Las cifras de la reconstrucción horaria del capítulo \@ref(horario) (12,2 frente a 23,1 y 13,6 CP)
+proceden de la documentación del paquete `chillR`; **[pendiente: citar viñeta y versión]**.
+
+## Lista de comprobación
+
+Lo que debería estar en su sitio antes de dar el trabajo por cerrado.
+
+| | |
+| --- | --- |
+| Código versionado | ⏳ hay cambios sin registrar (ver arriba) |
+| Datos archivados con suma de verificación | ⏳ pendiente, capítulo \@ref(descarga) |
+| Entorno declarado | ✅ `install_deps.R` y `environment.yml` |
+| Cada figura con su script | ✅ al pie de cada figura de este documento |
+| Cada cifra con su tabla | ✅ ninguna está escrita a mano |
+| Parámetros documentados | ✅ capítulo \@ref(glosario) |
+| Error de la interpolación medido | ✅ capítulo \@ref(superficie) |
+| Acuerdo entre modelos en cada mapa | ✅ capítulo \@ref(modelos) |
+| Alternativas descartadas escritas | ✅ capítulo \@ref(descartes) |
+| Prueba de lectura por alguien ajeno | ⏳ pendiente |
+
+La última es la que de verdad valida este documento: que alguien que no ha tocado el código lo siga
+solo y apunte dónde se atasca. Cada atasco es un hueco explicativo, y hasta que eso no se haga, la
+afirmación de que aquí no queda nada a interpretación es una intención y no un hecho.

@@ -1,0 +1,86 @@
+# La cadena entera en una estación {#calasparra}
+
+```{r calasparra-setup, include = FALSE}
+source("_common.R")
+w <- tabla("station_walkthrough_km2")
+STN <- metrica("method_chain_numbers", "walk_station")
+base <- w[situation == "presente_present"]
+far  <- w[situation == "ssp370_far"]
+```
+
+Si sólo vas a leer un capítulo, que sea éste. Los anteriores explican el procedimiento en general;
+éste lo aplica a un sitio concreto con el número a la vista en cada paso, de forma que la aritmética
+del método se pueda comprobar sobre un caso.
+
+La estación es **`r STN`, Calasparra (Murcia)**, a 394 m.
+
+```{r calasparra-fig, fig.cap = pie("El recorrido completo: lo medido, lo simulado y lo que sale en el terreno.", "38_method_figures.R", "ggplot2 4.0.2 · patchwork · terra 1.9.34")}
+knitr::include_graphics(figura("fig46_station_walkthrough.png"))
+```
+
+## Paso 1: lo que midieron los termómetros
+
+Cuarenta y cinco inviernos observados, cada uno con su frío calculado por el modelo dinámico
+(capítulos \@ref(horario) y \@ref(dinamico)). El percentil 10 de esas temporadas, o sea el frío del
+segundo peor invierno de cada diez, da
+**`r cp(metrica("method_chain_numbers", "walk_p10_obs"), 1)`**.
+
+Con `r cp(CR_BULIDA)` de requerimiento, Calasparra va hoy sobrada para las dos variedades: le sobran
+casi veinte chill portions.
+
+## Paso 2: lo que dicen los once modelos en ese punto
+
+Cada modelo climático simula su propia serie para esa estación, y de cada uno sale su propio SWC. En
+la línea base 1995-2020 la mediana de los once es
+**`r cp(metrica("method_chain_numbers", "walk_med_base"), 1)`**, muy cerca de lo observado, que es
+lo que uno espera de un producto calibrado contra estas estaciones.
+
+A fin de siglo bajo SSP3-7.0 la mediana baja a
+**`r cp(metrica("method_chain_numbers", "walk_med_far"), 1)`**.
+
+Ese número cae **por debajo** del requerimiento de 'Búlida' y **muy por encima** del de su mutante.
+En una sola estación, eso es todo el trabajo: aquí es donde el cambio de variedad compra algo.
+
+Conviene mirar también la dispersión de los puntos grises del panel 2, porque es el capítulo
+\@ref(modelos) hecho carne: los once modelos no dicen lo mismo, y varios de ellos dejan la estación
+por debajo incluso del umbral del mutante.
+
+## Paso 3: del punto al terreno
+
+Una estación no es un mapa. Calasparra pesa sobre las celdas que tiene a menos de 50 km, con peso
+inverso al cuadrado de la distancia (capítulo \@ref(superficie)), y esas celdas se cruzan con el
+suelo agrícola y se clasifican.
+
+En ese entorno de 50 km:
+
+```{r calasparra-tabla}
+knitr::kable(data.table::data.table(
+  Clase = c("Ambas variedades", "Sólo 'Búlida Precoz'", "Ninguna"),
+  Hoy = c(km2(base$km2_both), km2(base$km2_only_precoz), km2(base$km2_none)),
+  `Fin de siglo` = c(km2(far$km2_both), km2(far$km2_only_precoz), km2(far$km2_none))),
+  booktabs = TRUE, align = "lrr")
+```
+
+Hoy el mutante es prácticamente irrelevante alrededor de Calasparra: decide sobre
+`r km2(base$km2_only_precoz)`. A fin de siglo decide sobre
+`r km2(far$km2_only_precoz)`, y hay otros `r km2(far$km2_none)` donde ya no sirve ninguna de las
+dos.
+
+Nótese que la franja del mutante y la zona perdida son casi del mismo tamaño en este entorno. Es la
+misma proporción que sale a escala nacional (capítulo \@ref(resultados)), lo cual no es casualidad
+pero tampoco es garantía: en otras comarcas el reparto es distinto.
+
+## Qué comprobar en este capítulo
+
+Esta es la parte útil para un revisor con prisa. Cada cifra de este capítulo se puede contrastar
+contra las tablas del proyecto sin ejecutar nada:
+
+| Número | De dónde sale |
+| --- | --- |
+| `r cp(metrica("method_chain_numbers", "walk_p10_obs"), 1)` | percentil 10 de las 45 filas de `r STN` en `chill_obs_seasons_1975.csv` |
+| `r cp(metrica("method_chain_numbers", "walk_med_base"), 1)` | mediana de las 11 filas de `r STN` con `situation = presente_present` en `chill_all_windows.csv` |
+| `r cp(metrica("method_chain_numbers", "walk_med_far"), 1)` | lo mismo con `situation = ssp370_far` |
+| Los seis km² | `station_walkthrough_km2.csv` |
+
+Y esa es la propiedad que este documento persigue en general: que cualquier cifra se pueda seguir
+hasta el fichero que la produjo, sin tener que fiarse de quien la escribió.
