@@ -54,11 +54,10 @@ La razón no es preferencia: **es que se asume que los requerimientos de las dos
 midieron así**. Si el territorio se calculara con la parametrización de 1988 y se comparara contra
 unos umbrales medidos con la de 1987, la comparación no significaría nada.
 
-> **Y ese supuesto está sin confirmar.** Queda por comprobar con David Ruiz que la cuantificación de
-> los requerimientos en Ruiz et al. (2019) usó efectivamente Fishman 1987 y no los valores por
-> defecto de `chillR`. Es la primera pregunta del correo pendiente con los coautores, y hasta que
-> tenga respuesta toda cifra de superficie del trabajo es condicional a ella. El resto de este
-> apartado explica por qué importa tanto.
+> **Y ese supuesto está sin confirmar.** La sección de métodos de Ruiz et al. (2019) cita Fishman
+> 1987, pero no queda establecido que la cuantificación no usara los valores por defecto de
+> `chillR`. Mientras no se confirme, toda cifra de superficie del trabajo es condicional a ese
+> supuesto. El resto de este apartado explica por qué importa tanto.
 
 Cuánto importa se midió directamente, sobre los mismos datos de Cieza y con las dos
 parametrizaciones: la diferencia es de **6,94 CP**, la mitad de los `r cp(CR_HUECO)` que separan a

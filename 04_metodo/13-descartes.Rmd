@@ -19,7 +19,7 @@ que el lector supone que siguen ahí.
 | Fishman 1987 vía `DM_JOSE` | Los valores por defecto de `chillR` (1988) | Los requerimientos se midieron con la de 1987 (capítulo \@ref(dinamico)) |
 | Descarga por THREDDS | El formulario web | URL predecible, corre en el HPC, y sirve más estaciones |
 | Titular en superficie cultivable | Porcentaje de estaciones | Las estaciones se agolpan; contar puntos no estima territorio (capítulo \@ref(superficie)) |
-| IDW con máscara de 50 km | Kriging | Es el método publicado del coautor, y aquí está mejor sostenido |
+| IDW con máscara de 50 km | Kriging | Método publicado para este mismo problema (Egea et al. 2022), sobre una red más densa |
 | Base 1995-2020 | Base 1995-2025 | Con 2025 el solape cancelaría una cuarta parte del cambio a corto plazo |
 | Panel 2021-2040 agregado | Tres paneles separados | Los escenarios no se distinguen a ese horizonte (capítulo \@ref(modelos)) |
 | Sin corrección de sesgo | Corregir contra el observado | Ya venía corregido, y gastaría las observaciones dos veces |
@@ -86,9 +86,9 @@ forma de que una cifra no pueda quedarse atrás en silencio.
 
 ## Lo que sigue abierto
 
-- **La parametrización de los requerimientos**, pendiente de confirmar con David Ruiz. Es la
+- **La parametrización de los requerimientos**, que la fuente no declara explícitamente. Es la
   incertidumbre mayor del trabajo (capítulo \@ref(dinamico)).
-- **Una referencia** que justifique excluir SSP5-8.5, pendiente con J.A. Egea.
+- **Una referencia** que justifique excluir SSP5-8.5.
 - **Las sumas de verificación** de los 88 NetCDF, para congelar la versión de los datos
   (capítulo \@ref(descarga)).
 - **La selección de clases de CORINE en el script 28**, que sigue teniendo su propia regla en línea

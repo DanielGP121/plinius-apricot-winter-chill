@@ -11,10 +11,10 @@ Media página, y es la que más malentendidos evita.
 En este trabajo la palabra aparece con cuatro sentidos distintos, a veces en el mismo párrafo. Vale
 la pena fijarlos antes de empezar.
 
-| Cuando digo | Me refiero a |
+| Término | Significado |
 | --- | --- |
 | **modelo dinámico** | El modelo fisiológico que convierte temperatura en frío acumulado. Uno solo, el de Fishman et al. (1987). No tiene nada que ver con el clima futuro. |
-| **modelo climático** | Cada uno de los `r i_es(uniqueN(tabla("per_model_cropland_km2")$model))` modelos de circulación general de CMIP6 que simulan el clima del siglo. Cuando digo "los once modelos", son estos. |
+| **modelo climático** | Cada uno de los `r i_es(uniqueN(tabla("per_model_cropland_km2")$model))` modelos de circulación general de CMIP6 que simulan el clima del siglo. "Los once modelos" son estos. |
 | **escenario** | SSP1-2.6, SSP2-4.5 y SSP3-7.0. **No son modelos**: son supuestos de emisiones que cada uno de los once modelos ejecuta por separado. |
 | **situación** | La combinación de escenario y ventana temporal que indexa la tabla canónica: `ssp370_far` es SSP3-7.0 en 2071-2100. Hay quince, listadas en el capítulo \@ref(resultados). |
 | **interpolación** | El método que rellena el espacio entre estaciones (IDW). A veces se le llama "modelo" en la literatura; aquí nunca. |

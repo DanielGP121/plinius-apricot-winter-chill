@@ -288,7 +288,7 @@ find_var_file <- function(dir, var, model, scenario) {
 
 # Read a series that crosses the 2014/2015 boundary by joining the historical run to an SSP.
 # The CMIP6 historical experiment stops in 2014 by design, so any present-day window that reaches
-# past it (the 1991-2020 normal) does not exist in a single file and has to be assembled.
+# past it (the 1995-2020 baseline) does not exist in a single file and has to be assembled.
 read_var_spliced <- function(dir, var, model, scen_future, ymin, ymax) {
   parts <- list()
   if (ymin <= 2014) {
@@ -530,7 +530,7 @@ main <- function() {
   span <- function(win) { yy <- range(unlist(win)); c(yy[1] - 1, yy[2] + 1) }   # +-1 for season boundaries
 
   if (WINDOWS == "present") {
-    # 1991-2020 normal for the models, spliced across the 2014/2015 break. One run per model: the
+    # 1995-2020 baseline for the models, spliced across the 2014/2015 break. One run per model: the
     # scenarios have not separated by 2020, so computing it three times would triple the cost for
     # differences far below the model spread.
     win <- apply_years(WIN_PRESENT)
@@ -560,7 +560,7 @@ main <- function() {
     run_combo(OBS, "tasmax_obs.nc", "tasmin_obs.nc", "observaciones", "obs", win, yy[1], yy[2], t0)
 
   } else if (WINDOWS == "near") {
-    # 2021-2050, the stretch the default set left unanalysed. Entirely inside the SSP files.
+    # 2021-2040, the stretch the default set left unanalysed. Entirely inside the SSP files.
     win <- apply_years(WIN_NEAR)
     cat(sprintf("ventana %d-%d, %d escenarios x %d modelos\n", win[[1]][1], win[[1]][2],
                 length(setdiff(SCEN, "historical")), length(MODELS)))

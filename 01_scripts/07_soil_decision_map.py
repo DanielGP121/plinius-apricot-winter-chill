@@ -2,9 +2,10 @@
 Decision support for the cultivable-soil criterion (Murcia test-run).
 
 Why it exists: the strict vs broad cropland definition changes how many stations enter the
-chill maps (44 vs 73 in Murcia), and that is a call for J.A. Egea. This script gives him the
-two things he needs to decide fast: a map of which stations fall in/out under each definition,
-and a sensitivity table over buffer radius and threshold so he can see how fragile the count is.
+chill maps (44 vs 73 in Murcia), so the definition has to be chosen deliberately. This script
+lays out the two things that decision needs: a map of which stations fall in or out under each
+definition, and a sensitivity table over buffer radius and threshold showing how fragile the
+count is.
 
 It samples CORINE once and computes, per station, the cropland fraction at several radii for
 both the strict class set (arable + permanent crops, 211-223) and the broad set (also the

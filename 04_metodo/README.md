@@ -1,7 +1,7 @@
 # 04_metodo — el libro de método
 
-Memoria de método del estudio, en quince capítulos. Escrita para que J.A. Campoy y J.A. Egea puedan
-seguir la cadena entera sin haber visto el código.
+Memoria de método del estudio, en quince capítulos. Escrita para que un lector pueda seguir la
+cadena entera sin haber visto el código.
 
 ## Salidas
 

@@ -63,7 +63,7 @@ if (repo_sucio())
 **Ninguna cifra de estas páginas está escrita a mano.** Todas se leen, al generar el documento, de
 las tablas que produce el pipeline. Si mañana se reejecuta el análisis y una cifra cambia, cambia
 aquí sola. Esto no es una comodidad: es lo que convierte la promesa de "está todo comprobado" en
-algo verificable en vez de en una declaración de intenciones. El proyecto ya se llevó un susto con
+algo verificable en vez de en una declaración de intenciones. El proyecto ya tuvo un incidente por
 esto, y está contado en el capítulo \@ref(descartes).
 
 **Ningún fragmento de código es una copia.** Los bloques que aparecen plegados a lo largo del texto
@@ -95,5 +95,5 @@ No es el paper, ni un resumen de resultados. La discusión biológica, la compar
 bibliografía y la interpretación agronómica van por otro lado. Aquí sólo está la maquinaria.
 
 Tampoco es una guía de reproducción paso a paso, aunque el capítulo \@ref(entorno) tenga los
-comandos: quien quiera reproducir el análisis necesita además los datos, que no son míos y pesan
+comandos: quien quiera reproducir el análisis necesita además los datos, de terceros y de
 quince gigabytes, y eso está explicado allí.

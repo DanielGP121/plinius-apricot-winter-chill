@@ -115,6 +115,5 @@ Una limitación honesta: **el conjunto descargado no está congelado por un hash
 reprocesara el producto y volviera a publicarlo, una descarga futura podría no ser idéntica a esta
 y no habría forma de detectarlo desde aquí.
 
-Está anotado como pendiente calcular las sumas de verificación de los 88 NetCDF en el HPC y
-guardarlas junto al código. Mientras no se haga, lo que sí queda registrado es la fecha de descarga
+Las sumas de verificación de los 88 NetCDF no se han calculado ni guardado junto al código. Mientras no se haga, lo que sí queda registrado es la fecha de descarga
 y la vía, que es lo mínimo para que otro sepa qué pedir.

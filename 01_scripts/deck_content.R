@@ -60,14 +60,14 @@ list(kind = "slide", title = "Proyecciones: PNACC AR6 regionalizado a estaciones
     "El Plan Nacional de Adaptación al Cambio Climático publica proyecciones CMIP6 regionalizadas estadísticamente sobre estaciones meteorológicas, con el método ESD-RegBA. Se usan 11 modelos climáticos, el experimento histórico y tres escenarios (SSP1-2.6, SSP2-4.5 y SSP3-7.0), en temperatura máxima y mínima diaria. Son 88 ficheros NetCDF y unos 15 GB, sobre 3460 estaciones.",
     "Se descarga por el servidor THREDDS de AdapteCCa, con URL predecible y sin credencial, en vez de por el formulario del portal. La razón fue práctica: permite bajar directamente en el HPC y evita subir 22 GB desde un portátil.",
     "SSP5-8.5 se excluye deliberadamente. La bibliografía reciente no lo considera un escenario plausible, y el abstract aceptado menciona RCP8.5, así que en la charla hay que declarar el cambio."),
-  note = "Si preguntan por qué no 8.5: decisión tomada con Egea el 9 de julio. Falta la referencia concreta que él tenía en mente."),
+  note = "Exclusión de SSP5-8.5: falta añadir la referencia que la respalda."),
 
 list(kind = "slide", title = "Un hallazgo incómodo: las dos vías del portal no dan lo mismo",
   body = c(
     "Al auditar el script de descarga apareció algo que no estaba previsto. THREDDS y el formulario web del portal entregan el mismo producto científico (los mismos 11 modelos, el mismo método de regionalización, valores que correlan 0,9999916 con diferencia máxima de 0,05 °C) pero sobre distinto número de estaciones: THREDDS sirve 3460 y el formulario 3044.",
     "Se comprobó por aritmética sobre el fichero recibido en julio: el miembro correspondiente ocupa 289.309.352 bytes, y con 23.741 días y float32 esa cifra sólo cabe con 3044 estaciones; con 3460 el dato por sí solo necesitaría 39 MB más de los que mide el fichero entero.",
     "Consecuencia práctica: en Methods hay que declarar la vía. Quien intente reproducir estas cifras bajando por el formulario obtendrá 3044 estaciones y no dará con los mismos kilómetros cuadrados, y sin esa frase parecerá un error nuestro."),
-  note = "Esto es de las cosas que hacen quedar bien en un turno de preguntas: demuestra que se ha mirado el dato de verdad."),
+  note = "Punto útil en el turno de preguntas: demuestra inspección directa del dato."),
 
 list(kind = "slide", title = "Observado: dos fuentes, ninguna completa",
   body = c(
@@ -115,7 +115,7 @@ list(kind = "slide", title = "Safe Winter Chill: el frío que se supera nueve de
 list(kind = "slide", title = "De estaciones a superficie: interpolación IDW y máscara de 50 km",
   body = c(
     "El frío se calcula en estaciones, pero la pregunta es sobre territorio. La interpolación replica el método publicado por Egea et al. 2022: distancia inversa ponderada con potencia 2 y máscara a 50 km de la estación más cercana, sobre rejilla de 1 km.",
-    "Elegir el método del coautor no es sólo diplomacia. Es un método publicado y revisado para este mismo problema, y aquí está mejor sostenido: aquel trabajo interpolaba desde 270 estaciones y este desde 3460.",
+    "Es un método publicado y revisado para este mismo problema, aplicado aquí sobre una red más densa: aquel trabajo interpolaba desde 270 estaciones y este desde 3460.",
     "La superficie resultante se cruza con CORINE y cada celda se clasifica según qué variedades puede sostener. Cada celda contribuye con su fracción de suelo cultivable, no como celda entera, que es lo que convierte una clasificación por celda en una estadística de superficie."),
   figs = FIG("fig21_02_swc_surface_presente_present"),
   figcap = c("Superficie de Safe Winter Chill interpolada para la línea base del modelo, 1995-2020."),
@@ -141,7 +141,7 @@ list(kind = "gadget", id = "workflow", title = "Qué alimenta a qué",
     "El cómputo pesado corre en el HPC Ladon: la descarga de los 88 NetCDF y el motor nacional de frío, que lee los ficheros directamente, recorta a la ventana pedida y paraleliza por estación. La corrida nacional completa fueron unas 23 horas.",
     "Todo lo demás corre en local: la fusión de tablas, la interpolación y el cruce con CORINE, las figuras, y toda la rama del observado reciente.",
     "El motor nacional lleva protecciones que nacieron de fallos reales. Escribe un checkpoint por combinación de escenario y modelo en cuanto termina, con escritura atómica, así que un corte cuesta como mucho lo que estuviera en vuelo. Y lleva un centinela por estación: si un worker muere, la función de paralelización rellena su tramo con nulos sin dar error, y sin el centinela el resultado se guardaría truncado y el reintento lo daría por bueno para siempre."),
-  note = "Aquí es donde se explica que esto no es un notebook improvisado."),
+  note = "Aquí se explica la arquitectura del pipeline y sus protecciones."),
 
 # ---------------------------------------------------------------------------------------------
 list(kind = "section", n = "6", title = "Resultado principal: la superficie que el mutante rescata",
@@ -186,7 +186,7 @@ list(kind = "slide", title = "Antes de 2040 los escenarios son indistinguibles",
     "La lectura para el público es directa: lo que ocurra en el frío invernal español en las próximas dos décadas ya está comprometido, elijas el escenario que elijas. Las decisiones de mitigación de hoy se notan a partir de 2050."),
   figs = FIG("fig20_06_viability_pooled_nearterm"),
   figcap = c("Panel agregado 2021-2040, los tres escenarios juntos."),
-  note = "Este resultado gusta mucho en congresos de riesgo climático. Merece su minuto."),
+  note = "Resultado central para una audiencia de riesgo climático. Merece su minuto."),
 
 # ---------------------------------------------------------------------------------------------
 list(kind = "section", n = "8", title = "El registro observado, y una sorpresa",
@@ -240,14 +240,14 @@ list(kind = "gadget", id = "threshold", title = "Mueve los umbrales y mira qué 
     "Y hay una segunda fuente de duda. El código publicado junto a Muñoz-Morales et al. (2025) calcula el frío con la función por defecto de chillR, que lleva los parámetros de 1988, mientras el texto cita la parametrización de 1987. Conviene por tanto confirmar con los autores qué parametrización se usó al cuantificar los requerimientos, en vez de inferirla de la cita. Si estuvieran en la escala de 1988, habría que subirlos unas 7 porciones para compararlos con nuestra oferta.",
     "Los deslizadores recorren el barrido completo calculado sobre las superficies reales. Con los umbrales 7 porciones más altos y SSP3-7.0 a fin de siglo, la banda del mutante pasa de 23.302 a 37.009 km², un 59% más, y la superficie perdida del todo crece un 41%.",
     "La conclusión importante es la dirección: el desplazamiento no destruye el mensaje, lo amplifica por los dos lados. Menos superficie donde valen las dos, más banda de rescate y más tierra perdida. La incertidumbre mueve mucho las cifras y no cambia la conclusión cualitativa."),
-  note = "Si Egea pregunta por la parametrización, esta es la respuesta: medida, cuantificada en km², y con la dirección del efecto explicada."),
+  note = "Respuesta a la pregunta de la parametrización: medida, cuantificada en km², y con la dirección del efecto explicada."),
 
 list(kind = "slide", title = "Las otras limitaciones, dichas antes de que las digan",
   body = c(
     "La validación del modelo contra el observado da un sesgo de 0,45 porciones y una correlación de 0,984, lo que justifica no aplicar corrección de sesgo. Pero ESD-RegBA se calibró contra estas mismas estaciones, así que no es validación independiente y hay que declararlo.",
     "El ensemble se resume con la mediana de los once modelos para poder dibujar mapas, y eso esconde una dispersión enorme: 24,8 porciones entre modelos en una estación típica, casi el doble de la brecha entre variedades. En la ventana del mutante sólo el 0,43% de las estaciones tienen ocho de once modelos de acuerdo, y ninguna tiene unanimidad. La mediana fabrica un mapa nítido que los modelos no firman.",
     "El registro extendido hasta 2025 descansa en 666 estaciones y no en 3044, y el desfase medido entre las dos fuentes observadas sólo pudo comprobarse donde se solapan, no en el tramo reciente."),
-  note = "Decir esto en la charla desarma preguntas y da credibilidad. No es autoflagelación, es control del relato."),
+  note = "Declarar las limitaciones por adelantado."),
 
 # ---------------------------------------------------------------------------------------------
 list(kind = "section", n = "10", title = "Qué queda",
@@ -255,8 +255,8 @@ list(kind = "section", n = "10", title = "Qué queda",
 
 list(kind = "slide", title = "Pendiente",
   body = c(
-    "Resolver la pregunta de la parametrización con David Ruiz. Es la incertidumbre mayor y ahora se le puede preguntar señalando un artefacto concreto.",
-    "Contestar a Egea, pendiente desde el 15 de julio, con cuatro de sus preguntas ya resueltas con números: criterio de suelo, corrección de sesgo, tratamiento del ensemble y peso de los años recientes.",
+    "Resolver la pregunta de la parametrización. Es la incertidumbre mayor y ahora se puede plantear señalando un artefacto concreto.",
+    "Cuatro cuestiones de método ya resueltas con números: criterio de suelo, corrección de sesgo, tratamiento del ensemble y peso de los años recientes.",
     "Una prueba de sensibilidad de los kilómetros cuadrados restringida a las 3044 estaciones comunes, para cerrar el asunto de las dos vías de descarga.",
     "Congelar la versión de los NetCDF con sus checksums, que hoy no está registrada.",
     "Y montar la charla propiamente dicha: doce minutos obligan a dejar fuera la mayor parte de este material."),

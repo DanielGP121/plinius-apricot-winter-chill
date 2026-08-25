@@ -41,8 +41,7 @@ cerca, pesada por el inverso del cuadrado de la distancia.
 
 No es una elección de este trabajo: **replica el método de Egea et al. (2022)**, que interpoló así y
 enmascaró a 50 km de la estación más próxima. Aquella red tenía 270 estaciones y ésta tiene
-`r i_es(metrica("pipeline_diagram_numbers", "n_stations_proj"))`, así que el método está aquí mejor
-sostenido que en el trabajo que lo publicó.
+`r i_es(metrica("pipeline_diagram_numbers", "n_stations_proj"))`.
 
 ```{r superficie-cadena, fig.cap = pie("Las tres piezas de este capítulo: los puntos, la superficie interpolada y la máscara de cultivo.", "34_method_figures.R", "ggplot2 4.0.2 · patchwork")}
 knitr::include_graphics(figura("fig36_method_chain.png"))
@@ -146,7 +145,7 @@ codigo("19_cropland_viability_national.R", seccion = 4,
 
 ## El área de una celda, que no vale 1
 
-Una nota que parece pedante y que costó un día entero.
+Un detalle de implementación que afecta a toda cifra de superficie del trabajo.
 
 Al construir la rejilla se pide una resolución de 1.000 m sobre la extensión de España. `terra`
 respeta la extensión y ajusta la resolución para que quepa un número entero de celdas, así que la
