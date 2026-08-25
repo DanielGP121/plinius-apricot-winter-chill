@@ -39,6 +39,7 @@ REFRESH <- "--refresh" %in% args
 .f <- grep("^--file=", commandArgs(FALSE), value = TRUE)
 .dir <- if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]))) else getwd()
 source(file.path(.dir, "00_paths.R"))
+source(file.path(.dir, "00_map_layout.R"))
 source(file.path(.dir, "00_corine.R"))
 
 EPSG <- 3035
@@ -60,10 +61,12 @@ CACHE <- out_path("surface_cache"); dir.create(CACHE, showWarnings = FALSE, recu
 FIG_TITLE <- toupper(Sys.getenv("PLINIUS_FIG_TITLE", "FALSE")) %in% c("TRUE", "1", "YES")
 ttl <- function(x) if (FIG_TITLE) x else NULL
 
-# Spanish decimal separator for anything the audience reads. R's sprintf formats through the C
-# locale and always emits a full stop, so "3.65 CP" would appear on a slide written in Spanish.
-# Every user-visible number therefore goes through here as %s rather than through %f.
-n_es <- function(x, d = 1) formatC(x, format = "f", digits = d, big.mark = ".", decimal.mark = ",")
+# English separators for anything the audience reads: comma for thousands, full stop for decimals.
+# Replaces the n_es() helper this script carried while the deck was in Spanish, which swapped the
+# two and would now print "3,65 CP" inside an English slide. R's sprintf formats through the C
+# locale and cannot group thousands at all, so every user-visible number goes through here as %s
+# rather than through %f.
+n_en <- function(x, d = 1) formatC(x, format = "f", digits = d, big.mark = ",", decimal.mark = ".")
 
 talk_theme <- theme_minimal(base_size = 14) +
   theme(plot.title = element_text(face = "bold", size = 17),
@@ -126,8 +129,8 @@ cat(sprintf("2. tiempo de emergencia (%s)\n", SSP_LAB[[SCEN]]))
 sits <- c("presente_present", paste0(SCEN, "_", c("nearterm", "near", "far")))
 surf <- lapply(sits, chill_surface)
 
-TOE_LAB <- c("Ya por debajo\n(1995-2020)", "2021-2040", "2041-2070", "2071-2100",
-             "No ocurre\neste siglo")
+TOE_LAB <- c("Already below\n(1995-2020)", "2021-2040", "2041-2070", "2071-2100",
+             "Does not happen\nthis century")
 TOE_COL <- c("#67000d", "#cb181d", "#fb6a4a", "#fcbba1", "#f0f0f0")
 
 toe_raster <- function(cr) {
@@ -150,12 +153,12 @@ toe_panel <- function(cr, cultivar) {
     geom_sf(data = disp, fill = NA, colour = "grey55", linewidth = 0.15) +
     coord_sf(crs = EPSG, datum = NA, expand = FALSE, xlim = XLIM, ylim = YLIM) +
     scale_fill_manual(values = setNames(TOE_COL, TOE_LAB), drop = FALSE, name = NULL) +
-    labs(title = sprintf("'%s' · %s CP", cultivar, n_es(cr)),
+    labs(title = sprintf("'%s' · %s CP", cultivar, n_en(cr)),
          # "never" and "at the end of the century" are not the same statement: a cell classified
          # grey never drops below the requirement in ANY window, which is the stronger claim.
          # Two lines, because on one the text runs past the panel and ggplot clips it silently.
-         subtitle = sprintf("nunca baja del requerimiento: %s %%\nlo pierde en algún momento: %s %%",
-                            n_es(ok), n_es(100 - ok))) +
+         subtitle = sprintf("never below the requirement: %s%%\nloses it at some point: %s%%",
+                            n_en(ok), n_en(100 - ok))) +
     talk_theme +
     theme(panel.grid = element_blank(), axis.text = element_blank(), axis.title = element_blank(),
           legend.position = "none")
@@ -163,26 +166,24 @@ toe_panel <- function(cr, cultivar) {
 }
 
 pa <- toe_panel(CR_B, "Búlida"); pb <- toe_panel(CR_P, "Búlida Precoz")
-leg <- ggplot(data.table(x = seq_along(TOE_LAB), lab = factor(TOE_LAB, levels = TOE_LAB))) +
-  geom_point(aes(x, 1, colour = lab), size = 6, shape = 15) +
-  geom_text(aes(x, 0.55, label = lab), size = 3.6, colour = "grey20", lineheight = 0.9) +
-  scale_colour_manual(values = setNames(TOE_COL, TOE_LAB), guide = "none") +
-  coord_cartesian(xlim = c(0.3, 7.2), ylim = c(0.2, 1.3), expand = FALSE) +
-  theme_void()
+leg <- legend_column(lapply(seq_along(TOE_LAB),
+                             function(i) list(lab = gsub("
+", " ", TOE_LAB[i]),
+                                              fill = TOE_COL[i])),
+                     size = 3.9, title = "First window below the requirement")
 
 # The assertion in the title is computed, not written. An earlier draft claimed the mutant pushed
 # the problem out of the century "in almost all of Spain", which the numbers did not support.
-g30 <- (pa$g | pb$g) / leg +
-  plot_layout(heights = unit(c(1, 0.75), c("null", "in"))) +
+g30 <- map_row_with_legend(list(pa$g, pb$g), leg, LEG_IN[["hatch"]]) +
   plot_annotation(
-    title = ttl(sprintf("El mutante reduce del %s %% al %s %% el suelo donde el frío deja de bastar antes de 2100",
-                    n_es(100 - pa$ok, 0), n_es(100 - pb$ok, 0))),
-    subtitle = sprintf("Primera ventana en la que el frío invernal cae por debajo del requerimiento · %s · mediana de 11 modelos CMIP6",
+    title = ttl(sprintf("The mutant cuts the cropland losing its chill requirement before 2100 from %s%% to %s%%",
+                    n_en(100 - pa$ok, 0), n_en(100 - pb$ok, 0))),
+    subtitle = sprintf("First window in which winter chill drops below the requirement · %s · median of 11 CMIP6 models",
                        SSP_LAB[[SCEN]]),
     theme = theme(plot.title = element_text(face = "bold", size = 19),
                   plot.subtitle = element_text(size = 13, colour = "grey30")))
 ggsave(fig_path(sprintf("fig30_time_of_emergence_%s.png", SCEN)), g30,
-       width = 13, height = 6.5 * MAP_AR + 2.15, dpi = 190, bg = "white")
+       width = 13, height = slot_height(13), dpi = 190, bg = "white")
 cat("   fig30 escrita\n")
 
 # § 3 — fig31, the ensemble against the two requirements where the cultivar is actually grown.
@@ -211,9 +212,9 @@ BOX_SITS <- c("presente_present", paste0(rep(c("ssp126", "ssp245", "ssp370"), ea
 bx <- d[station_id %in% mu_ids & situation %in% BOX_SITS]
 bx <- bx[, .(SWC = median(safe_winter_chill_P10)), by = .(situation, scenario, window, station_id)]
 bx[, period := WINDOWS$period[match(window, WINDOWS$window)]]
-bx[, grp := ifelse(situation == "presente_present", "Línea base\n1995-2020",
+bx[, grp := ifelse(situation == "presente_present", "Baseline\n1995-2020",
                    sprintf("%s\n%s", SSP_LAB[scenario], period))]
-bx[, grp := factor(grp, levels = c("Línea base\n1995-2020",
+bx[, grp := factor(grp, levels = c("Baseline\n1995-2020",
                                    unlist(lapply(c("ssp126", "ssp245", "ssp370"), function(s)
                                      sprintf("%s\n%s", SSP_LAB[[s]], WINDOWS$period[2:4])))))]
 bx[, fillcol := ifelse(situation == "presente_present", "grey60",
@@ -246,10 +247,10 @@ g31 <- ggplot(bx, aes(xpos, SWC, group = xpos, fill = fillcol)) +
   scale_x_continuous(breaks = seq_along(xlab), labels = xlab,
                      expand = expansion(add = c(0.6, 0.6))) +
   scale_y_continuous(sec.axis = sec_axis(~ ., breaks = c(CR_P, CR_B),
-                                         labels = c(sprintf("'Búlida Precoz'\nnecesita %s CP", n_es(CR_P)),
-                                                    sprintf("'Búlida'\nnecesita %s CP", n_es(CR_B))))) +
-  labs(title = ttl("En Murcia, donde se cultiva, el mutante es la diferencia entre seguir y no seguir"),
-       subtitle = sprintf("Safe Winter Chill de las %d estaciones de la Región · cada caja resume la mediana de los 11 modelos por estación",
+                                         labels = c(sprintf("'Búlida Precoz'\nneeds %s CP", n_en(CR_P)),
+                                                    sprintf("'Búlida'\nneeds %s CP", n_en(CR_B))))) +
+  labs(title = ttl("In Murcia, where it is grown, the mutant is the difference between carrying on and not"),
+       subtitle = sprintf("Safe Winter Chill at the %d stations in the Region · each box summarises the per-station median of the 11 models",
                           length(mu_ids)),
        x = NULL, y = "Chill portions (P10)") +
   talk_theme +
@@ -285,7 +286,7 @@ obs[, anom := mean_CP - mu]
 g32 <- ggplot(obs, aes(season_end_year, 1, fill = anom)) +
   geom_tile(width = 1, height = 1) +
   scale_fill_gradient2(low = "#b2182b", mid = "#f7f7f7", high = "#2166ac", midpoint = 0,
-                       name = "Anomalía de frío (CP)") +
+                       name = "Chill anomaly (CP)") +
   annotate("segment", x = 2020.5, xend = 2020.5, y = 0.5, yend = 1.72, linewidth = 0.6) +
   annotate("text", x = 2020.3, y = 1.62, label = "2021-2025", hjust = 1, size = 4.6,
            fontface = "bold") +
@@ -293,10 +294,10 @@ g32 <- ggplot(obs, aes(season_end_year, 1, fill = anom)) +
   coord_cartesian(ylim = c(0.5, 1.8), expand = FALSE) +
   # 45 winters, not fifty: the trendless stretch is 1976-2020 (p = 0.90). Over the full 1976-2025
   # record the trend IS significant (p = 0.047), precisely because of the recent block.
-  labs(title = ttl("Cuarenta y cinco inviernos sin tendencia, y luego un quinquenio sin precedente"),
-       subtitle = sprintf("Media de %d estaciones AEMET · anomalía frente a la base 1976-2020\nEl quinquenio 2021-2025 pierde %s CP (%s σ) y aporta %d de los 10 inviernos más pobres del registro (p = %s)",
-                          max(obs$n_stations), n_es(abs(anom), 2), n_es(abs(anom_sd), 2),
-                          round(n_mild), n_es(p_exch, 4)),
+  labs(title = ttl("Forty-five winters with no trend, and then an unprecedented five-year block"),
+       subtitle = sprintf("Mean of %d AEMET stations · anomaly against the 1976-2020 baseline\nThe 2021-2025 five-year block loses %s CP (%s σ) and supplies %d of the 10 mildest winters on record (p = %s)",
+                          max(obs$n_stations), n_en(abs(anom), 2), n_en(abs(anom_sd), 2),
+                          round(n_mild), n_en(p_exch, 4)),
        x = NULL, y = NULL) +
   talk_theme +
   theme(axis.text.y = element_blank(), panel.grid = element_blank(),
@@ -335,7 +336,7 @@ cat(sprintf("   atribuible al calentamiento: %.0f km2, rescatados %.0f (%.1f%%)\
 # stubs next to one tall bar, and the comparison the talk is about becomes the hardest thing on the
 # slide to read. The lower bar rescales the affected fraction to full width, and the connector says
 # that is what is happening.
-km <- function(x) formatC(round(x), format = "d", big.mark = ".")
+km <- function(x) formatC(round(x), format = "d", big.mark = ",")
 kept <- far$crop_km2_both
 
 top <- data.table(xmin = c(0, kept), xmax = c(kept, tot), ymin = 2.45, ymax = 3.25,
@@ -349,25 +350,25 @@ g33 <- ggplot() +
   geom_polygon(data = link, aes(x, y), fill = "#d7191c", alpha = 0.16) +
   geom_rect(data = bot, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = col)) +
   scale_fill_identity() +
-  annotate("text", x = kept / 2, y = 2.85, label = sprintf("'Búlida' sigue cumpliendo\n%s km²", km(kept)),
+  annotate("text", x = kept / 2, y = 2.85, label = sprintf("'Búlida' still viable\n%s km²", km(kept)),
            size = 5, colour = "grey15", fontface = "bold", lineheight = 0.95) +
   annotate("text", x = (kept + tot) / 2, y = 3.52, size = 5, colour = "#d7191c", fontface = "bold",
-           label = sprintf("deja de cumplir\n%s km²  (%s %%)", km(lost), n_es(100 * lost / tot)),
+           label = sprintf("no longer viable\n%s km²  (%s%%)", km(lost), n_en(100 * lost / tot)),
            lineheight = 0.95) +
   annotate("text", x = tot * rescued / lost / 2, y = 0.95, size = 5.4, colour = "grey15",
            fontface = "bold", lineheight = 0.95,
-           label = sprintf("el mutante lo rescata\n%s km²  (%s %%)", km(rescued),
-                           n_es(100 * rescued / lost))) +
+           label = sprintf("the mutant rescues it\n%s km²  (%s%%)", km(rescued),
+                           n_en(100 * rescued / lost))) +
   annotate("text", x = tot * (1 + rescued / lost) / 2, y = 0.95, size = 5.4, colour = "white",
            fontface = "bold", lineheight = 0.95,
-           label = sprintf("se pierde de verdad\n%s km²  (%s %%)", km(gone), n_es(100 * gone / lost))) +
+           label = sprintf("lost outright\n%s km²  (%s%%)", km(gone), n_en(100 * gone / lost))) +
   annotate("text", x = 0, y = 3.95, hjust = 0, size = 4.6, colour = "grey35",
-           label = sprintf("Suelo cultivable de España: %s km² (CORINE 211-244, sin pastos)", km(tot))) +
+           label = sprintf("Spain's cropland: %s km² (CORINE 211-244, pastures excluded)", km(tot))) +
   annotate("text", x = 0, y = 1.72, hjust = 0, size = 4.3, colour = "grey35",
-           label = "Ampliación de la franja roja") +
+           label = "The red band, magnified") +
   coord_cartesian(xlim = c(0, tot), ylim = c(0.3, 4.2), expand = FALSE) +
-  labs(title = ttl("El mutante recupera la mitad de lo que el calentamiento le quita a 'Búlida'"),
-       subtitle = sprintf("%s a fin de siglo (2071-2100) · mediana de 11 modelos CMIP6", SSP_LAB[[SCEN]]),
+  labs(title = ttl("The mutant buys back half of what warming takes away from 'Búlida'"),
+       subtitle = sprintf("%s at the end of the century (2071-2100) · median of 11 CMIP6 models", SSP_LAB[[SCEN]]),
        x = NULL, y = NULL) +
   talk_theme +
   theme(legend.position = "none", panel.grid = element_blank(),
@@ -444,12 +445,12 @@ g38 <- ggplot(Bl, aes(SWC, model)) +
   geom_point(aes(colour = scenario), size = 3.6) +
   scale_colour_manual(values = SSP_COL, labels = SSP_LAB, name = NULL) +
   scale_x_continuous(breaks = seq(42, 58, 2),
-                     sec.axis = dup_axis(breaks = CR_B, labels = "requerimiento\nde 'Búlida'")) +
-  labs(title = ttl("Qué escenario sale más pobre en frío depende del modelo, no de las emisiones"),
-       subtitle = sprintf(paste0("Mediana de las %d estaciones que rondan el umbral, 2021-2040 · ",
-                                 "cada línea gris une los tres escenarios dentro de un mismo modelo\n",
-                                 "El escenario más pobre es SSP1-2.6 en %d modelos, SSP2-4.5 en %d ",
-                                 "y SSP3-7.0 en %d: no hay orden estable"),
+                     sec.axis = dup_axis(breaks = CR_B, labels = "requirement\nof 'Búlida'")) +
+  labs(title = ttl("Which scenario comes out poorest in chill depends on the model, not on the emissions"),
+       subtitle = sprintf(paste0("Median of the %d stations near the threshold, 2021-2040 · ",
+                                 "each grey line joins the three scenarios within one model\n",
+                                 "The poorest scenario is SSP1-2.6 in %d models, SSP2-4.5 in %d ",
+                                 "and SSP3-7.0 in %d: there is no stable ordering"),
                           length(marg),
                           coldest[coldest == "ssp126", N][1], coldest[coldest == "ssp245", N][1],
                           coldest[coldest == "ssp370", N][1]),

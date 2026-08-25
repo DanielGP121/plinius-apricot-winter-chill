@@ -45,9 +45,9 @@ HATCH_LWD <- c(robust = 0.13, weak = 0.20, plain = 0.15)
 HATCH_GAP <- c(robust = 15000, weak = 7000, plain = 9000)   # metres between lines
 # Kept short on purpose: these ride in a one-line legend strip next to three class
 # labels, and anything longer collides with the next item at frame width.
-HATCH_LAB <- c(robust = "9-10 de 11 (82-91 %)",
-               weak   = "≤8 de 11 (≤73 %)",
-               plain  = "menos del 80 % de los modelos coinciden")
+HATCH_LAB <- c(robust = "9-10 of 11 (82-91%)",
+               weak   = "≤8 of 11 (≤73%)",
+               plain  = "fewer than 80% of models agree")
 
 # What the legend has to show, derived from the mode so the callers never decide it themselves.
 # Each entry: label, line gap in legend units, colour, and whether the sample is crossed.

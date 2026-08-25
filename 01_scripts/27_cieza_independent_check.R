@@ -208,4 +208,12 @@ ggsave(file.path(FIGDIR, "fig26_02_parametrisation_gap.png"), p2, width = 9, hei
 fwrite(cz, file.path(OUTDIR, "cieza_seasons.csv"))
 fwrite(czk[, .(season_end_year, CP_1987, CP_1988, gap)], file.path(OUTDIR, "cieza_parametrisation_gap.csv"))
 fwrite(tab, file.path(OUTDIR, "cieza_check_summary.csv"))
+
+# The parametrisation gap is quoted in a slide title, so it has to reach the deck through a metrics
+# table like every other figure on screen. It was typed by hand until 2026-08-24.
+fwrite(data.table(
+  metric = c("param_gap_mean_CP", "param_gap_min_CP", "param_gap_max_CP", "param_gap_n_seasons"),
+  value = c(round(mean(czk$gap), 4), round(min(czk$gap), 4),
+            round(max(czk$gap), 4), nrow(czk))
+), file.path(OUTDIR, "cieza_numbers.csv"))
 cat(sprintf("\nescritas 2 figuras en %s y 3 tablas en %s\n", FIGDIR, OUTDIR))

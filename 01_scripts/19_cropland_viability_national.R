@@ -87,12 +87,12 @@ SIT_ORDER <- c("observaciones_present", "presente_present", "presente_current",
                "ssp126_near", "ssp245_near", "ssp370_near",
                "ssp126_far", "ssp245_far", "ssp370_far")
 SIT_LABEL <- c(
-  observaciones_present = "Observado 1995-2020",
-  presente_present      = "Modelo, línea base 1995-2020",
-  presente_current      = "Modelo, clima actual 1995-2025",
-  observaciones_obsref  = "Observado 1991-2020",
-  historical_ref        = "Histórico simulado 1985-2014",
-  pooled_nearterm       = "2021-2040 · los 3 escenarios juntos",
+  observaciones_present = "Observed 1995-2020",
+  presente_present      = "Model, baseline 1995-2020",
+  presente_current      = "Model, current climate 1995-2025",
+  observaciones_obsref  = "Observed 1991-2020",
+  historical_ref        = "Simulated historical 1985-2014",
+  pooled_nearterm       = "2021-2040, three scenarios pooled",
   ssp126_nearterm = "SSP1-2.6 · 2021-2040", ssp245_nearterm = "SSP2-4.5 · 2021-2040", ssp370_nearterm = "SSP3-7.0 · 2021-2040",
   ssp126_near     = "SSP1-2.6 · 2041-2070", ssp245_near     = "SSP2-4.5 · 2041-2070", ssp370_near     = "SSP3-7.0 · 2041-2070",
   ssp126_far      = "SSP1-2.6 · 2071-2100", ssp245_far      = "SSP2-4.5 · 2071-2100", ssp370_far      = "SSP3-7.0 · 2071-2100")
@@ -137,7 +137,7 @@ cat(sprintf("   superficie cultivable nacional: %.0f km2\n", total_crop_km2))
 # Three classes: both cultivars viable, only the low-chill mutant, neither. The middle class is
 # the window the talk is about, the land the mutant buys back.
 classify_cell <- function(swc) ifel(swc >= CR_B, 1L, ifel(swc >= CR_P, 2L, 3L))
-LAB <- c("Ambas variedades", "Solo 'Búlida Precoz'", "Ninguna")
+LAB <- c("Both cultivars", "Only 'Búlida Precoz'", "Neither")
 COL <- c("#2c7bb6", "#fdae61", "#d7191c")
 
 pretty_sit <- function(s) unname(SIT_LABEL[s])
@@ -194,30 +194,33 @@ for (i in seq_along(ord)) {
   r <- tab[situation == s]
   g <- ggplot() + geom_raster(data = df, aes(x, y, fill = clase)) + base_map() +
     scale_fill_manual(values = setNames(COL, LAB), drop = FALSE, name = NULL) +
-    labs(title = sprintf("Suelo cultivable viable — %s", r$label),
-         subtitle = sprintf("Ambas %.1f%%  ·  solo 'Búlida Precoz' %.1f%%  ·  ninguna %.1f%%  (de %.0f km² cultivables)",
-                            r$pct_both, r$pct_only_precoz, r$pct_none, total_crop_km2))
+    labs(title = sprintf("Viable cropland — %s", r$label),
+         subtitle = sprintf("Both %.1f%%  ·  only 'Búlida Precoz' %.1f%%  ·  neither %.1f%%  (of %s km² of cropland)",
+                            r$pct_both, r$pct_only_precoz, r$pct_none,
+                            formatC(round(total_crop_km2), format = "d", big.mark = ",")))
   ggsave(file.path(FIGS, sprintf("fig20_%02d_viability_%s.png", idx, s)), g, width = 8, height = 7, dpi = 200)
 
   sdf <- as.data.frame(surfaces[[s]], xy = TRUE, na.rm = TRUE); names(sdf)[3] <- "SWC"
   gs <- ggplot() + geom_raster(data = sdf, aes(x, y, fill = SWC)) + base_map() +
     scale_fill_viridis_c(name = "Chill portions (P10)", option = "viridis") +
     labs(title = sprintf("Safe Winter Chill — %s", r$label),
-         subtitle = "Interpolación IDW desde 3460 estaciones AEMET, radio 50 km (método de Egea et al. 2022)")
+         subtitle = "IDW interpolation from 3,460 AEMET stations, 50 km radius (method of Egea et al. 2022)")
   ggsave(file.path(FIGS, sprintf("fig21_%02d_swc_surface_%s.png", idx, s)), gs, width = 8, height = 7, dpi = 200)
 }
 
 bars <- melt(tab[, .(label = factor(label, levels = tab[match(ord, situation)]$label),
-                     `Ambas variedades` = pct_both, `Solo 'Búlida Precoz'` = pct_only_precoz, `Ninguna` = pct_none)],
+                     `Both cultivars` = pct_both, `Only 'Búlida Precoz'` = pct_only_precoz,
+                     `Neither` = pct_none)],
              id.vars = "label", variable.name = "clase", value.name = "pct")
 bars[, clase := factor(clase, levels = LAB)]
 gb <- ggplot(bars, aes(label, pct, fill = clase)) +
   geom_col(width = 0.7) + coord_flip() +
   scale_fill_manual(values = setNames(COL, LAB), name = NULL) +
   scale_x_discrete(limits = rev(levels(bars$label))) +
-  labs(title = "Superficie cultivable de España por viabilidad varietal",
-       subtitle = sprintf("%% de los %.0f km² de suelo agrícola (CORINE 211-244)", total_crop_km2),
-       x = NULL, y = "% de la superficie cultivable") +
+  labs(title = "Cropland area in Spain per viability class",
+       subtitle = sprintf("%% of the %s km² of cropland (CORINE 211-244)",
+                          formatC(round(total_crop_km2), format = "d", big.mark = ",")),
+       x = NULL, y = "% of cropland area") +
   theme_minimal(base_size = 11) + theme(legend.position = "bottom", plot.title = element_text(face = "bold"))
 ggsave(file.path(FIGS, "fig22_viability_bars.png"), gb, width = 9, height = 5.5, dpi = 200)
 

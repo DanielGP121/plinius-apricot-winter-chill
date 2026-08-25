@@ -207,7 +207,8 @@ p2 <- ggplot(swc_ok, aes(swc_arch, swc_api)) +
                           nrow(swc_ok), MIN_SWC_SEASONS, mean(swc_ok$d), median(swc_ok$d),
                           cor(swc_ok$swc_api, swc_ok$swc_arch)),
        x = "Safe Winter Chill, archive (P10)", y = "Safe Winter Chill, API (P10)") + th
-ggsave(file.path(FIGDIR, "fig23_02_api_vs_archive_swc.png"), p2, width = 7, height = 7, dpi = 200)
+ggsave(file.path(FIGDIR, "fig23_02_api_vs_archive_swc.png"), p2, width = 7, height = 7 / 1.28,
+       dpi = 200)
 
 p3 <- ggplot(j[!is.na(pc_bin)], aes(pc_bin, d)) +
   geom_hline(yintercept = 0, colour = "grey40", linewidth = .4) +

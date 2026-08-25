@@ -36,11 +36,12 @@ SCEN   <- getarg("--scenario", "ssp370")
 source(file.path(.dir, "00_paths.R"))
 source(file.path(.dir, "00_corine.R"))   # cell_area_km2()
 source(file.path(.dir, "00_hatch.R"))
+source(file.path(.dir, "00_map_layout.R"))
 
 EPSG <- 3035; CR_B <- 47.5; CR_P <- 33.7
 IDW_RADIUS <- 50000; IDW_POWER <- 2; IDW_NMAX <- 12
 AGREE_FRAC <- 0.8
-LAB <- c("Ambas variedades", "Solo 'Búlida Precoz'", "Ninguna")
+LAB <- c("Both cultivars", "Only 'Búlida Precoz'", "Neither")
 COL <- c("#2c7bb6", "#fdae61", "#d7191c")
 SSP_LAB <- c(ssp126 = "SSP1-2.6", ssp245 = "SSP2-4.5", ssp370 = "SSP3-7.0")
 SSP_COL <- c(ssp126 = "#173C66", ssp245 = "#F79420", ssp370 = "#E71D25")
@@ -49,7 +50,7 @@ CACHE <- out_path("surface_cache")
 
 FIG_TITLE <- toupper(Sys.getenv("PLINIUS_FIG_TITLE", "FALSE")) %in% c("TRUE", "1", "YES")
 ttl <- function(x) if (FIG_TITLE) x else NULL
-n_es <- function(x, d = 1) formatC(x, format = "f", digits = d, big.mark = ".", decimal.mark = ",")
+n_en <- function(x, d = 1) formatC(x, format = "f", digits = d, big.mark = ",", decimal.mark = ".")
 
 talk_theme <- theme_minimal(base_size = 14) +
   theme(plot.title = element_text(face = "bold", size = 17),
@@ -124,33 +125,27 @@ agree_panel <- function(sit, title) {
     base_map() +
     scale_fill_manual(values = setNames(COL, LAB), drop = FALSE, name = NULL) +
     labs(title = title,
-         subtitle = sprintf("los modelos coinciden en el %s %% del suelo", n_es(pct))) +
+         subtitle = sprintf("the models agree over %s%% of the cropland", n_en(pct))) +
     map_theme() + theme(legend.position = "none")
   g
 }
 p39 <- lapply(c("ssp126_far", "ssp245_far", "ssp370_far"),
               function(s) agree_panel(s, sprintf("%s · 2071-2100", SSP_LAB[[sub("_far", "", s)]])))
-leg39 <- local({
-  g <- ggplot(data.table(x = c(0.9, 3.0, 5.1), lab = factor(LAB, levels = LAB))) +
-    geom_point(aes(x, 1, colour = lab), size = 5, shape = 15) +
-    geom_text(aes(x + 0.10, 1, label = lab), hjust = 0, size = 3.6, colour = "grey20") +
-    scale_colour_manual(values = setNames(COL, LAB), guide = "none")
-  x0 <- 7.4
-  for (it in hatch_legend_items()) {
-    g <- g + hatch_swatch(x0, it$gap, it$col, it$cross) +
-      annotate("text", x = x0 + 0.36, y = 1, hjust = 0, size = 3.5, colour = "grey30",
-               label = it$lab)
-    x0 <- x0 + 4.2
-  }
-  g + coord_cartesian(xlim = c(0.8, x0 + 0.4), ylim = c(0.9, 1.1), expand = FALSE) + theme_void()
+# The same key as before, stacked into a column so it can sit beside the maps instead of under
+# them. Built from LAB/COL and hatch_legend_items(), so it cannot drift from what the maps draw.
+leg_side <- local({
+  items <- lapply(seq_along(LAB), function(i) list(lab = LAB[i], fill = COL[i]))
+  for (it in hatch_legend_items())
+    items <- c(items, list(list(lab = it$lab, hatch = list(gap = it$gap, col = it$col,
+                                                          cross = it$cross))))
+  legend_column(items, size = 4.1)
 })
 
-g39 <- wrap_plots(p39, nrow = 1) / leg39 +
-  plot_layout(heights = unit(c(1, 0.3), c("null", "in"))) +
-  plot_annotation(title = ttl("Dónde el ensemble sostiene el mapa, y dónde no"),
+g39 <- map_row_with_legend(p39, leg_side, LEG_IN[["hatch"]]) +
+  plot_annotation(title = ttl("Where the ensemble supports the map, and where it does not"),
                   theme = theme(plot.title = element_text(face = "bold", size = 18)))
 ggsave(fig_path("fig39_model_agreement_far.png"), g39, width = 15,
-       height = 5 * MAP_AR + 1.2, dpi = 190, bg = "white")
+       height = slot_height(15), dpi = 190, bg = "white")
 
 # § 3 — fig40, the eleven models without any summarising at all, one sheet per situation.
 # The point of a small-multiple panel is that it cannot lie by aggregation: whatever the ensemble
@@ -182,17 +177,22 @@ per_model_sheet <- function(sit, label) {
     # eleven laid out wide. Two rows of six fill the slide and each panel ends up larger.
     facet_wrap(~ model, ncol = 6) +
     scale_fill_manual(values = setNames(COL, LAB), drop = FALSE, name = NULL) +
-    labs(title = ttl("Los once modelos, sin resumir"), subtitle = label) +
+    labs(title = ttl("The eleven models, unsummarised"), subtitle = label) +
     map_theme(11) +
-    theme(legend.position = "bottom", strip.text = element_text(face = "bold", size = 9.5))
-  ggsave(fig_path(sprintf("fig40_small_multiples_%s.png", sit)), g, width = 15, height = 6.4,
-         dpi = 190, bg = "white")
+    # The legend stays under this one. A side column only pays off when the figure is taller than
+    # the slide slot; this sheet is already 2.3 wide per unit tall against the slot's 2.6, so
+    # moving the key sideways would take width away from eleven maps to save height there is no
+    # shortage of.
+    theme(legend.position = "bottom", legend.text = element_text(size = 11),
+          strip.text = element_text(face = "bold", size = 9.5))
+  ggsave(fig_path(sprintf("fig40_small_multiples_%s.png", sit)), g, width = 15,
+         height = slot_height(15), dpi = 190, bg = "white")
   cat(sprintf("   %s\n", sit))
 }
-SHEETS <- c(presente_present = "Línea base 1995-2020 · el punto de partida del que salen todos los futuros",
-            ssp126_far = "SSP1-2.6 · 2071-2100 · ordenados de mayor a menor fracción rescatada por el mutante",
-            ssp245_far = "SSP2-4.5 · 2071-2100 · ordenados de mayor a menor fracción rescatada por el mutante",
-            ssp370_far = "SSP3-7.0 · 2071-2100 · ordenados de mayor a menor fracción rescatada por el mutante")
+SHEETS <- c(presente_present = "Baseline 1995-2020 · the starting point every future comes from",
+            ssp126_far = "SSP1-2.6 · 2071-2100 · ordered from the largest to the smallest fraction of cropland the mutant still covers",
+            ssp245_far = "SSP2-4.5 · 2071-2100 · ordered from the largest to the smallest fraction of cropland the mutant still covers",
+            ssp370_far = "SSP3-7.0 · 2071-2100 · ordered from the largest to the smallest fraction of cropland the mutant still covers")
 for (s in names(SHEETS)) per_model_sheet(s, SHEETS[[s]])
 
 # § 3b — the observed map, which is the only one of these that is measured rather than simulated.
@@ -218,14 +218,14 @@ g_obs <- ggplot() +
   geom_sf(data = disp, fill = NA, colour = "grey55", linewidth = 0.15) +
   coord_sf(crs = EPSG, datum = NA, expand = FALSE, xlim = XLIM, ylim = YLIM) +
   scale_fill_manual(values = setNames(COL, LAB), drop = FALSE, name = NULL) +
-  labs(title = ttl("Lo que dicen los termómetros, antes de cualquier modelo"),
-       subtitle = sprintf("Observado 1995-2020, %s estaciones AEMET · solo el mutante sería viable en %s km² (%s %%), ninguna de las dos en %s km²",
-                          formatC(n_obs_st, format = "d", big.mark = "."),
-                          formatC(round(okm[2]), format = "d", big.mark = "."),
-                          n_es(100 * okm[2] / sum(okm)),
-                          formatC(round(okm[3]), format = "d", big.mark = "."))) +
+  labs(title = ttl("What the thermometers say, before any model"),
+       subtitle = sprintf("Observed 1995-2020, %s AEMET stations · only the mutant viable over %s km² (%s%%), neither over %s km²",
+                          formatC(n_obs_st, format = "d", big.mark = ","),
+                          formatC(round(okm[2]), format = "d", big.mark = ","),
+                          n_en(100 * okm[2] / sum(okm)),
+                          formatC(round(okm[3]), format = "d", big.mark = ","))) +
   map_theme() + theme(legend.position = "bottom")
-ggsave(fig_path("fig47_observed_viability.png"), g_obs, width = 9.5, height = 9.5 * MAP_AR + 1.7,
+ggsave(fig_path("fig47_observed_viability.png"), g_obs, width = 9.5, height = 9.5 / 1.28,
        dpi = 190, bg = "white")
 
 # § 4 — fig41, the range behind the quoted number.
@@ -240,10 +240,10 @@ st_rng <- d[grepl("_far$", situation), .(
   pct = 100 * sum(safe_winter_chill_P10 < CR_B & safe_winter_chill_P10 >= CR_P) /
         sum(safe_winter_chill_P10 < CR_B)), by = .(situation, model)]
 st_rng[, scen := sub("_far", "", situation)]
-far[, base := "sobre superficie (km²)"]; st_rng[, base := "sobre estaciones"]
+far[, base := "over area (km²)"]; st_rng[, base := "over stations"]
 both <- rbind(far[, .(scen, model, pct = pct_rescued_of_lost, base)], st_rng[, .(scen, model, pct, base)])
 both[, scen := factor(SSP_LAB[scen], levels = SSP_LAB)]
-both[, base := factor(base, levels = c("sobre superficie (km²)", "sobre estaciones"))]
+both[, base := factor(base, levels = c("over area (km²)", "over stations"))]
 
 g41 <- ggplot(both, aes(pct, scen, colour = scen)) +
   geom_hline(yintercept = c(1, 2, 3), colour = "grey92", linewidth = 6) +
@@ -252,12 +252,12 @@ g41 <- ggplot(both, aes(pct, scen, colour = scen)) +
   stat_summary(fun = median, geom = "point", shape = 124, size = 9, colour = "grey15") +
   facet_wrap(~ base) +
   scale_colour_manual(values = setNames(SSP_COL, SSP_LAB), guide = "none") +
-  scale_x_continuous(labels = function(x) paste0(n_es(x, 0), " %")) +
-  labs(title = ttl("Cuánto rescata el mutante, modelo a modelo"),
-       subtitle = paste("2071-2100 · cada punto es un modelo, la barra vertical es la mediana ·",
-                        "la línea discontinua marca un tercio\nSobre superficie ningún modelo baja de un tercio;",
-                        "sobre estaciones el más bajo sí. La misma frase es cierta o falsa según la base."),
-       x = "fracción de lo que pierde 'Búlida' que el mutante todavía cubre", y = NULL) +
+  scale_x_continuous(labels = function(x) paste0(n_en(x, 0), "%")) +
+  labs(title = ttl("How much the mutant rescues, model by model"),
+       subtitle = paste("2071-2100 · each point is a model, the vertical bar is the median ·",
+                        "the dashed line marks a third\nOver area no model drops below a third;",
+                        "over stations the lowest does. The same sentence is true or false depending on the base."),
+       x = "fraction of what 'Búlida' loses that the mutant still covers", y = NULL) +
   talk_theme + theme(strip.text = element_text(face = "bold", size = 12))
 ggsave(fig_path("fig41_per_model_range.png"), g41, width = 13.5, height = 4.6, dpi = 190,
        bg = "white")
@@ -278,19 +278,20 @@ sign_panel <- function(sit, title) {
     base_map() +
     scale_fill_manual(values = setNames(COL, LAB), drop = FALSE, name = NULL) +
     labs(title = title,
-         subtitle = sprintf("acuerdo sobre el signo del cambio: %s %% del suelo", n_es(pct))) +
+         subtitle = sprintf("sign-of-change agreement: %s%% of the cropland", n_en(pct))) +
     map_theme() + theme(legend.position = "none")
 }
-g42 <- (sign_panel(paste0(SCEN, "_nearterm"), sprintf("%s · 2021-2040", SSP_LAB[[SCEN]])) |
-        sign_panel(paste0(SCEN, "_far"),      sprintf("%s · 2071-2100", SSP_LAB[[SCEN]]))) /
-  leg39 + plot_layout(heights = unit(c(1, 0.3), c("null", "in"))) +
+g42 <- map_row_with_legend(
+  list(sign_panel(paste0(SCEN, "_nearterm"), sprintf("%s · 2021-2040", SSP_LAB[[SCEN]])),
+       sign_panel(paste0(SCEN, "_far"),      sprintf("%s · 2071-2100", SSP_LAB[[SCEN]]))),
+  leg_side, LEG_IN[["hatch"]]) +
   plot_annotation(
-    title = ttl("A corto plazo los modelos ni siquiera coinciden en la dirección del cambio"),
-    subtitle = "Líneas diagonales donde menos del 80 % de los modelos coinciden en si el frío sube o baja respecto a la línea base",
+    title = ttl("In the near term the models do not even agree on the direction of change"),
+    subtitle = "Diagonal lines where fewer than 80% of the models agree on whether chill rises or falls against the baseline",
     theme = theme(plot.title = element_text(face = "bold", size = 18),
                   plot.subtitle = element_text(size = 12.5, colour = "grey30")))
-ggsave(fig_path(sprintf("fig42_sign_agreement_%s.png", SCEN)), g42, width = 12,
-       height = 6 * MAP_AR + 1.4, dpi = 190, bg = "white")
+ggsave(fig_path(sprintf("fig42_sign_agreement_%s.png", SCEN)), g42, width = 13,
+       height = slot_height(13), dpi = 190, bg = "white")
 
 # § 5b — fig48, agreement on its own, with its own colour scale.
 # The hatching has to share the map with the viability fill, so it can only ever carry three bands.
@@ -298,8 +299,8 @@ ggsave(fig_path(sprintf("fig42_sign_agreement_%s.png", SCEN)), g42, width = 12,
 # models the majority side can only be 6, 7, 8, 9, 10 or 11, and there is no such thing as an
 # agreement below 6 of 11. Kept for the annex, where the extra resolution is worth the extra map.
 cat("6. fig48 acuerdo con escala propia\n")
-AG_LAB <- c("6 de 11 (55 %)", "7 de 11 (64 %)", "8 de 11 (73 %)",
-            "9 de 11 (82 %)", "10 de 11 (91 %)", "11 de 11 (100 %)")
+AG_LAB <- c("6 of 11 (55%)", "7 of 11 (64%)", "8 of 11 (73%)",
+            "9 of 11 (82%)", "10 of 11 (91%)", "11 of 11 (100%)")
 AG_COL <- c("#67000d", "#cb181d", "#fb6a4a", "#c7e9c0", "#74c476", "#238b45")
 
 agree_only <- function(sit, layer, title, sub) {
@@ -315,26 +316,25 @@ agree_only <- function(sit, layer, title, sub) {
     labs(title = title, subtitle = sub) +
     map_theme() + theme(legend.position = "none")
 }
-leg48 <- ggplot(data.table(x = seq_along(AG_LAB), lab = factor(AG_LAB, levels = AG_LAB))) +
-  geom_point(aes(x, 1, colour = lab), size = 5, shape = 15) +
-  geom_text(aes(x + 0.07, 1, label = lab), hjust = 0, size = 3.4, colour = "grey25") +
-  scale_colour_manual(values = setNames(AG_COL, AG_LAB), guide = "none") +
-  coord_cartesian(xlim = c(0.8, 7.4), ylim = c(0.9, 1.1), expand = FALSE) + theme_void()
+leg48 <- legend_column(lapply(seq_along(AG_LAB),
+                                function(i) list(lab = AG_LAB[i], fill = AG_COL[i])),
+                        size = 3.9)
 
-g48 <- (agree_only(paste0(SCEN, "_far"), "n_below_bulida",
-                   "Sobre la clasificación", "¿está la celda por encima o por debajo de 47,5 CP?") |
-        agree_only(paste0(SCEN, "_nearterm"), "n_decreasing",
-                   "Sobre el signo del cambio", "¿sube o baja el frío respecto a la línea base?")) /
-  leg48 + plot_layout(heights = unit(c(1, 0.32), c("null", "in"))) +
+g48 <- map_row_with_legend(
+  list(agree_only(paste0(SCEN, "_far"), "n_below_bulida",
+                  "On the classification", "is the cell above or below 47.5 CP?"),
+       agree_only(paste0(SCEN, "_nearterm"), "n_decreasing",
+                  "On the sign of the change", "does chill rise or fall against the baseline?")),
+  leg48, LEG_IN[["plain"]]) +
   plot_annotation(
-    title = ttl("Cuántos modelos coinciden, sin nada que compita por el color"),
-    subtitle = sprintf("%s · izquierda 2071-2100, derecha 2021-2040 · el criterio del AR6 (≥80 %%) cae entre 8 y 9 modelos
-Con 11 modelos el bando mayoritario nunca baja de 6, así que un acuerdo por debajo del 55 %% no existe",
+    title = ttl("How many models agree, with nothing competing for the colour"),
+    subtitle = sprintf("%s · left 2071-2100, right 2021-2040 · the AR6 criterion (≥80%%) falls between 8 and 9 models
+With 11 models the majority side never drops below 6, so agreement below 55%% does not exist",
                        SSP_LAB[[SCEN]]),
     theme = theme(plot.title = element_text(face = "bold", size = 18),
                   plot.subtitle = element_text(size = 12, colour = "grey30")))
-ggsave(fig_path(sprintf("fig48_agreement_scale_%s.png", SCEN)), g48, width = 12,
-       height = 6 * MAP_AR + 1.5, dpi = 190, bg = "white")
+ggsave(fig_path(sprintf("fig48_agreement_scale_%s.png", SCEN)), g48, width = 13,
+       height = slot_height(13), dpi = 190, bg = "white")
 
 # § 6 — Numbers for the deck.
 fwrite(data.table(

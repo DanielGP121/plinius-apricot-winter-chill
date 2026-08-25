@@ -10,15 +10,18 @@ lines, evidence rather than bullets underneath, and nothing on the slide the spe
 read out loud. Scenario colours are the IPCC AR6 ones so anyone who has seen an AR6 figure
 recognises them without a legend.
 
-Every number reaching a slide comes from talk_key_numbers.csv and method_figure_numbers.csv. None
-is typed into the content file, so a slide cannot drift from the table that produced it.
+Every number reaching a slide comes from one of the six metric tables load_numbers() reads. Almost
+none is typed into the content file, and the exceptions are marked in its own docstring, so a slide
+cannot drift from the table that produced it.
 
 Usage: python 35_build_talk_pptx.py [--out ../03_presentacion/charla_plinius.pptx]
-Requires: python-pptx, Pillow. Run 31, 32, 33 and 34 first: the figures and the GIF must exist.
+Requires: python-pptx, Pillow. Run 31 to 34 and 36 to 43 first: the figures, the GIF and the metric
+tables must all exist.
 """
 
 import argparse
 import csv
+import re
 import sys
 from pathlib import Path
 
@@ -77,6 +80,30 @@ def write(tf, text, *, size, colour=INK, bold=False, para=0, space_after=0, alig
     r.font.name = FONT
     r.font.color.rgb = colour
     return p
+
+
+def link_urls(p, *, size, colour=MUTED):
+    """Rebuild a finished paragraph so that any https:// token becomes a real hyperlink.
+
+    Splitting the text into runs is what makes the address clickable in the exported PDF, which is
+    how the repository actually gets visited after a talk. The colour is deliberately left as the
+    surrounding text: a blue underlined link would be the only one in the whole deck.
+    """
+    text = "".join(r.text for r in p.runs)
+    if "https://" not in text:
+        return
+    for r in list(p.runs):
+        r._r.getparent().remove(r._r)
+    for token in re.split(r"(https://\S+)", text):
+        if not token:
+            continue
+        run = p.add_run()
+        run.text = token
+        run.font.size = Pt(size)
+        run.font.name = FONT
+        run.font.color.rgb = colour
+        if token.startswith("https://"):
+            run.hyperlink.address = token
 
 
 def para(tf, text, **kw):
@@ -176,10 +203,11 @@ def footer(slide, source, page):
 
 # --- slide kinds -----------------------------------------------------------------------------
 def s_cover(prs, d, page):
+    # No accent bar and a 32 pt title: the working title is a full descriptive sentence rather
+    # than a short phrase, so it needs three lines and the whole upper band of the page.
     slide = blank(prs)
-    rect(slide, Emu(0), Emu(0), W, Inches(0.14), BLUE)
-    tf = txbox(slide, MARGIN, Inches(1.55), CONTENT_W - Inches(1.2), Inches(1.6))
-    write(tf, d["title"], size=40, bold=True, line=0.95)
+    tf = txbox(slide, MARGIN, Inches(0.68), CONTENT_W - Inches(1.2), Inches(2.05))
+    write(tf, d["title"], size=32, bold=True, line=0.95)
     tf = txbox(slide, MARGIN, Inches(3.25), CONTENT_W - Inches(2.0), Inches(1.1))
     write(tf, d["subtitle"], size=17, colour=MUTED, line=1.15)
     tf = txbox(slide, MARGIN, Inches(4.85), CONTENT_W, Inches(1.0))
@@ -199,8 +227,10 @@ def s_section(prs, d, page):
     write(tf, d["n"], size=76, bold=True, colour=RGBColor(0xC9, 0xD3, 0xDC))
     tf = txbox(slide, Inches(2.35), Inches(2.62), Inches(9.4), Inches(1.0))
     write(tf, d["title"], size=34, bold=True)
-    tf = txbox(slide, Inches(2.35), Inches(3.72), Inches(8.6), Inches(1.2))
-    write(tf, d["lead"], size=16, colour=MUTED, line=1.2)
+    lead = d.get("lead", "")
+    if lead:
+        tf = txbox(slide, Inches(2.35), Inches(3.72), Inches(8.6), Inches(1.2))
+        write(tf, lead, size=16, colour=MUTED, line=1.2)
     notes(slide, d.get("notes", ""))
 
 
@@ -221,7 +251,7 @@ def s_figure(prs, d, page):
         tf = badge.text_frame
         tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
         tf.vertical_anchor = MSO_ANCHOR.MIDDLE
-        write(tf, "animado · pulsa F5", size=9, colour=WHITE, align=PP_ALIGN.CENTER)
+        write(tf, "animated · press F5", size=9, colour=WHITE, align=PP_ALIGN.CENTER)
     footer(slide, d.get("source"), page)
     notes(slide, d["notes"])
 
@@ -306,7 +336,8 @@ def s_close(prs, d, page):
         write(tf, pt, size=17, line=1.18)
         y += Inches(1.06)
     tf = txbox(slide, MARGIN, H - Inches(0.95), CONTENT_W, Inches(0.4))
-    write(tf, d["foot"], size=12.5, colour=MUTED)
+    p = write(tf, d["foot"], size=12.5, colour=MUTED)
+    link_urls(p, size=12.5)
     notes(slide, d["notes"])
 
 
@@ -342,10 +373,12 @@ def load_numbers():
     """Every metric the slides quote, keyed by name, from the tables that computed them."""
     out = {}
     for name in ("talk_key_numbers.csv", "method_figure_numbers.csv", "model_spread_numbers.csv",
-                 "method_chain_numbers.csv"):
+                 "method_chain_numbers.csv", "timeline_numbers.csv", "model_ranking_numbers.csv",
+                 "cieza_numbers.csv"):
         path = ROOT / "02_outputs" / name
         if not path.exists():
-            sys.exit(f"missing {path}\n  run scripts 33, 34, 36, 37 and 38 before building the deck")
+            sys.exit(f"missing {path}\n"
+                     "  run scripts 27, 33, 34, 36, 37, 38, 42 and 43 before building the deck")
         with open(path, newline="", encoding="utf-8") as fh:
             for row in csv.DictReader(fh):
                 try:
@@ -360,13 +393,26 @@ def main():
     ap.add_argument("--out", default=None)
     ap.add_argument("--annex", action="store_true",
                     help="build the backup deck instead of the talk")
+    ap.add_argument("--short", action="store_true",
+                    help="build only the slides marked spoken=True, for the 15-minute slot")
     a = ap.parse_args()
 
     N = load_numbers()
     deck = talk_content.annex(N) if a.annex else talk_content.slides(N)
+
+    # Two decks come out of one narrative. The full one is what the coauthors review, and it has to
+    # carry every check that was run; the short one is what fits a 15-minute slot. Marking the
+    # spoken subset in the content file rather than keeping a second list means the two cannot
+    # drift, which is the same reason the numbers come from CSVs instead of being typed.
+    if a.short:
+        deck = [d for d in deck if d.get("spoken")]
+        if not deck:
+            sys.exit("--short: no slide carries spoken=True in talk_content.py")
+
     if a.out is None:
-        a.out = str(ROOT / "03_presentacion" /
-                    ("anexo_plinius.pptx" if a.annex else "charla_plinius.pptx"))
+        stem = "anexo_plinius" if a.annex else ("charla_plinius_15min" if a.short
+                                               else "charla_plinius")
+        a.out = str(ROOT / "03_presentacion" / f"{stem}.pptx")
 
     prs = Presentation()
     prs.slide_width, prs.slide_height = W, H
@@ -383,12 +429,12 @@ def main():
     n_notes = sum(1 for s in prs.slides if s.has_notes_slide
                   and s.notes_slide.notes_text_frame.text.strip())
     print(f"{out}")
-    print(f"{len(deck)} diapositivas, {n_notes} con notas de orador, "
+    print(f"{len(deck)} slides, {n_notes} with speaker notes, "
           f"{out.stat().st_size/1e6:.2f} MB")
     # The cap was 20 while the deck argued a result, 30 once it also had to explain the method, and
     # 35 once the results section showed the eleven models per scenario before their median.
     if not a.annex and len(deck) > 35:
-        print(f"AVISO: {len(deck)} diapositivas, por encima del tope de 35")
+        print(f"WARNING: {len(deck)} slides, above the cap of 35")
 
 
 if __name__ == "__main__":

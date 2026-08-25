@@ -58,7 +58,7 @@ IDW_RADIUS <- 50000                     # 50 km mask, Egea et al. 2022
 IDW_POWER  <- 2
 IDW_NMAX   <- 12
 
-LAB <- c("Ambas variedades", "Solo 'Búlida Precoz'", "Ninguna")
+LAB <- c("Both cultivars", "Only 'Búlida Precoz'", "Neither")
 COL <- c("#2c7bb6", "#fdae61", "#d7191c")
 
 # IPCC AR6 scenario colours, so the three panels are recognisable to anyone who has seen an AR6
@@ -262,7 +262,7 @@ stat_line <- function(sit) {
   r <- ST[situation == sit]
   ggplot() +
     annotate("text", x = 0, y = 1, hjust = 0, size = 4.1, colour = "grey20",
-             label = sprintf("Solo 'Búlida Precoz': %s km²      Ninguna de las dos: %s km²",
+             label = sprintf("Only 'Búlida Precoz': %s km²      Neither: %s km²",
                              km2_fmt(r$km2_only), km2_fmt(r$km2_none))) +
     coord_cartesian(xlim = c(0, 10), ylim = c(0.9, 1.1), expand = FALSE) +
     theme_void() + theme(plot.margin = margin(2, 4, 2, 4))
@@ -279,9 +279,9 @@ PANEL_W   <- 5.2    # inches, one panel of the side-by-side
 TITLE_IN  <- 0.72   # room the title and subtitle take above the map
 strip_layout <- function(...) plot_layout(heights = unit(c(1, ...), c("null", rep("in", length(c(...))))))
 
-# Spanish thousands separator. formatC rather than format, which warns when the big mark and the
+# English thousands separator. formatC rather than format, which warns when the big mark and the
 # decimal mark are both a full stop even though these are integers and no decimal is ever printed.
-km2_fmt <- function(x) formatC(round(x), format = "d", big.mark = ".")
+km2_fmt <- function(x) formatC(round(x), format = "d", big.mark = ",")
 
 # § 5 — One animation per scenario.
 # The caption on step 2 is not decoration. At 2021-2040 the three scenarios differ by 0.62 CP at the
@@ -293,9 +293,9 @@ frame_file <- function(tag, i) file.path(FRAME_DIR, sprintf("%s_%02d.png", tag, 
 for (scen in scen_list) {
   for (i in 1:4) {
     sit <- sit_of(scen, i)
-    sub <- if (i == 1) "Línea base del modelo, común a los tres escenarios"
-           else if (i == 2) "A este horizonte los tres escenarios aún no se distinguen"
-           else sprintf("Mediana de los 11 modelos CMIP6")
+    sub <- if (i == 1) "Model baseline, shared by the three scenarios"
+           else if (i == 2) "At this horizon the three scenarios are not yet distinguishable"
+           else sprintf("Median of the 11 CMIP6 models")
     g <- map_panel(sit, sprintf("%s · %s", SSP_LAB[[scen]], STEPS$period[i]), sub) /
          legend_strip() / stat_line(sit) / timeline(i, SSP_COL[[scen]]) +
          strip_layout(STRIP_IN[["legend"]], STRIP_IN[["stat"]], STRIP_IN[["timeline"]])
@@ -314,7 +314,7 @@ for (scen in scen_list) {
 for (i in 1:4) {
   maps <- lapply(scen_list, function(scen)
     map_panel(sit_of(scen, i), SSP_LAB[[scen]],
-              sprintf("solo 'Búlida Precoz': %s km²",
+              sprintf("only 'Búlida Precoz': %s km²",
                       km2_fmt(ST[situation == sit_of(scen, i)]$km2_only))))
   # At 2021-2040 the panels differ, and one of the differences runs the wrong way: SSP3-7.0 loses
   # LESS land than SSP2-4.5. That is not a scenario effect and it is not a mistake either, it is
@@ -322,11 +322,11 @@ for (i in 1:4) {
   # do. The frame says so, because a viewer comparing three panels will otherwise read the ranking
   # as a result, and the question arrives before the speaker gets to it.
   note <- if (i == 2)
-    paste("Las diferencias entre paneles a este horizonte no son efecto del escenario:",
-          "los modelos discrepan entre sí mucho más de lo que discrepan los escenarios") else ""
+    paste("Differences between panels at this horizon are not a scenario effect:",
+          "the models disagree with each other far more than the scenarios do") else ""
   head <- ggplot() +
     annotate("text", x = 0, y = 1.06, hjust = 0, size = 6.2, fontface = "bold", colour = "grey15",
-             label = sprintf("Suelo cultivable viable · %s", STEPS$period[i])) +
+             label = sprintf("Viable cropland · %s", STEPS$period[i])) +
     annotate("text", x = 0, y = 0.94, hjust = 0, size = 3.9, colour = "#b2182b", label = note) +
     coord_cartesian(xlim = c(0, 10), ylim = c(0.88, 1.12), expand = FALSE) +
     theme_void() + theme(plot.margin = margin(6, 4, 0, 4))

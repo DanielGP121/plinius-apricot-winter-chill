@@ -35,6 +35,7 @@ STN    <- getarg("--station", "7121A")
 .f <- grep("^--file=", commandArgs(FALSE), value = TRUE)
 .dir <- if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]))) else getwd()
 source(file.path(.dir, "00_paths.R"))
+source(file.path(.dir, "00_map_layout.R"))
 source(file.path(.dir, "00_corine.R"))   # cell_area_km2()
 
 CR_B <- 47.5; CR_P <- 33.7
@@ -44,8 +45,8 @@ CACHE <- out_path("surface_cache")
 
 FIG_TITLE <- toupper(Sys.getenv("PLINIUS_FIG_TITLE", "FALSE")) %in% c("TRUE", "1", "YES")
 ttl <- function(x) if (FIG_TITLE) x else NULL
-n_es <- function(x, d = 1) formatC(x, format = "f", digits = d, big.mark = ".", decimal.mark = ",")
-i_es <- function(x) formatC(round(x), format = "d", big.mark = ".")
+n_en <- function(x, d = 1) formatC(x, format = "f", digits = d, big.mark = ",", decimal.mark = ".")
+i_en <- function(x) formatC(round(x), format = "d", big.mark = ",", decimal.mark = ".")
 
 talk_theme <- theme_minimal(base_size = 14) +
   theme(plot.title = element_text(face = "bold", size = 17),
@@ -84,19 +85,19 @@ g43 <- ggplot(bias, aes(sesgo, model)) +
   geom_vline(xintercept = ens_bias, linetype = "22", colour = "#d7191c", linewidth = 0.9) +
   geom_segment(aes(x = q25, xend = q75, yend = model), colour = "grey70", linewidth = 1.1) +
   geom_point(size = 3.6, colour = "#2c7bb6") +
-  geom_text(aes(label = sprintf("r = %s", n_es(r, 3))), x = max(bias$q75) + 0.55, hjust = 0,
+  geom_text(aes(label = sprintf("r = %s", n_en(r, 3))), x = max(bias$q75) + 0.55, hjust = 0,
             size = 3.6, colour = "grey40") +
   annotate("text", x = ens_bias - 0.12, y = nrow(bias) + 0.5, hjust = 1, size = 3.9,
            colour = "#d7191c", fontface = "bold",
-           label = sprintf("mediana del ensemble: %s CP", n_es(ens_bias, 2))) +
+           label = sprintf("ensemble median: %s CP", n_en(ens_bias, 2))) +
   scale_x_continuous(limits = c(min(bias$q25) - 0.4, max(bias$q75) + 2.2),
-                     breaks = seq(-4, 2, 1), labels = function(x) paste0(n_es(x, 0), " CP")) +
+                     breaks = seq(-4, 2, 1), labels = function(x) paste0(n_en(x, 0), " CP")) +
   scale_y_discrete(expand = expansion(add = c(0.6, 0.6))) +
-  labs(title = ttl("Ningún modelo se desvía lo bastante como para justificar corregirlo"),
-       subtitle = sprintf(paste0("Sesgo del Safe Winter Chill frente a las observaciones, misma ventana 1995-2020 y las mismas %s estaciones\n",
-                                 "La banda azul son ±1 CP. El punto es la mediana entre estaciones, la barra gris el rango intercuartílico."),
-                          i_es(uniqueN(mm$station_id))),
-       x = "modelo menos observado", y = NULL) +
+  labs(title = ttl("No model departs far enough to justify correcting it"),
+       subtitle = sprintf(paste0("Safe Winter Chill bias against the observations, same 1995-2020 window and the same %s stations\n",
+                                 "The blue band is ±1 CP. The point is the median across stations, the grey bar the interquartile range."),
+                          i_en(uniqueN(mm$station_id))),
+       x = "model minus observed", y = NULL) +
   talk_theme
 ggsave(fig_path("fig43_model_bias.png"), g43, width = 12.5, height = 6, dpi = 190, bg = "white")
 
@@ -112,20 +113,20 @@ n_cells <- global(!is.na(surf), "sum")[1, 1]
 
 steps <- data.table(
   i = 1:6,
-  etapa = c("Temperatura diaria",
-            "Frío por temporada",
+  etapa = c("Daily temperature",
+            "Chill per season",
             "Safe Winter Chill",
-            "Mediana entre modelos",
-            "Superficie interpolada",
-            "Suelo cultivable clasificado"),
-  detalle = c(sprintf("%s estaciones × %d modelos × 2 variables × ~30 años", i_es(n_st), n_md),
-              sprintf("modelo dinámico sobre cada temporada\n%s × %d × %d temporadas",
-                      i_es(n_st), n_md, n_seasons_far),
-              sprintf("percentil 10 de las temporadas\n%s × %d = %s valores",
-                      i_es(n_st), n_md, i_es(n_st * n_md)),
-              sprintf("un valor por estación\n%s valores", i_es(n_st)),
-              sprintf("IDW radio 50 km\n%s celdas de 1 km", i_es(n_cells)),
-              sprintf("máscara CORINE y dos umbrales\n%s km² en 3 clases", i_es(CROP_KM2))),
+            "Median across models",
+            "Interpolated surface",
+            "Classified cropland"),
+  detalle = c(sprintf("%s stations × %d models × 2 variables × ~30 years", i_en(n_st), n_md),
+              sprintf("Dynamic Model on each season\n%s × %d × %d seasons",
+                      i_en(n_st), n_md, n_seasons_far),
+              sprintf("10th percentile of the seasons\n%s × %d = %s values",
+                      i_en(n_st), n_md, i_en(n_st * n_md)),
+              sprintf("one value per station\n%s values", i_en(n_st)),
+              sprintf("IDW, 50 km radius\n%s cells of 1 km", i_en(n_cells)),
+              sprintf("CORINE mask and two thresholds\n%s km² in 3 classes", i_en(CROP_KM2))),
   n = c(NA, NA, n_st * n_md, n_st, n_cells, NA))
 steps[, y := rev(seq_len(.N))]
 
@@ -140,10 +141,10 @@ g44 <- ggplot(steps) +
                arrow = arrow(length = unit(0.16, "cm"), type = "closed"), colour = "grey45") +
   annotate("text", x = 3.55, y = steps[i == 4]$y, hjust = 0, size = 3.9, colour = "#d7191c",
            lineheight = 0.95,
-           label = "aquí se pierde\nla dispersión entre\nmodelos: por eso\nse recupera aparte") +
+           label = "this is where the\nmodel spread is\nlost: it is brought\nback separately") +
   coord_cartesian(xlim = c(0, 4.6), ylim = c(0.3, 6.8), expand = FALSE) +
-  labs(title = ttl("El mapa es el último de cinco resúmenes, no el primero"),
-       subtitle = "Cada etapa reduce el número de valores. Saber dónde ocurre cada reducción es lo que permite juzgar el resultado.") +
+  labs(title = ttl("The map is the last of five collapses, not the first"),
+       subtitle = "Each stage cuts down the number of values. Knowing where each reduction happens is what lets you judge the result.") +
   theme_void(base_size = 14) +
   theme(plot.title = element_text(face = "bold", size = 17, hjust = 0),
         plot.subtitle = element_text(size = 12.5, colour = "grey30", hjust = 0),
@@ -169,11 +170,11 @@ g45 <- ggplot(ds, aes(med, scen, colour = scen)) +
   geom_point(size = 3.4, alpha = 0.9) +
   stat_summary(fun = median, geom = "point", shape = 124, size = 9, colour = "grey15") +
   scale_colour_manual(values = setNames(SSP_COL, SSP_LAB), guide = "none") +
-  scale_x_continuous(labels = function(x) paste0(n_es(x, 0), " CP")) +
-  labs(title = ttl("Comparando cada modelo consigo mismo, la pérdida sigue estando ahí"),
-       subtitle = paste("Cambio del Safe Winter Chill entre 1995-2020 y 2071-2100, cada modelo contra su propia línea base.",
-                        "\nCualquier sesgo constante del modelo se cancela en esta resta, así que el resultado no depende de haber corregido o no."),
-       x = "cambio en el frío, fin de siglo menos línea base", y = NULL) +
+  scale_x_continuous(labels = function(x) paste0(n_en(x, 0), " CP")) +
+  labs(title = ttl("Comparing each model with itself, the loss is still there"),
+       subtitle = paste("Change in Safe Winter Chill between 1995-2020 and 2071-2100, each model against its own baseline.",
+                        "\nAny constant model bias cancels out in this subtraction, so the result does not depend on correcting it or not."),
+       x = "change in chill, end century minus baseline", y = NULL) +
   talk_theme
 ggsave(fig_path("fig45_delta_vs_absolute.png"), g45, width = 12.5, height = 4.6, dpi = 190,
        bg = "white")
@@ -193,9 +194,9 @@ pa <- ggplot(os, aes(season_end_year, CP)) +
   scale_fill_manual(values = c(`FALSE` = "#9ecae1", `TRUE` = "#d7191c"), guide = "none") +
   annotate("label", x = min(os$season_end_year), y = p10_obs, hjust = 0, size = 3.8,
            colour = "#d7191c", fill = "white", fontface = "bold",
-           label = sprintf("P10 observado = %s CP", n_es(p10_obs))) +
-  labs(title = sprintf("1. Lo medido: %d temporadas observadas", nrow(os)),
-       x = NULL, y = "CP por temporada") +
+           label = sprintf("observed P10 = %s CP", n_en(p10_obs))) +
+  labs(title = sprintf("1. Measured: %d seasons", nrow(os)),
+       x = NULL, y = "Chill portions of the season") +
   talk_theme + theme(plot.title = element_text(size = 13.5))
 
 stm <- rbind(
@@ -207,11 +208,11 @@ pb <- ggplot(stm, aes(SWC, w)) +
   geom_vline(xintercept = CR_P, colour = "#2166ac", linewidth = 0.9) +
   geom_point(size = 3, colour = "grey45", alpha = 0.85) +
   geom_point(data = med, aes(m, w), size = 5, shape = 124, colour = "grey10") +
-  geom_text(data = med, aes(m, w, label = n_es(m)), vjust = -1.4, size = 4, fontface = "bold") +
-  scale_x_continuous(labels = function(x) paste0(n_es(x, 0), " CP")) +
-  labs(title = "2. Lo simulado: los 11 modelos en este punto, y su mediana",
-       subtitle = sprintf("líneas: requerimiento de 'Búlida' (%s) y de 'Búlida Precoz' (%s)",
-                          n_es(CR_B), n_es(CR_P)),
+  geom_text(data = med, aes(m, w, label = n_en(m)), vjust = -1.4, size = 4, fontface = "bold") +
+  scale_x_continuous(labels = function(x) paste0(n_en(x, 0), " CP")) +
+  labs(title = "2. Simulated: 11 models",
+       subtitle = sprintf("lines: 'Búlida' (%s), mutant (%s)",
+                          n_en(CR_B), n_en(CR_P)),
        x = NULL, y = NULL) +
   talk_theme + theme(plot.title = element_text(size = 13.5), plot.subtitle = element_text(size = 11))
 
@@ -233,8 +234,8 @@ HALF <- 62000                                   # a little past the 50 km radius
 win  <- ext(xy[1] - HALF, xy[1] + HALF, xy[2] - HALF, xy[2] + HALF)
 
 classify_local <- function(s) ifel(s >= CR_B, 1L, ifel(s >= CR_P, 2L, 3L))
-SIT3 <- c(presente_present = "Hoy · 1995-2020", ssp370_far = "Fin de siglo · SSP3-7.0")
-LAB3 <- c("Ambas variedades", "Sólo 'Búlida Precoz'", "Ninguna")
+SIT3 <- c(presente_present = "1995-2020", ssp370_far = "2071-2100 · SSP3-7.0")
+LAB3 <- c("Both cultivars", "Only 'Búlida Precoz'", "Neither")
 COL3 <- c("#2c7bb6", "#fdae61", "#d7191c")
 
 cfw <- crop(cropfrac, win)
@@ -250,8 +251,8 @@ built <- lapply(names(SIT3), function(s) {
   df <- as.data.frame(cls, xy = TRUE, na.rm = TRUE)
   names(df)[3] <- "k"
   list(df = as.data.table(df), sit = s, km = km,
-       lab = sprintf("%s\n%s km² ambas · %s sólo Precoz · %s ninguna",
-                     SIT3[[s]], i_es(km[1]), i_es(km[2]), i_es(km[3])))
+       lab = sprintf("%s\n%s both · %s mutant\n%s neither  (km²)",
+                     SIT3[[s]], i_en(km[1]), i_en(km[2]), i_en(km[3])))
 })
 built <- Filter(Negate(is.null), built)
 if (!length(built)) stop("no hay superficies cacheadas para el panel 3 de fig46")
@@ -268,8 +269,8 @@ pc <- ggplot() +
   facet_wrap(~ sit) +
   scale_fill_manual(values = setNames(COL3, LAB3), name = NULL, drop = FALSE) +
   coord_sf(expand = FALSE) +
-  labs(title = sprintf("3. Y en el terreno: el suelo cultivable a 50 km de %s", STN),
-       subtitle = "El círculo es el radio dentro del cual esta estación pesa en la interpolación. Sólo se pinta suelo agrícola.") +
+  labs(title = sprintf("3. On the ground: 50 km around %s", STN),
+       subtitle = "Circle: the radius this station weighs over. Cropland only.") +
   theme_void(base_size = 14) +
   theme(plot.title = element_text(face = "bold", size = 13.5),
         plot.subtitle = element_text(size = 11, colour = "grey30"),
@@ -277,17 +278,20 @@ pc <- ggplot() +
                                   margin = margin(b = 5)),
         legend.position = "bottom")
 
-g46 <- (pa / pb / pc) +
-  plot_layout(heights = c(1, 0.85, 1.25)) +
+# In a row rather than a column. Stacked, the sheet came out 1.1 wide per unit tall against the
+# slide's 2.6, so PowerPoint scaled it to fit the height and left 58% of the width empty. The three
+# panels read left to right in the same order they read top to bottom.
+g46 <- (pa | pb | pc) +
+  plot_layout(widths = c(1, 0.85, 1.25)) +
   plot_annotation(
-    title = ttl(sprintf("El mismo cálculo, seguido en una estación real: %s", STN)),
-    subtitle = paste("Calasparra (Murcia), 394 m. Hoy la mediana del ensemble la deja por encima",
-                     "del requerimiento de 'Búlida';\na fin de siglo, por debajo, pero muy por",
-                     "encima del de su mutante."),
+    title = ttl(sprintf("The same calculation, followed at one real station: %s", STN)),
+    subtitle = paste("Calasparra (Murcia), 394 m. Today the ensemble median leaves it above the",
+                     "chill requirement of 'Búlida';\nby the end of the century, below it, but well",
+                     "above that of its mutant."),
     theme = theme(plot.title = element_text(face = "bold", size = 17),
                   plot.subtitle = element_text(size = 12, colour = "grey30")))
-ggsave(fig_path("fig46_station_walkthrough.png"), g46, width = 13.5, height = 12.4, dpi = 190,
-       bg = "white")
+ggsave(fig_path("fig46_station_walkthrough.png"), g46, width = 15, height = slot_height(15),
+       dpi = 190, bg = "white")
 
 fwrite(data.table(
   metric = c("bias_min_CP", "bias_max_CP", "bias_range_CP", "bias_ensemble_CP", "bias_min_model",

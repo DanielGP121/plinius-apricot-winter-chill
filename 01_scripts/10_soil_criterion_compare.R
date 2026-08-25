@@ -102,23 +102,25 @@ cat("\nEgea vs buffer-% broad (nº estaciones):\n")
 print(table(egea = res$cultivable_egea, pct_broad = res$pct_broad))
 
 # --- map: where the two criteria (Egea vs buffer-% broad) agree/disagree ------------------
-res[, cat := fifelse(cultivable_egea & pct_broad, "ambos",
-             fifelse(cultivable_egea & !pct_broad, "solo Egea",
-             fifelse(!cultivable_egea & pct_broad, "solo %-buffer", "ninguno")))]
-res[, cat := factor(cat, levels = c("ambos", "solo Egea", "solo %-buffer", "ninguno"))]
+res[, cat := fifelse(cultivable_egea & pct_broad, "both",
+             fifelse(cultivable_egea & !pct_broad, "Egea only",
+             fifelse(!cultivable_egea & pct_broad, "buffer-% only", "neither")))]
+res[, cat := factor(cat, levels = c("both", "Egea only", "buffer-% only", "neither"))]
 res_sf <- st_transform(st_as_sf(res, coords = c("lon", "lat"), crs = 4326), EPSG)
 
 g <- ggplot() +
   geom_sf(data = murcia, fill = "grey96", color = "grey50", linewidth = 0.3) +
   geom_sf(data = res_sf, aes(color = cat), size = 2.6) +
-  scale_color_manual(values = c("ambos" = "#1a9850", "solo Egea" = "#2166ac",
-                                "solo %-buffer" = "#f46d43", "ninguno" = "#999999"),
-                     name = "Criterio", drop = FALSE) +
+  scale_color_manual(values = c("both" = "#1a9850", "Egea only" = "#2166ac",
+                                "buffer-% only" = "#f46d43", "neither" = "#999999"),
+                     name = "Criterion", drop = FALSE) +
   coord_sf(crs = EPSG, datum = NA) +
-  labs(title = "Suelo cultivable: criterio de Egea vs buffer-% (Región de Murcia)",
-       subtitle = sprintf("Egea: ≤%d km al cultivo + ≤%d m altitud (%d est.)  |  buffer-%% broad 2 km/50%% (%d est.)",
+  labs(title = "Cropland: Egea's criterion vs buffer-% (Region of Murcia)",
+       subtitle = sprintf("Egea: ≤%d km to cropland + ≤%d m elevation (%d stations)  |  buffer-%% broad 2 km/50%% (%d stations)",
                           DIST_M / 1000, DALT_M, sum(res$cultivable_egea), sum(res$pct_broad, na.rm = TRUE))) +
   theme_minimal(base_size = 12) +
   theme(axis.title = element_blank(), axis.text = element_blank())
-ggsave(FIG, g, width = 9, height = 7.5, dpi = 150)
+# Sized to the figure_side slot of the deck (6.77 x 5.30 in, an aspect of 1.28). A map of one
+# region is nearly square, so a full-width slot would leave half of it blank.
+ggsave(FIG, g, width = 9, height = 9 / 1.28, dpi = 150)
 cat("\nmapa ->", FIG, "\ntabla ->", OUT, "\n")
