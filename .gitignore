@@ -73,6 +73,11 @@ CP_Tdiarias.zip
 
 # The deck: 26 MB of embedded figures, rebuilt in two minutes by scripts 29 and 30.
 03_presentacion/
+# ...except the one-page workflow sheet. It is 0.4 MB, it is what a new reader should see first,
+# and the README links to it. Rebuilt by 44_workflow_sheet.py.
+!03_presentacion/
+03_presentacion/*
+!03_presentacion/plinius_workflow.pdf
 
 # --- caches and editor droppings -----------------------------------------------------------
 __pycache__/
@@ -96,3 +101,16 @@ Thumbs.db
 04_metodo/02_outputs/
 # The cold-read audit: candid internal assessment of the document, same category as info/.
 04_metodo/_auditoria_*.md
+
+# R opens a default graphics device when a script plots without ggsave, and drops this here.
+Rplots.pdf
+**/Rplots.pdf
+
+# --- the frozen Spanish originals -----------------------------------------------------------
+# Snapshots taken on 2026-08-24, when the talk and its figures moved to English. They are exact
+# twins of scripts that still exist in their migrated form, so a reader gains nothing from them
+# and a maintainer would have two copies of every figure to keep in step. `legacy/README.md` and
+# `legacy/build_aemet_matching.py` stay versioned because they document an abandoned line of work
+# that has no successor; these do not.
+01_scripts/legacy/es_figuras_2026-08-24/
+01_scripts/legacy/talk_content_es_*.py

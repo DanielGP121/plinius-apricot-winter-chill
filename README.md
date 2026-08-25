@@ -12,20 +12,26 @@ answer as **area of cultivable land** rather than as a count of weather stations
 > **Status.** Work in progress towards the talk. The numbers below are current as of August 2026
 > and reconcile with the tables in `02_outputs/`.
 
+**In a hurry?** [`03_presentacion/plinius_workflow.pdf`](03_presentacion/plinius_workflow.pdf) is
+the whole pipeline on one page: the four data sources with their real dimensions, which step runs
+on the cluster and which locally, every operative parameter with the line of code that sets it,
+and a thumbnail of what each stage produces. Rebuilt by
+[`01_scripts/44_workflow_sheet.py`](01_scripts/44_workflow_sheet.py).
+
 ---
 
 ## The result
 
-Of Spain's **229,604 km²** of cropland, under SSP3-7.0 by the end of the century:
+Of Spain's **229,676 km²** of cropland, under SSP3-7.0 by the end of the century:
 
 | | km² | |
 |---|---:|---|
-| 'Búlida' stops being viable on | **45,089** | 19.6% of cropland |
-| of which 'Búlida Precoz' still works on | **23,302** | **51.7% of the loss** |
-| neither cultivar viable | 21,787 | 9.5% of cropland |
+| 'Búlida' stops being viable on | **45,103** | 19.6% of cropland |
+| of which 'Búlida Precoz' still works on | **23,310** | **51.7% of the loss** |
+| neither cultivar viable | 21,794 | 9.5% of cropland |
 
-Across the eleven climate models the rescued fraction runs from **32.6% to 66.1%**, and none falls
-below a third. That is the most robust number here, because it rests on the *gap* between the two
+Across the eleven climate models the rescued fraction of cropland runs from **39.1% to 82.1%**, and
+none falls below a third. That is the most robust number here, because it rests on the *gap* between the two
 cultivars, which is well determined, rather than on either absolute threshold, which is not.
 
 Under milder scenarios the mutant rescues almost all of the loss (89.3% under SSP1-2.6). Under the
@@ -34,9 +40,10 @@ immunity.**
 
 Two secondary findings carry their own weight:
 
-- **Before 2040 the scenarios are indistinguishable.** Spread between scenarios is 0.62 chill
-  portions against 8.91 between models, and in 62% of stations the pessimistic scenario returns
-  *more* chill than the optimistic one. The next two decades are already committed.
+- **Before 2040 the scenarios are indistinguishable.** Across the stations whose chill sits near
+  the 'Búlida' threshold, the three scenarios differ by 2.7 chill portions and the eleven models by
+  13.4, five times as much, and in 62% of stations the pessimistic scenario returns *more* chill
+  than the optimistic one. The next two decades are already committed.
 - **The last five winters are the mildest five-year stretch in the 50-year observed record.**
   1976-2020 shows no trend at all (p = 0.90), yet 2021-2025 averages **3.65 chill portions below
   that baseline, 1.95 standard deviations**, and none of the 41 five-year blocks in the baseline
@@ -94,7 +101,9 @@ flowchart TD
         D3["25 splice 1995-2025"]
         D4["26 long record 1976-2025"]
         D5["27 cieza independent check"]
-        E1["29 build_deck / 30 build_pptx"]
+        C4["36 per_model_stats<br/>the same chain, once per model"]
+        C5["41 idw_crossval<br/>leave-one-out over the interpolation"]
+        E1["29 / 30 working document<br/>35 the talk, 44 the one-page sheet"]
     end
 
     A1 --> B1 --> B2 --> C1 --> C2 --> C3
@@ -103,6 +112,10 @@ flowchart TD
     A4 --> C2
     B2 -->|per-season mode| D2
     D4 --> D5
+    C1 --> C4
+    C2 --> C5
+    C4 --> E1
+    C5 --> E1
     C2 --> E1
     D4 --> E1
 ```
@@ -142,6 +155,36 @@ the aggregate.
 towns, and 151 locations hold two of them. Counting points does not estimate territory, so the chill
 surface is interpolated and crossed with land cover, and each 1 km cell contributes its own fraction
 of cropland.
+
+### Every parameter, and where it is set
+
+Nothing here is a rounded recollection. Each value is read from the line named beside it, and that
+column exists so any of them can be checked against the code in one step.
+
+| | Value | Set at |
+|---|---|---|
+| Chill model | Dynamic Model, Fishman et al. (1987) parametrisation | `DM_JOSE.R:4-5` |
+| Model constants | E0 4457.8, E1 10161.9, A0 419700, A1 1.797e14, slope 1.6, Tf 277 | `DM_JOSE.R:4-5` |
+| Chill season | Julian day 305 to 59, 1 November to 28 February | `15_chill_national_parallel.R:116` |
+| Safe Winter Chill | 10th percentile of seasonal chill portions, across seasons within a station | `15_...:346` |
+| Season kept if | at least 85% of days present | `15_...:116, :339` |
+| Station kept if | no more than 40% missing in either variable, and 3 or more valid seasons | `15_...:117, :344` |
+| Fill-value guard | values outside -90 to 70 C masked; four models ship -999 undeclared | `15_...:118, :271` |
+| Baseline splice | historical to 2014, then SSP2-4.5 from 2015 | `15_...:159, :295-302` |
+| Analysis windows | 1995-2020, then 2021-2040, 2041-2070, 2071-2100 | `15_...:126-132` |
+| Ensemble statistic | median across the 11 models, at the station, before interpolation | `19_cropland_viability_national.R:66` |
+| Interpolation | IDW, power 2, 50 km radius, at most 12 neighbours; the radius *is* the mask | `19_...:43-45, :151` |
+| Grid | 1 km, EPSG:3035; cell area from the realised resolution, not the nominal one | `19_...:37-40`, `00_corine.R:43` |
+| Cropland | CORINE 2018 classes 211-244 excluding 231; each cell weighted by its cropland fraction | `00_corine.R:24-28` |
+| Cultivar thresholds | 47.5 and 33.7 chill portions, both with a standard error of 3.3 | `19_...:41-42` |
+| Model agreement | hatched where fewer than 9 of 11 models agree on the class, the AR6 80% convention | `00_hatch.R:28, :107-113` |
+
+Two of those deserve a note. The **cell area** is not one square kilometre: `terra` honours the
+extent it is given and adjusts the resolution to fit a whole number of cells, which over Spain lands
+on cells of 1000.3189 by 999.9947 m. Every area the project reported was 0.031% low until that was
+fixed. And **agreement can only take six values**: counted as the larger of the two sides, 11 models
+can agree 6, 7, 8, 9, 10 or 11 ways, so a legend promising a 50% band would be describing something
+the data cannot produce.
 
 ### Time windows
 
@@ -224,7 +267,14 @@ carries a header stating what it does, what it needs and what it writes.
 | | `25_splice_observed_1995_2025.R` | local | The splice and its effect |
 | | `26_observed_long_record.R` | local | 1976-2025: trend, ranking, blocks |
 | | `27_cieza_independent_check.R` | local | Check outside the AEMET network |
+| **Ensemble** | `36_per_model_stats.R` | local | The whole chain repeated once per model, and the agreement rasters |
+| | `41_idw_crossval.R` | local | Leave-one-out error of the interpolation |
+| **Shared** | `00_corine.R`, `00_hatch.R`, `00_map_layout.R` | local | Cropland mask and cell area, AR6 agreement hatching, figure geometry |
+| **Figures** | `31_scenario_frames.R`, `32_make_gifs.py` | local | Animation frames and the GIFs built from them |
+| | `33`, `34`, `37`, `38`, `39`, `40`, `42`, `43` | local | Talk and method figures, the pipeline diagram, the attrition funnel, the data timeline, the model ranking |
 | **Reporting** | `29_build_deck.R`, `30_build_pptx.py` | local | Working document, HTML and PowerPoint |
+| | `talk_content.py`, `35_build_talk_pptx.py` | local | The talk's content, and the builder that lays it out |
+| | `44_workflow_sheet.py` | local | The whole pipeline on one A3 page, HTML and PDF |
 
 `01_scripts/legacy/` holds one script from an approach the project abandoned; its README explains
 why.
@@ -272,7 +322,11 @@ tables that back a specific claim are versioned, listed explicitly in `.gitignor
   against these same stations.
 - **The ensemble median hides real disagreement.** Model spread at a typical station is 24.8 chill
   portions, nearly twice the gap between cultivars. In the mutant's band only 0.43% of stations have
-  8 of 11 models agreeing, and none has unanimity.
+  8 of 11 models agreeing, and none has unanimity. On area it is starker still: the land where
+  neither cultivar works ranges from 4,983 to 75,951 km² depending on which of the eleven models is
+  believed, a factor of fifteen. What is *not* a problem is the order of aggregation: mapping the
+  ensemble median, which is what this pipeline does, and classifying each model separately before
+  aggregating give areas within 8.6% of each other and a headline within four tenths of a point.
 - **The record extended to 2025 rests on 666 stations, not 3044**, and the measured offset between
   the two observed sources could only be checked where they overlap, not in the recent stretch.
 - **The portal serves the projections over two different station sets.** This analysis uses the
