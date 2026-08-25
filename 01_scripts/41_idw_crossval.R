@@ -68,8 +68,8 @@ BASE_SIT   <- "presente_present"
 
 FIG_TITLE <- toupper(Sys.getenv("PLINIUS_FIG_TITLE", "FALSE")) %in% c("TRUE", "1", "YES")
 ttl <- function(x) if (FIG_TITLE) x else NULL
-n_es <- function(x, d = 1) formatC(x, format = "f", digits = d, big.mark = ".", decimal.mark = ",")
-i_es <- function(x) formatC(round(x), format = "d", big.mark = ".", decimal.mark = ",")
+n_en <- function(x, d = 1) formatC(x, format = "f", digits = d, big.mark = ",", decimal.mark = ".")
+i_en <- function(x) formatC(round(x), format = "d", big.mark = ",", decimal.mark = ".")
 
 talk_theme <- theme_minimal(base_size = 14) +
   theme(plot.title = element_text(face = "bold", size = 17),
@@ -114,18 +114,18 @@ idw_predict <- function(nb, z, power, self = FALSE, z_self = NULL) {
   }, numeric(1))
 }
 
-cat("1. datos\n")
+cat("1. data\n")
 d <- fread(out_path("chill_all_windows.csv"))
 ens <- d[, .(SWC = median(safe_winter_chill_P10)), by = .(situation, station_id, lon, lat)]
 sits <- if (SITS == "base") BASE_SIT else unique(ens$situation)
-cat(sprintf("   %d situaciones, %s estaciones en la mayor\n", length(sits),
-            i_es(max(ens[, .N, by = situation]$N))))
+cat(sprintf("   %d situations, %s stations in the largest\n", length(sits),
+            i_en(max(ens[, .N, by = situation]$N))))
 
 # The structure is keyed by station set rather than by situation, because the fourteen situations
 # reduce to two networks. The key is the station count, which is cheap, and reuse is then VERIFIED
 # against the actual station list instead of trusted: a key collision would silently apply one
 # network's neighbours to another's values, and the output would look entirely reasonable.
-cat("2. estructura de vecinos\n")
+cat("2. neighbour structure\n")
 structures <- list(); ids_of <- list(); key_of <- character(0)
 for (s in sits) {
   p <- ens[situation == s]; setorder(p, station_id)
@@ -137,7 +137,7 @@ for (s in sits) {
     t0 <- Sys.time()
     structures[[k]] <- neighbour_structure(xy, IDW_RADIUS, IDW_NMAX)
     ids_of[[k]] <- p$station_id
-    cat(sprintf("   %s estaciones en %.0f s\n", i_es(nrow(xy)),
+    cat(sprintf("   %s stations in %.0f s\n", i_en(nrow(xy)),
                 as.numeric(difftime(Sys.time(), t0, units = "secs"))))
   } else {
     stopifnot(identical(ids_of[[k]], p$station_id))
@@ -153,7 +153,7 @@ for (s in sits) {
 # its own instruments agree there, so this is the yardstick for reading the cross-validation, and it
 # is computed first for that reason. It also surfaces data-quality outliers that no other check in
 # the pipeline would catch, because both members of a pair enter the median untouched.
-cat("3. estaciones co-localizadas\n")
+cat("3. co-located stations\n")
 pb <- ens[situation == BASE_SIT]; setorder(pb, station_id)
 pvb <- project(vect(as.data.frame(pb[, .(lon, lat)]), geom = c("lon", "lat"), crs = "EPSG:4326"),
                paste0("EPSG:", EPSG))
@@ -185,18 +185,18 @@ colo[, spread_obs := vapply(ids, function(v) {
 
 NOISE_FLOOR <- median(colo[todos_obs == TRUE]$spread_obs, na.rm = TRUE)
 N_FLOOR     <- colo[todos_obs == TRUE & !is.na(spread_obs), .N]
-cat(sprintf("   %d grupos, %d estaciones · en el modelo mediana %s CP, maximo %s CP (%s)\n",
-            nrow(colo), sum(colo$n), n_es(median(colo$spread), 2), n_es(max(colo$spread), 2),
+cat(sprintf("   %d groups, %d stations · in the model, median %s CP, maximum %s CP (%s)\n",
+            nrow(colo), sum(colo$n), n_en(median(colo$spread), 2), n_en(max(colo$spread), 2),
             colo$stations[1]))
-cat(sprintf("   suelo de ruido sobre los %d grupos medidos en las dos: %s CP de mediana\n",
-            N_FLOOR, n_es(NOISE_FLOOR, 2)))
+cat(sprintf("   noise floor over the %d groups measured in both: median %s CP\n",
+            N_FLOOR, n_en(NOISE_FLOOR, 2)))
 fwrite(colo[, .(stations, n, lon, lat, swc_min, swc_max, spread, todos_obs, spread_obs)],
        out_path("idw_colocated.csv"))
 
 # § 3 — Self-checks. They run before anything is written, because a silently wrong interpolator
 # would produce a plausible error figure and there would be no way to tell from the output.
 if (CHECK) {
-  cat("4. comprobaciones\n")
+  cat("4. checks\n")
   nb <- structures[[key_of[BASE_SIT]]]
   p  <- ens[situation == BASE_SIT]; setorder(p, station_id)
   z  <- p$SWC
@@ -208,9 +208,9 @@ if (CHECK) {
   alone <- vapply(nb$dst, function(x) !length(x) || x[1] > 0, logical(1))
   exact <- idw_predict(nb, z, IDW_POWER, self = TRUE)
   worst <- max(abs(exact[alone] - z[alone]), na.rm = TRUE)
-  cat(sprintf("   exactitud en las %s estaciones sin gemela: desviacion maxima %.2e CP\n",
-              i_es(sum(alone)), worst))
-  if (worst > 1e-9) stop("el interpolador no es exacto en los propios puntos; revisar los pesos")
+  cat(sprintf("   exactness at the %s stations with no twin: maximum deviation %.2e CP\n",
+              i_en(sum(alone)), worst))
+  if (worst > 1e-9) stop("the interpolator is not exact at its own points; check the weights")
 
   ccaa  <- esp_get_ccaa(epsg = 4326)
   ccaa  <- st_transform(ccaa[!grepl("Canaria", ccaa$ine.ccaa.name), ], EPSG)
@@ -222,14 +222,14 @@ if (CHECK) {
                      maxPoints = IDW_NMAX, near = TRUE)
   ter   <- terra::extract(surf, pv)[, 2]
   gap   <- median(abs(ter - exact), na.rm = TRUE)
-  cat(sprintf("   frente a terra sobre la rejilla de %d m: diferencia mediana %.3f CP\n", RES_M, gap))
+  cat(sprintf("   against terra on the %d m grid: median difference %.3f CP\n", RES_M, gap))
   # Not an equality test. terra answers at the cell centre and the station sits somewhere inside the
   # cell, so a difference of this order is the grid, not a bug. An order of magnitude more would be.
-  if (is.finite(gap) && gap > 1) warning("diferencia con terra mayor de lo que explica la rejilla")
+  if (is.finite(gap) && gap > 1) warning("difference against terra larger than the grid explains")
 }
 
 # § 4 — The cross-validation itself, one pass per situation.
-cat("5. validacion cruzada\n")
+cat("5. cross-validation\n")
 res <- rbindlist(lapply(sits, function(s) {
   nb <- structures[[key_of[s]]]
   p  <- ens[situation == s]; setorder(p, station_id)
@@ -277,7 +277,7 @@ print(summ[, .(situation, n_stations, mae_CP = round(mae_CP, 2), rmse_CP = round
 #
 # This is deliberately not a confidence interval. It is a count of the land where the answer is
 # within reach of the error, which is the weakest claim the data actually support.
-cat("6. franja de incertidumbre alrededor de los umbrales\n")
+cat("6. uncertainty band around the thresholds\n")
 CACHE <- out_path("surface_cache")
 crop_f <- file.path(CACHE, sprintf("cropfrac_%d.tif", RES_M))
 band <- NULL
@@ -303,12 +303,12 @@ if (file.exists(crop_f)) {
     band[, pct_near_any := 100 * km2_near_any / km2_total]
     fwrite(band, out_path("idw_threshold_band.csv"))
     for (i in seq_len(nrow(band)))
-      cat(sprintf("   %-22s %s km2 a menos de %.2f CP de un umbral (%.1f %%)\n",
-                  band$situation[i], i_es(band$km2_near_any[i]),
+      cat(sprintf("   %-22s %s km2 within %.2f CP of a threshold (%.1f%%)\n",
+                  band$situation[i], i_en(band$km2_near_any[i]),
                   band$rmse_CP[i], band$pct_near_any[i]))
   }
 } else {
-  cat("   sin cropfrac cacheado; se omite (ejecuta antes 36_per_model_stats.R)\n")
+  cat("   no cached cropfrac; skipped (run 36_per_model_stats.R first)\n")
 }
 
 # § 6 — fig52. Three panels answering three different questions about the same residuals: how big
@@ -330,19 +330,19 @@ p1 <- ggplot(rb, aes(resid)) +
   geom_vline(xintercept = 0, colour = "grey30") +
   annotate("text", x = CR_GAP / 2 + 0.8, y = Inf, hjust = 0, vjust = 1.5, size = 3.7,
            colour = "#2c7bb6", lineheight = 0.95,
-           label = sprintf("la banda azul es la mitad de los %s CP\nque separan a los dos cultivares",
-                           n_es(CR_GAP))) +
+           label = sprintf("the blue band is half of the %s CP\nthat separate the two cultivars",
+                           n_en(CR_GAP))) +
   annotate("text", x = XLIM[1], y = Inf, hjust = 0, vjust = 1.5, size = 3.4, colour = "grey45",
-           label = sprintf("%d estaciones se salen de este rango", n_out)) +
-  scale_x_continuous(labels = function(x) paste0(n_es(x, 0), " CP")) +
+           label = sprintf("%d stations fall outside this range", n_out)) +
+  scale_x_continuous(labels = function(x) paste0(n_en(x, 0), " CP")) +
   coord_cartesian(xlim = XLIM) +
-  labs(title = sprintf("1. El error: RMSE de %s CP, el %s %% de la diferencia entre las dos variedades",
-                       n_es(sb$rmse_CP, 2), n_es(sb$pct_of_gap, 0)),
-       subtitle = sprintf(paste("Dejando cada una de las %s estaciones fuera y prediciéndola desde las demás. Error absoluto mediano %s CP, sesgo %s CP, r = %s.",
-                                "\nDe referencia: donde dos códigos comparten coordenada y los dos tienen registro medido, sus observaciones discrepan %s CP de mediana. Esas %s estaciones quedan fuera de este cálculo."),
-                          i_es(sb$n_stations), n_es(median(abs(rb$resid)), 2), n_es(sb$bias_CP, 3),
-                          n_es(sb$r, 3), n_es(NOISE_FLOOR, 2), i_es(sb$n_twin)),
-       x = "predicho menos medido", y = "estaciones") +
+  labs(title = sprintf("1. Interpolation error: RMSE %s CP, %s%% of the gap between the two cultivars",
+                       n_en(sb$rmse_CP, 2), n_en(sb$pct_of_gap, 0)),
+       subtitle = sprintf(paste("Leaving each of the %s stations out and predicting it from the rest. Median absolute error %s CP, bias %s CP, r = %s.",
+                                "\nFor reference: where two codes share a coordinate and both have a measured record, their observations differ by a median of %s CP. Those %s stations are left out of this calculation."),
+                          i_en(sb$n_stations), n_en(median(abs(rb$resid)), 2), n_en(sb$bias_CP, 3),
+                          n_en(sb$r, 3), n_en(NOISE_FLOOR, 2), i_en(sb$n_twin)),
+       x = "predicted minus measured", y = "stations") +
   talk_theme + theme(plot.title = element_text(size = 13.5), plot.subtitle = element_text(size = 11))
 
 # Conditional medians by distance band, not a scatter of three thousand overplotted points.
@@ -356,14 +356,14 @@ db <- rb[!is.na(d_bin), .(med = median(abs(resid)), q75 = quantile(abs(resid), .
 p2 <- ggplot(db, aes(d_bin, med)) +
   geom_segment(aes(xend = d_bin, y = med, yend = q75), colour = "grey70", linewidth = 1.2) +
   geom_point(size = 3.4, colour = "#4a7fb0") +
-  geom_text(aes(label = i_es(n)), y = 0, vjust = -0.4, size = 3.1, colour = "grey45") +
-  scale_y_continuous(labels = function(x) paste0(n_es(x, 0), " CP"), limits = c(0, NA)) +
-  labs(title = sprintf("2. El error apenas depende del aislamiento: entre %s y %s CP en todos los tramos",
-                       n_es(min(db$med), 2), n_es(max(db$med), 2)),
-       subtitle = sprintf(paste("Error absoluto mediano por distancia a la estación más cercana, con el percentil 75; el número gris es cuántas estaciones hay en cada tramo.",
-                                "\nOjo con el alcance: la red es tan densa que ninguna estación tiene su vecina a más de %s km, así que esto no dice nada de las celdas realmente aisladas."),
-                          n_es(max(rb$d_nn, na.rm = TRUE) / 1000, 0)),
-       x = "distancia a la estación más próxima (km)", y = NULL) +
+  geom_text(aes(label = i_en(n)), y = 0, vjust = -0.4, size = 3.1, colour = "grey45") +
+  scale_y_continuous(labels = function(x) paste0(n_en(x, 0), " CP"), limits = c(0, NA)) +
+  labs(title = sprintf("2. Error by distance to the nearest station: %s to %s CP across the bands",
+                       n_en(min(db$med), 2), n_en(max(db$med), 2)),
+       subtitle = sprintf(paste("Median absolute error by distance to the nearest station, with the 75th percentile; the grey number is how many stations fall in each band.",
+                                "\nMind the reach: the network is so dense that no station has its neighbour further than %s km away, so this says nothing about the genuinely isolated cells."),
+                          n_en(max(rb$d_nn, na.rm = TRUE) / 1000, 0)),
+       x = "distance to the nearest station (km)", y = NULL) +
   talk_theme + theme(plot.title = element_text(size = 13.5), plot.subtitle = element_text(size = 11))
 
 # Elevation is only available for the stations in the public AEMET inventory, a fifth of the
@@ -379,27 +379,27 @@ p3 <- if (nrow(re) > 50) {
     geom_hline(yintercept = 0, colour = "grey30") +
     geom_point(alpha = 0.35, size = 1.6, colour = "#4a7fb0") +
     geom_smooth(method = "lm", formula = y ~ x, se = TRUE, colour = "#d7191c", linewidth = 0.9) +
-    scale_y_continuous(labels = function(x) paste0(n_es(x, 0), " CP")) +
+    scale_y_continuous(labels = function(x) paste0(n_en(x, 0), " CP")) +
     coord_cartesian(ylim = ylim3) +
-    labs(title = sprintf("3. Sí hay estructura con la altitud: %s CP por cada 1.000 m de cota",
-                         n_es(1000 * coef(fit)[2], 2)),
-         subtitle = sprintf(paste("La interpolación sobreestima el frío en el llano y lo subestima en alto, que es exactamente el modo en que un IDW falla en un país montañoso.",
-                                  "\nIntervalo de confianza al 95 %%: de %s a %s CP por cada 1.000 m. Sólo las %s estaciones cuya cota figura en el inventario público, de las %s de la red."),
-                            n_es(ci[1], 2), n_es(ci[2], 2), i_es(nrow(re)), i_es(sb$n_stations)),
-         x = "altitud de la estación (m)", y = "predicho menos medido") +
+    labs(title = sprintf("3. Residual against station elevation: %s CP per 1,000 m of altitude",
+                         n_en(1000 * coef(fit)[2], 2)),
+         subtitle = sprintf(paste("The interpolation overestimates chill on the flat and underestimates it high up, which is exactly how an IDW fails in a mountainous country.",
+                                  "\n95%% confidence interval: %s to %s CP per 1,000 m. Only the %s stations whose elevation appears in the public inventory, out of the %s in the network."),
+                            n_en(ci[1], 2), n_en(ci[2], 2), i_en(nrow(re)), i_en(sb$n_stations)),
+         x = "station elevation (m)", y = "predicted minus measured") +
     talk_theme + theme(plot.title = element_text(size = 13.5), plot.subtitle = element_text(size = 11))
 } else NULL
 
 g52 <- (if (is.null(p3)) (p1 / p2) else (p1 / p2 / p3)) +
   plot_annotation(
-    title = ttl("Cuánto se equivoca la superficie interpolada, medido y no supuesto"),
-    subtitle = sprintf(paste("Validación cruzada dejando una estación fuera, con los mismos parámetros de los mapas publicados:",
-                             "radio %s km, potencia %d, %d vecinos como máximo.\nEl error se mide EN las estaciones, que se agolpan en valles y",
-                             "poblaciones; entre ellas, en sierra, es mayor que lo que dice esta figura."),
-                       i_es(IDW_RADIUS / 1000), IDW_POWER, IDW_NMAX),
+    title = ttl("Error of the interpolated chill surface, measured by leave-one-out cross-validation"),
+    subtitle = sprintf(paste("Leaving one station out at a time, with the same parameters as the published maps:",
+                             "radius %s km, power %d, at most %d neighbours.\nThe error is measured AT the stations, which cluster in valleys and",
+                             "towns; between them, in the sierras, it is larger than this figure says."),
+                       i_en(IDW_RADIUS / 1000), IDW_POWER, IDW_NMAX),
     theme = theme(plot.title = element_text(face = "bold", size = 17),
                   plot.subtitle = element_text(size = 12, colour = "grey30")))
 ggsave(fig_path("fig52_idw_crossval.png"), g52, width = 13.5,
        height = if (is.null(p3)) 8.2 else 11.6, dpi = 190, bg = "white")
 
-cat(sprintf("\nescritas idw_crossval.csv (%s filas), idw_crossval_summary.csv y fig52\n", i_es(nrow(res))))
+cat(sprintf("\nwritten idw_crossval.csv (%s rows), idw_crossval_summary.csv and fig52\n", i_en(nrow(res))))

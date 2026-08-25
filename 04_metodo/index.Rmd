@@ -17,9 +17,9 @@ source("_common.R")
 
 Este documento explica **cómo** se ha hecho el estudio, no qué sale de él. Está escrito para que
 alguien que no ha visto el código pueda seguir el camino entero, desde el fichero de temperaturas
-que descarga AEMET hasta el mapa final, y comprobar cada paso sin tener que fiarse de nadie.
+que descarga AEMET hasta el mapa final, y comprobar cada paso de forma independiente.
 
-La pregunta del trabajo es corta. El albaricoque 'Búlida' necesita `r cp(CR_BULIDA)` de frío
+El albaricoque 'Búlida' necesita `r cp(CR_BULIDA)` de frío
 invernal para florecer bien. Su mutante somático 'Búlida Precoz' necesita `r cp(CR_PRECOZ)`, o sea
 `r cp(CR_HUECO)` menos. Conforme los inviernos se templan habrá sitios donde el parental deje de
 cumplir su requerimiento y el mutante siga cumpliéndolo. La pregunta es dónde, y cuánto suelo hay
@@ -31,7 +31,7 @@ cumplir en `r km2(metrica("talk_key_numbers", "lost_km2"))`, y de esos el mutant
 `r km2(metrica("talk_key_numbers", "rescued_km2"))`, un
 `r pct(metrica("talk_key_numbers", "rescued_pct_of_lost"))`.
 
-Tres cosas hay que leer pegadas a esa cifra, y las tres están desarrolladas más adelante:
+Tres condicionantes acompañan a esa cifra y se desarrollan más adelante:
 
 - **Depende de un supuesto sin confirmar.** Que los requerimientos de las dos variedades se midieran
   con la misma parametrización del modelo dinámico que se usa aquí está pendiente de comprobar
@@ -62,9 +62,8 @@ if (repo_sucio())
 
 **Ninguna cifra de estas páginas está escrita a mano.** Todas se leen, al generar el documento, de
 las tablas que produce el pipeline. Si mañana se reejecuta el análisis y una cifra cambia, cambia
-aquí sola. Esto no es una comodidad: es lo que convierte la promesa de "está todo comprobado" en
-algo verificable en vez de en una declaración de intenciones. El proyecto ya tuvo un incidente por
-esto, y está contado en el capítulo \@ref(descartes).
+aquí sola. El proyecto ya tuvo un incidente con una cifra escrita a mano, y
+está contado en el capítulo \@ref(descartes).
 
 **Ningún fragmento de código es una copia.** Los bloques que aparecen plegados a lo largo del texto
 se leen del fichero real en el momento de generar el documento, así que no pueden desincronizarse
@@ -75,24 +74,21 @@ paquete, para que se pueda ir a mirar.
 
 ## Cómo leer esto {-}
 
-Hay dos maneras y las dos son legítimas.
+Los capítulos \@ref(pregunta) a \@ref(modelos) siguen la cadena de principio a fin y se leen en
+orden. Son diez capítulos cortos, cada uno con la etapa anterior ya explicada. El capítulo
+\@ref(calasparra) recorre esa misma cadena en una estación concreta, con los números a la vista en
+cada paso.
 
-Si quieres entender el método, lee del capítulo \@ref(pregunta) al \@ref(modelos) en orden. Son diez
-capítulos cortos que siguen la cadena de principio a fin, cada uno con la etapa anterior ya
-explicada. Después está el capítulo \@ref(calasparra), que recorre esa misma cadena en una estación
-concreta con los números a la vista en cada paso; si sólo vas a leer un capítulo, que sea ese.
+Los capítulos \@ref(referencia) y \@ref(entorno) responden a la consulta puntual: qué hace un
+script, con qué parámetros corre una etapa, qué versión de qué paquete se usó.
 
-Si lo que quieres es consultar algo puntual (qué hace un script, con qué parámetros corre una
-etapa, qué versión de qué paquete se usó), vete directamente a los capítulos
-\@ref(referencia) y \@ref(entorno), que están hechos para eso y no para leerse seguidos.
-
-El capítulo \@ref(glosario) es media página y conviene mirarlo antes que nada, porque en este
-trabajo la palabra "modelo" significa cuatro cosas distintas.
+El capítulo \@ref(glosario) ocupa media página y fija los cuatro sentidos que la palabra "modelo"
+tiene en este trabajo.
 
 ## Lo que este documento no es {-}
 
 No es el paper, ni un resumen de resultados. La discusión biológica, la comparación con la
-bibliografía y la interpretación agronómica van por otro lado. Aquí sólo está la maquinaria.
+bibliografía y la interpretación agronómica van por otro lado. Aquí sólo está el método.
 
 Tampoco es una guía de reproducción paso a paso, aunque el capítulo \@ref(entorno) tenga los
 comandos: quien quiera reproducir el análisis necesita además los datos, de terceros y de

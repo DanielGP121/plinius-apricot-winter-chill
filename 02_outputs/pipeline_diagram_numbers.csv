@@ -1,0 +1,11 @@
+metric,value
+n_stations_proj,3460
+n_stations_obs,3044
+n_models,11
+n_scenarios,3
+n_windows,6
+n_rows_canonical,462808
+n_cells_1km,502264
+cropland_km2,229675.901624189
+n_runs,132
+table_MB,48.92

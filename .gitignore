@@ -71,6 +71,32 @@ CP_Tdiarias.zip
 !02_outputs/observed_spliced_summary.csv
 !02_outputs/aemet_station_inventory_public.csv
 
+# The metric tables. Each is one or two kilobytes of (metric, value) pairs, and between them they
+# are what the README, the one-page workflow sheet and the method book quote: those three are
+# versioned and until now the numbers behind them were not, so a clone could read a claim and had
+# no way to check it. The chill tables they are derived from stay out, being 153 MB.
+!02_outputs/talk_key_numbers.csv
+!02_outputs/method_chain_numbers.csv
+!02_outputs/method_figure_numbers.csv
+!02_outputs/model_spread_numbers.csv
+!02_outputs/timeline_numbers.csv
+!02_outputs/model_ranking_numbers.csv
+!02_outputs/model_ranking_ssp370.csv
+!02_outputs/cieza_numbers.csv
+!02_outputs/pipeline_diagram_numbers.csv
+!02_outputs/attrition_funnel_numbers.csv
+!02_outputs/season_attrition_by_window.csv
+!02_outputs/per_model_cropland_km2.csv
+!02_outputs/model_agreement_summary.csv
+!02_outputs/idw_crossval_summary.csv
+!02_outputs/idw_threshold_band.csv
+!02_outputs/idw_colocated.csv
+!02_outputs/gif_frame_stats.csv
+!02_outputs/v3_numbers.csv
+!02_outputs/v3_gap_numbers.csv
+!02_outputs/model_sensitivity_numbers.csv
+!02_outputs/band_agreement_by_situation.csv
+
 # The deck: 26 MB of embedded figures, rebuilt in two minutes by scripts 29 and 30.
 03_presentacion/
 # ...except the one-page workflow sheet. It is 0.4 MB, it is what a new reader should see first,

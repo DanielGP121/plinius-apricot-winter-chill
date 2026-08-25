@@ -4,10 +4,9 @@
 source("_common.R")
 ```
 
-Este capítulo no se lee: se consulta. La tabla de abajo **se genera escaneando el directorio de
-scripts** cada vez que se compila el documento, así que no puede quedarse desfasada como se quedó la
-lista que había antes en las notas del proyecto, que se paró en el script 30 mientras el directorio
-llegaba al 41.
+La tabla de abajo **se genera escaneando el directorio de scripts** cada vez que se compila el
+documento, así que no puede quedarse desfasada como se quedó la lista que había antes en las notas
+del proyecto, que se paró en el script 30 mientras el directorio llegaba al 41.
 
 La columna "Qué hace" viene **literal de la cabecera de cada fichero y por tanto en inglés**, que es
 el idioma del código en este proyecto. Traducirla aquí obligaría a mantener dos versiones y una de
@@ -75,7 +74,7 @@ knitr::kable(ref, booktabs = TRUE, align = "lrll")
 
 ## Dónde corre cada cosa
 
-Sólo dos scripts se ejecutan fuera del portátil, y son los que mueven los gigabytes:
+Sólo dos scripts se ejecutan fuera del portátil, y son los que manejan el grueso de los datos:
 
 - `14_ladon_download_thredds.sh` descarga los 88 NetCDF en el HPC.
 - `15_chill_national_parallel.R` calcula el frío allí mismo, en paralelo por estación, con punto de

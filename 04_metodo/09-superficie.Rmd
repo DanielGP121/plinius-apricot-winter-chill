@@ -5,26 +5,24 @@ source("_common.R")
 ```
 
 Hasta aquí todo son puntos: `r i_es(metrica("pipeline_diagram_numbers", "n_stations_proj"))`
-estaciones con un número cada una. Los resultados, en cambio, se dan en kilómetros cuadrados. Este
-capítulo es el puente, y es el único paso del trabajo que se defiende con un número propio en vez de
-con una cita.
+estaciones con un número cada una. Los resultados, en cambio, se dan en kilómetros cuadrados.
 
 ## Por qué superficie y no estaciones
 
-Podría reportarse "el X % de las estaciones deja de cumplir". Sería más fácil y sería peor.
+Podría reportarse "el X % de las estaciones deja de cumplir".
 
 Las estaciones meteorológicas no están repartidas al azar: se agolpan en valles, poblaciones y
 aeropuertos, y hay `r i_es(nrow(tabla("idw_colocated")))` coordenadas de esta red con **dos
-estaciones distintas en el mismo punto**. Contar puntos no estima territorio; estima dónde puso
-AEMET sus termómetros.
+estaciones distintas en el mismo punto**. Contar puntos no estima territorio; estima la distribución
+de la red de AEMET.
 
-La diferencia no es teórica. Sobre estaciones, la proporción de suelo que rescata el mutante entre
+Sobre estaciones, la proporción de suelo que rescata el mutante entre
 modelos va del
 `r pct(metrica("model_spread_numbers", "station_rescued_min_pct"))` al
 `r pct(metrica("model_spread_numbers", "station_rescued_max_pct"))`; sobre superficie va del
 `r pct(metrica("model_spread_numbers", "km2_rescued_min_pct"))` al
 `r pct(metrica("model_spread_numbers", "km2_rescued_max_pct"))`. Son dos bases distintas y dan dos
-respuestas distintas, y confundirlas fue uno de los errores que este documento vino a corregir.
+respuestas distintas.
 
 ## La interpolación
 
@@ -49,11 +47,11 @@ knitr::include_graphics(figura("fig36_method_chain.png"))
 
 ## Cuánto se equivoca
 
-Replicar un método publicado justifica la elección, pero no dice cuánto se acierta. Eso hasta ahora
-no estaba medido en el proyecto, y ahora sí.
+Replicar un método publicado justifica la elección, pero no dice cuánto se acierta.
 
-El procedimiento es el más simple que hay: se esconde una estación, se predice su valor desde las
-demás con exactamente los mismos parámetros, y se compara con lo que esa estación midió. Se repite
+El procedimiento es una validación cruzada dejando una estación fuera: se esconde una estación, se
+predice su valor desde las demás con exactamente los mismos parámetros, y se compara con lo que esa
+estación midió. Se repite
 con todas.
 
 ```{r superficie-cv, fig.cap = pie("Validación cruzada dejando una estación fuera. El error se mide EN las estaciones, que se agolpan en valles; entre ellas es mayor que lo que dice la figura.", "41_idw_crossval.R", "ggplot2 4.0.2 · patchwork")}
@@ -65,10 +63,10 @@ Sobre la línea base, el error cuadrático medio es de
 mediano de `r cp(cifra("idw_crossval_summary", "presente_present", "mae_CP"), 2)` y un sesgo de
 `r cp(cifra("idw_crossval_summary", "presente_present", "bias_CP"), 3)`, prácticamente nulo.
 
-La forma útil de leerlo es contra los `r cp(CR_HUECO)` que separan a las dos variedades: el error de
+Comparado con los `r cp(CR_HUECO)` que separan a las dos variedades, el error de
 la superficie es el
 `r pct(cifra("idw_crossval_summary", "presente_present", "pct_of_gap"), 0)` de esa diferencia. No
-tumba la clasificación, pero sí significa que **la frontera entre clases tiene un grosor**.
+invalida la clasificación, pero implica que **la frontera entre clases tiene un grosor**.
 
 ### Cuánto suelo cae dentro de ese grosor
 
@@ -90,12 +88,11 @@ En la línea base son `r km2(cifra("idw_threshold_band", "presente_present", "km
 `r pct(cifra("idw_threshold_band", "presente_present", "pct_near_any"))` del suelo agrícola. A fin de
 siglo bajo SSP3-7.0 la franja crece hasta
 `r km2(cifra("idw_threshold_band", "ssp370_far", "km2_near_any"))`, el
-`r pct(cifra("idw_threshold_band", "ssp370_far", "pct_near_any"))`, porque el calentamiento arrastra
-a media España hacia los umbrales y ahí es donde el error muerde.
+`r pct(cifra("idw_threshold_band", "ssp370_far", "pct_near_any"))`, porque el calentamiento desplaza
+a media España hacia los umbrales, que es donde el error afecta a la clasificación.
 
-Eso **no** es un intervalo de confianza de la cifra titular, y no se debe leer como tal: es el suelo
-donde la respuesta está al alcance del error, que es la afirmación más débil que los datos sostienen.
-Pero es la cifra que hay que tener en la cabeza al mirar el mapa de fin de siglo, y sale de la tabla
+Eso **no** es un intervalo de confianza de la cifra titular: es el suelo
+donde la respuesta está al alcance del error. Sale de la tabla
 [`idw_threshold_band.csv`](../02_outputs/idw_threshold_band.csv).
 
 Por escenario, el error va de `r cp(min(tabla("idw_crossval_summary")$rmse_CP), 2)` a
@@ -104,7 +101,8 @@ Por escenario, el error va de `r cp(min(tabla("idw_crossval_summary")$rmse_CP), 
 ### Tres avisos sobre esa cifra
 
 **Se mide donde hay termómetros.** La red es tan densa que ninguna estación tiene su vecina a más de
-27 km, así que la validación no dice nada de las celdas realmente aisladas, que son justo las peores.
+27 km, así que la validación no cubre las celdas más alejadas de cualquier estación, donde el error
+de interpolación es mayor.
 
 **Hay un suelo por debajo del cual no se puede bajar.** En `r i_es(nrow(tabla("idw_colocated")))`
 coordenadas de esta red hay dos códigos de estación distintos. Donde los dos tienen registro medido
@@ -114,7 +112,7 @@ coordenadas de esta red hay dos códigos de estación distintos. Donde los dos t
 Ninguna interpolación puede predecir un punto mejor de lo que coinciden allí los propios
 instrumentos.
 
-Conviene no confundir esa cifra con la que sale de las series simuladas en esas mismas coordenadas,
+Esa cifra es distinta de la que sale de las series simuladas en esas mismas coordenadas,
 que es mayor y no mide lo mismo. Como el producto proyectado se calibra contra el registro de cada
 estación, dos códigos en el mismo punto de los que **sólo uno** tiene observaciones producen series
 distintas por razones de calibración y no de instrumento. El desacuerdo máximo de todo el conjunto,
@@ -122,7 +120,7 @@ distintas por razones de calibración y no de instrumento. El desacuerdo máximo
 `r tabla("idw_colocated")[which.max(spread)]$stations`, es precisamente uno de esos casos y **no** es
 un suelo de ruido: es un aviso sobre la procedencia de esas dos series.
 
-**El IDW no sabe de altitud, y se nota.** El residuo tiene pendiente con la cota: la interpolación
+**El IDW no incorpora la altitud.** El residuo tiene pendiente con la cota: la interpolación
 sobreestima el frío en el llano y lo subestima en alto. Es el modo en que este método falla en un
 país montañoso, está cuantificado en el tercer panel de la figura, y no está corregido.
 
@@ -133,7 +131,7 @@ Sobre la superficie interpolada se recorta el suelo agrícola de CORINE. Cada ce
 cuadrado.
 
 De ahí sale el denominador de todo el trabajo, `r km2(SUPERFICIE_CULTIVABLE)`, que es el
-`r pct(100 * SUPERFICIE_CULTIVABLE / tabla("attrition_funnel_numbers")[paso == "España peninsular y Baleares", valor])`
+`r pct(100 * SUPERFICIE_CULTIVABLE / tabla("attrition_funnel_numbers")[step == "Peninsular Spain and the Balearics", value])`
 del país.
 
 ```{r superficie-codigo, results = "asis"}
@@ -154,6 +152,6 @@ que cada celda vale `r n_es(metrica("cropland_threshold_meta", "cell_km2"), 5)` 
 
 Durante meses, siete scripts multiplicaron por 1. El efecto es un
 `r pct(100 * (metrica("cropland_threshold_meta", "cell_km2") - 1), 3)` de subestimación en **toda**
-cifra de superficie del trabajo. Se corrigió el 14 de agosto de 2026 y la historia completa está en
-el capítulo \@ref(descartes), porque dice algo sobre cómo fallan estos errores: ninguna comprobación
+cifra de superficie del trabajo. Se corrigió el 14 de agosto de 2026 y el caso completo está en
+el capítulo \@ref(descartes): ninguna comprobación
 del proyecto lo detectó, porque todas comparaban cifras que estaban igual de bajas.

@@ -1,18 +1,18 @@
-# Cuánto creerse esto {#modelos}
+# Incertidumbre y dispersión entre modelos {#modelos}
 
 ```{r modelos-setup, include = FALSE}
 source("_common.R")
 ```
 
-El capítulo \@ref(agregacion) dejó una deuda: en el escalón 3 se tiran once números y se queda uno.
-Aquí se paga.
+En el escalón 3 del capítulo \@ref(agregacion) se reducen once números a uno. La dispersión entre
+esos once se cuantifica aquí.
 
 ## Los once modelos, cada uno por su cuenta
 
 La cadena entera se ha repetido **una vez por cada modelo climático**, en vez de sólo sobre la
 mediana.
 
-Las cuentas conviene tenerlas juntas porque se parecen y no son lo mismo. De las quince situaciones
+Las cuentas se presentan juntas porque se parecen y no son lo mismo. De las quince situaciones
 del capítulo \@ref(resultados), `r i_es(data.table::uniqueN(tabla("per_model_cropland_km2")$situation))`
 son simuladas y por tanto se pueden repetir modelo a modelo; las otras cuatro son observadas o
 agregadas y no tienen once versiones. De ahí salen
@@ -34,14 +34,13 @@ A fin de siglo bajo SSP3-7.0, la proporción del suelo perdido que el mutante re
 `r pct(metrica("model_spread_numbers", "km2_rescued_max_pct"))`
 (`r metrica("model_spread_numbers", "km2_rescued_max_model")`), con mediana
 `r pct(metrica("model_spread_numbers", "km2_rescued_median_pct"))`. **Ningún modelo baja de un
-tercio.** Ese es el resultado honesto: el número exacto depende del modelo, pero ninguno desmiente
+tercio.** El número exacto depende del modelo, pero ninguno desmiente
 la conclusión.
 
 ## "Acuerdo" son tres preguntas distintas
 
-Aquí hay una confusión que el proyecto arrastró un tiempo y que conviene deshacer, porque las tres
-respuestas son muy distintas y citar la peor sin decir cuál es hace parecer que los modelos no
-respaldan nada.
+El término "acuerdo" agrupa tres preguntas con respuestas muy distintas, y citar la peor sin decir
+cuál es hace parecer que los modelos no respaldan nada.
 
 | La pregunta | La respuesta |
 | --- | --- |
@@ -53,7 +52,7 @@ Las tres salen de [`model_spread_numbers.csv`](../02_outputs/model_spread_number
 celda a celda de las once situaciones está en
 [`model_agreement_summary.csv`](../02_outputs/model_agreement_summary.csv).
 
-La tercera es la mala, y es real: **a corto plazo los modelos ni siquiera coinciden en la dirección
+En la tercera pregunta, **a corto plazo los modelos ni siquiera coinciden en la dirección
 del cambio.** No es un defecto del análisis, es el estado del conocimiento a ese horizonte.
 
 ```{r modelos-acuerdo, fig.cap = pie("Acuerdo entre modelos celda a celda, con la convención de sombreado del AR6: color donde al menos el 80 % coincide, diagonales donde no.", "37_model_figures.R", "ggplot2 4.0.2 · terra 1.9.34")}
@@ -61,13 +60,11 @@ knitr::include_graphics(figura("fig39_model_agreement_far.png"))
 ```
 
 Todos los mapas de proyección del trabajo llevan ese rayado. Un mapa de mediana sin su medida de
-acuerdo es una afirmación sin intervalo.
+acuerdo no informa de la dispersión entre modelos.
 
 ## Por qué SSP3-7.0 pierde menos que SSP2-4.5 a corto plazo
 
-Es la pregunta que cualquiera hace al ver el panel de 2021-2040, y tiene respuesta.
-
-A ese horizonte, la diferencia entre escenarios es de
+En el horizonte 2021-2040, la diferencia entre escenarios es de
 `r cp(metrica("talk_key_numbers", "nearterm_spread_scenarios_CP"), 1)` sobre las estaciones
 marginales, mientras que la diferencia **entre modelos** es de
 `r cp(metrica("talk_key_numbers", "nearterm_spread_models_CP"), 1)`. Los modelos discrepan cinco
@@ -86,8 +83,6 @@ tres escenarios: separarlos invitaría a leer ruido como efecto de escenario.
 
 ## Por qué no se corrigió el sesgo
 
-Es la otra pregunta incómoda, y la respuesta tiene una figura detrás.
-
 ```{r modelos-sesgo, fig.cap = pie("Sesgo de cada modelo frente al observado, sobre la misma ventana y las mismas estaciones.", "38_method_figures.R", "ggplot2 4.0.2")}
 knitr::include_graphics(figura("fig43_model_bias.png"))
 ```
@@ -104,7 +99,7 @@ es de `r cp(cifra("talk_numbers_cropland", "presente_present", "swc_median"), 1)
 
 ### Qué mide cada cifra de dispersión
 
-Por el trabajo circulan varias y no son la misma. Conviene tenerlas juntas:
+En el trabajo aparecen varias y no son la misma:
 
 | Cifra | Qué compara | Sobre qué |
 | --- | --- | --- |
@@ -135,13 +130,14 @@ Y aunque se corrigiera, la **dirección** del resultado no dependería de ello: 
 consigo mismo, o sea el futuro contra su propia línea base, cualquier sesgo constante se cancela en
 la resta, y la pérdida sigue estando ahí.
 
-Ese argumento tiene un límite que conviene no esconder, el mismo del capítulo \@ref(horario): **los
+Ese argumento tiene un límite, el mismo del capítulo \@ref(horario): **los
 kilómetros cuadrados que se reportan no salen de una resta**, salen de comparar un valor absoluto
 contra dos umbrales fijos. Un sesgo residual de un chill portion no se cancela ahí: mueve la frontera
 entre clases y con ella la superficie. Los `r cp(metrica("method_chain_numbers", "bias_range_CP"), 2)`
-de rango entre modelos hay que leerlos contra los
+de rango entre modelos se leen contra los
 `r km2(cifra("idw_threshold_band", "ssp370_far", "km2_near_any"))` que están a menos de un error de
-interpolación de un umbral (capítulo \@ref(superficie)): son las dos caras de la misma fragilidad.
+interpolación de un umbral (capítulo \@ref(superficie)): ambos describen la misma sensibilidad de
+la frontera entre clases.
 
 ```{r modelos-delta, fig.cap = pie("Cambio del Safe Winter Chill entre la línea base y fin de siglo, cada modelo contra su propio pasado.", "38_method_figures.R", "ggplot2 4.0.2")}
 knitr::include_graphics(figura("fig45_delta_vs_absolute.png"))

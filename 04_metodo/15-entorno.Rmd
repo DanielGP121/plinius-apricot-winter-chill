@@ -4,9 +4,6 @@
 source("_common.R")
 ```
 
-El último capítulo, también para consultar y no para leer. Es lo que un revisor mira en treinta
-segundos para saber si falta algo.
-
 ## Versión de este análisis
 
 ```{r entorno-version}
@@ -29,8 +26,8 @@ knitr::kable(v, booktabs = TRUE)
 ```
 
 Si ahí pone "con cambios sin registrar", este documento se generó sobre un estado del código que no
-está guardado en ninguna parte, y por tanto no es reproducible por nadie más. Conviene mirarlo antes
-de enviar el PDF.
+está guardado en ninguna parte, y por tanto no es reproducible por nadie más. Esa fila se comprueba
+antes de enviar el PDF.
 
 ## Versiones del software
 
@@ -44,16 +41,16 @@ knitr::kable(rbind(data.table::data.table(Paquete = "R", Versión = paste(R.vers
                    inst), booktabs = TRUE)
 ```
 
-Dos versiones mínimas no son precaución sino requisito real, y están declaradas en
+Dos versiones mínimas son un requisito y están declaradas en
 `install_deps.R`: `ggplot2` ≥ 3.4.0, porque `linewidth` sustituyó a `size` para líneas y todos los
-scripts de figuras lo usan, y `terra` ≥ 1.7, porque `interpIDW(..., near = TRUE)` es el corazón de
+scripts de figuras lo usan, y `terra` ≥ 1.7, porque con `interpIDW(..., near = TRUE)` se construyen
 los mapas de viabilidad.
 
 El lado Python es un entorno conda declarado en `environment.yml`: `xarray` y `netcdf4` para leer
 los NetCDF, `rasterio`, `geopandas` y `pyproj` para los filtros de suelo, `python-pptx` para el
 montaje de las diapositivas.
 
-En el HPC el entorno es distinto y tiene una trampa documentada: `chillR` no está en conda-forge y
+En el HPC el entorno es distinto: `chillR` no está en conda-forge y
 arrastra una cadena de dependencias espaciales pesadas. Instalarlo directo cuesta una tarde de
 fallos de compilación; instalar antes sus dependencias como binarios de conda-forge y sólo entonces
 `chillR` desde CRAN cuesta minutos. La receta está al final de `install_deps.R`.
@@ -73,8 +70,9 @@ variable de entorno `PLINIUS_DATA`; ningún script lleva rutas absolutas dentro.
 
 ## El orden
 
-Ojo con una trampa de nombres: el modo `--windows near` produce la ventana **2021-2040**, que en las
-tablas se llama `nearterm`. La de 2041-2070, que en las tablas es `near`, sale del modo por defecto.
+Los nombres de las ventanas no coinciden entre el modo y las tablas: el modo `--windows near`
+produce la ventana **2021-2040**, que en las tablas se llama `nearterm`. La de 2041-2070, que en las
+tablas es `near`, sale del modo por defecto.
 
 ```bash
 # --- en el HPC ---
@@ -138,7 +136,7 @@ Rscript -e "bookdown::render_book('.', 'bookdown::pdf_book')"   # PDF
 
 ## Referencias
 
-Las cuatro obras de las que cuelgan las decisiones centrales del trabajo. Se citan por el texto
+Las cuatro obras en las que se apoyan las decisiones centrales del trabajo. Se citan por el texto
 completo y no por clave abreviada, porque este documento no pasa por un gestor bibliográfico.
 
 **Fishman, S., Erez, A. y Couvillon, G.A. (1987).** *The temperature dependence of dormancy breaking
@@ -179,6 +177,6 @@ Lo que debería estar en su sitio antes de dar el trabajo por cerrado.
 | Alternativas descartadas escritas | ✅ capítulo \@ref(descartes) |
 | Prueba de lectura por alguien ajeno | ✅ auditoría de lectura en frío, 2026-08-15 |
 
-La última es la que de verdad valida este documento: que alguien que no ha tocado el código lo siga
-solo y apunte dónde se atasca. Cada atasco es un hueco explicativo, y hasta que eso no se haga, la
-afirmación de que aquí no queda nada a interpretación es una intención y no un hecho.
+La última consiste en que alguien que no ha tocado el código siga el documento solo y apunte dónde
+se atasca. Cada atasco señala un hueco explicativo. Sin esa lectura, la afirmación de que aquí no
+queda nada a interpretación queda sin verificar.

@@ -4,9 +4,6 @@
 source("_common.R")
 ```
 
-Este capítulo es el más corto de todos a propósito: el documento va de método, y los resultados
-están para que se vea qué produce la maquinaria de los capítulos anteriores, no para discutirlos.
-
 ## Las quince situaciones
 
 El pipeline no calcula un mapa, calcula quince: cinco de referencia (observado y línea base
@@ -34,18 +31,19 @@ knitr::kable(data.table::data.table(
 ```
 
 Las dos primeras columnas son las dos versiones de "hoy" que maneja el trabajo, y **no coinciden**:
-sobre el termómetro la franja del mutante ocupa `r km2(o$crop_km2_only_precoz)` y sobre la línea base
+sobre el registro observado la franja del mutante ocupa `r km2(o$crop_km2_only_precoz)` y sobre la
+línea base
 simulada `r km2(b$crop_km2_only_precoz)`, casi el doble. No es un error: es el sesgo del modelo
 concentrado justo en la franja marginal, que es donde un sesgo pequeño en CP mueve mucha superficie.
 Todas las restas de atribución de abajo se hacen contra la **línea base simulada**, porque comparar
 un futuro simulado contra un pasado observado mezclaría el cambio climático con ese sesgo.
 
-Dicho en una frase: 'Búlida' deja de cumplir en
+'Búlida' deja de cumplir en
 `r km2(metrica("talk_key_numbers", "lost_km2"))`, y el mutante rescata
 `r km2(metrica("talk_key_numbers", "rescued_km2"))` de esos, un
 `r pct(metrica("talk_key_numbers", "rescued_pct_of_lost"))`.
 
-Hay un matiz de atribución que conviene no saltarse, y hay que hacer la resta en los dos lados. De
+La atribución exige hacer la resta en los dos lados. De
 esos `r km2(metrica("talk_key_numbers", "lost_km2"))`,
 `r km2(metrica("talk_key_numbers", "baseline_already_lost_km2"))` **ya estaban fuera en la línea
 base**: son sitios donde 'Búlida' tampoco cumple hoy. Quedan
@@ -121,5 +119,5 @@ fuera de ella por construcción. Todo sale de
 [`observed_annual_series.csv`](../02_outputs/observed_annual_series.csv) y
 [`observed_long_record_summary.csv`](../02_outputs/observed_long_record_summary.csv).
 
-Es dato observado, no proyección, y por eso va aparte: reencuadra el resultado de las proyecciones
-sin depender de ninguno de los supuestos que arrastran.
+Es dato observado, no proyección, y no depende de ninguno de los supuestos que arrastran las
+proyecciones.

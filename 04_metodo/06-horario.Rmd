@@ -4,9 +4,7 @@
 source("_common.R")
 ```
 
-Este es el paso que casi nunca se cuenta, y hasta que se escribió este documento tampoco estaba
-contado aquí. Merece capítulo propio por una razón sencilla: **es donde entra la única suposición
-fuerte de toda la primera mitad de la cadena.**
+Este paso introduce **la única suposición fuerte de toda la primera mitad de la cadena**.
 
 ## El problema
 
@@ -37,40 +35,38 @@ codigo("15_chill_national_parallel.R", funcion = "chill_station",
                        "`DM_JOSE` es la parametrización. Tres líneas para dos capítulos de texto."))
 ```
 
-## Por qué importa tanto
+## Por qué el método de reconstrucción cambia el frío calculado
 
 Porque el modelo dinámico **no es lineal en la temperatura**. Tiene un óptimo alrededor de los 8 °C
 y deja de acumular por encima de 14 °C, así que lo que cuenta no es la media del día sino cuántas
 horas pasó cerca del óptimo. Dos días con la misma máxima y la misma mínima pero con distinta forma
 de curva acumulan frío distinto.
 
-Un ejemplo de la propia documentación de `chillR` da la medida del asunto: en un huerto de
+Un ejemplo de la documentación de `chillR` cuantifica el efecto: en un huerto de
 California donde se midieron 12,2 chill portions, interpolar linealmente entre máxima y mínima daba
 23,1, casi el doble, mientras que la reconstrucción idealizada daba 13,6. El método de
-reconstrucción no es un detalle de implementación: es la diferencia entre acertar y equivocarse por
-un factor de dos.
+reconstrucción puede alterar el resultado en un factor de dos.
 
 ## Qué se hereda al aceptarlo
 
-Tres cosas, y conviene decirlas juntas:
+Tres cosas:
 
 **La curva es idealizada, no medida.** Un día de niebla persistente o un frente que entra por la
 tarde rompen la forma supuesta. El error que eso introduce no está cuantificado en este trabajo, y
 no lo está en casi ninguno que use este método.
 
-**Se aplica igual al observado y al proyectado**, y eso salva la mitad del problema. Sea cual sea el
+**Se aplica igual al observado y al proyectado**, lo que cancela parte del efecto. Sea cual sea el
 sesgo que introduce la reconstrucción, lo introduce en los dos lados por igual, así que las
 diferencias entre periodos y entre modelos no lo llevan dentro.
 
-Pero conviene decir cuál es la otra mitad, porque es la limitación más incómoda del trabajo y no se
-arregla con ese argumento: **la clasificación no es una diferencia, es una comparación absoluta**
+Ese argumento no cubre el resto del problema, que es una limitación del trabajo: **la clasificación
+no es una diferencia, es una comparación absoluta**
 contra `r cp(CR_BULIDA)` y `r cp(CR_PRECOZ)`. Ahí no se cancela nada. Si la reconstrucción horaria
 desplazara sistemáticamente el frío calculado, todos los km² de este trabajo se desplazarían con él,
-y el ejemplo de California de más abajo sugiere que ese desplazamiento puede ser de un 10 %.
+y el ejemplo de California sugiere que ese desplazamiento puede ser de un 10 %.
 
 Lo único que sostiene esa comparación es que los umbrales se midieran con la misma cadena, que es
-justo el supuesto pendiente del capítulo \@ref(dinamico). Las dos limitaciones son en realidad la
-misma, vista desde dos sitios.
+justo el supuesto pendiente del capítulo \@ref(dinamico). Las dos limitaciones son la misma.
 
 **Se asume que es el mismo método con el que se midieron los requerimientos.** Comparar el frío del
 territorio con esos umbrales sólo tiene sentido si las dos cifras se han construido igual. Ese
@@ -81,7 +77,8 @@ supuesto está pendiente de confirmación y es la incertidumbre mayor del trabaj
 
 No se puede validar la reconstrucción horaria sin datos horarios, que no hay. Lo que sí se hizo fue
 comprobar el resultado final contra un instrumento que no es de la red AEMET: un huerto del CEBAS en
-Cieza con su propio registro. Si el procesado estuviera introduciendo algo raro, ahí se vería.
+Cieza con su propio registro. Un artefacto introducido por el procesado se manifestaría en esa
+comparación.
 
 ```{r horario-cieza, fig.cap = pie("Cuatro registros de dos redes distintas, estandarizados. La caída reciente aparece en las dos, así que no sale del procesado de AEMET.", "27_cieza_independent_check.R", "ggplot2 4.0.2")}
 knitr::include_graphics(figura("fig26_01_independent_records.png"))

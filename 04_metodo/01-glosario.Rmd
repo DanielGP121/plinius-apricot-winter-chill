@@ -4,12 +4,9 @@
 source("_common.R")
 ```
 
-Media página, y es la que más malentendidos evita.
-
 ## Cuatro cosas que se llaman "modelo"
 
-En este trabajo la palabra aparece con cuatro sentidos distintos, a veces en el mismo párrafo. Vale
-la pena fijarlos antes de empezar.
+En este trabajo la palabra aparece con cuatro sentidos distintos, a veces en el mismo párrafo.
 
 | Término | Significado |
 | --- | --- |
@@ -19,7 +16,7 @@ la pena fijarlos antes de empezar.
 | **situación** | La combinación de escenario y ventana temporal que indexa la tabla canónica: `ssp370_far` es SSP3-7.0 en 2071-2100. Hay quince, listadas en el capítulo \@ref(resultados). |
 | **interpolación** | El método que rellena el espacio entre estaciones (IDW). A veces se le llama "modelo" en la literatura; aquí nunca. |
 
-De ahí sale una cuenta que conviene tener presente: once modelos climáticos por tres escenarios más
+De ahí sale esta cuenta: once modelos climáticos por tres escenarios más
 el histórico, repartidos en las ventanas temporales, dan
 `r i_es(nrow(tabla("pipeline_runs")))` corridas distintas del cálculo de frío. Cuando el trabajo
 dice "once modelos" está resumiendo eso.
@@ -45,7 +42,7 @@ arriba por una elección que aún no está justificada por escrito.
 Cuando este documento dice "España" se refiere a la **Península y Baleares**. Canarias queda fuera
 del dominio de las proyecciones del PNACC que se usan, y por tanto de todos los mapas y todas las
 cifras de superficie. Son
-`r km2(tabla("attrition_funnel_numbers")[paso == "España peninsular y Baleares", valor])` de
+`r km2(tabla("attrition_funnel_numbers")[step == "Peninsular Spain and the Balearics", value])` de
 territorio, de los cuales `r km2(SUPERFICIE_CULTIVABLE)` son suelo agrícola.
 
 ## Las otras palabras
@@ -73,9 +70,8 @@ una estimación de superficie plantada.
 
 ## Las constantes del estudio
 
-Todas juntas y en una página, para que ninguna aparezca por primera vez en el paso 27 de 38. Es lo
-que pide la regla de Rule et al. (2019) sobre declarar arriba las variables que gobiernan un
-análisis.
+Todas juntas y en una página, siguiendo la regla de Rule et al. (2019) sobre declarar arriba las
+variables que gobiernan un análisis.
 
 ```{r constantes}
 cons <- data.table::data.table(
@@ -101,8 +97,7 @@ knitr::kable(cons, booktabs = TRUE)
 ```
 
 Y tres filtros más que no aparecen en ninguna figura y sin embargo deciden qué entra en el cálculo.
-Los tres viven en el motor de frío (`15_chill_national_parallel.R`) y hasta ahora sólo se veían
-leyendo el código:
+Los tres están definidos en el motor de frío (`15_chill_national_parallel.R`):
 
 ```{r constantes-filtros}
 knitr::kable(data.table::data.table(
@@ -119,6 +114,6 @@ knitr::kable(data.table::data.table(
   booktabs = TRUE, col.names = c("Filtro", "Valor", "Por qué"))
 ```
 
-La proyección no es un detalle administrativo: al ser equiárea, el área de una celda es el producto
+La proyección es equiárea: el área de una celda es el producto
 de sus dos lados en cualquier punto del mapa, y eso es lo que permite sumar kilómetros cuadrados
-sin corregir por latitud. Tiene su historia, contada en el capítulo \@ref(superficie).
+sin corregir por latitud. El capítulo \@ref(superficie) da el detalle.

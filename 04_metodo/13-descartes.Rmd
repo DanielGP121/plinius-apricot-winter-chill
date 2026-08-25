@@ -4,10 +4,6 @@
 source("_common.R")
 ```
 
-Un método sólo se entiende del todo si se sabe qué alternativas había y por qué se dejaron. Y un
-trabajo sólo es creíble si cuenta también los fallos que tuvo, porque los que no se cuentan son los
-que el lector supone que siguen ahí.
-
 ## Decisiones y alternativas descartadas
 
 | Se eligió | En vez de | Por qué |
@@ -27,7 +23,7 @@ que el lector supone que siguen ahí.
 ## Los fallos, y qué enseñó cada uno
 
 Cinco costaron tiempo real. Los tres primeros están documentados desde antes; los dos últimos
-salieron al escribir este documento, que es en sí mismo un argumento a favor de escribirlo.
+salieron al escribir este documento.
 
 ### La guarda de CORINE que dejó de funcionar sola
 
@@ -36,7 +32,7 @@ La selección de clases comprobaba la tabla de atributos del ráster buscando un
 `terra` 1.9 devuelve una tabla con columnas `Value` y `LABEL3`, y la comprobación abortó. **El
 script dejó de poder reproducir sus propias figuras sin que cambiara una línea de él.**
 
-La lección quedó incorporada: ahora la selección se verifica contra las **etiquetas** de las clases,
+Ahora la selección se verifica contra las **etiquetas** de las clases,
 que dicen lo que se está seleccionando y son estables entre versiones, en vez de contra el nombre de
 una columna.
 
@@ -55,7 +51,7 @@ deduplicar por el triplete cuenta filas. Hay ahora una comprobación en el scrip
 
 ### El área de celda que valía 1 y no valía 1
 
-El más instructivo de los cinco, y el más reciente.
+El más reciente de los cinco.
 
 Al construir la rejilla, `terra` respeta la extensión pedida y ajusta la resolución para que quepa
 un número entero de celdas. La celda real mide 1.000,32 × 999,99 m, así que su área es
@@ -66,7 +62,7 @@ Resultado: **toda cifra de superficie del trabajo estuvo un
 agosto de 2026. La superficie cultivable nacional pasó de 229.604 a
 `r km2(SUPERFICIE_CULTIVABLE)` al corregirlo.
 
-Lo instructivo no es el error, que es pequeño y no cambia ninguna conclusión. Es **por qué ninguna
+El error es pequeño y no cambia ninguna conclusión. La cuestión es **por qué ninguna
 comprobación lo detectó**. El proyecto tenía una autocomprobación cruzada entre dos scripts que
 reproducía las cifras publicadas con 0,00 km² de discrepancia, y seguía pasando: las dos cifras
 estaban igual de bajas. *Un test de consistencia no es un test de corrección.*
@@ -80,9 +76,8 @@ Al barrer el proyecto buscando restos del número antiguo apareció un `229604` 
 un script de figuras. Habría seguido dibujando la cifra vieja mientras todas las tablas decían la
 nueva.
 
-De ahí sale la regla que gobierna este documento y que está declarada en el resumen: ninguna cifra
-se escribe a mano, todas se leen de las tablas al generar el texto. No es pedantería: es la única
-forma de que una cifra no pueda quedarse atrás en silencio.
+De ahí sale la regla declarada en el resumen: ninguna cifra se escribe a mano, todas se leen de las
+tablas al generar el texto. Así ninguna cifra puede quedarse desactualizada sin que se note.
 
 ## Lo que sigue abierto
 

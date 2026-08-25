@@ -4,7 +4,7 @@
 source("_common.R")
 ```
 
-Los frutales de hueso necesitan pasar frío en invierno. No es una metáfora: durante la dormancia
+Los frutales de hueso necesitan pasar frío en invierno. Durante la dormancia
 acumulan una señal térmica sin la cual la floración de primavera sale mal, desigual o directamente
 no sale. Cada variedad tiene su requerimiento, y ese requerimiento es una propiedad genética que no
 cambia. Lo que cambia es el invierno.
@@ -23,8 +23,8 @@ sobra para las dos variedades, lugares donde ya no alcance para ninguna, y una f
 donde 'Búlida' se quede corta pero 'Búlida Precoz' aún cumpla. Esa franja es suelo donde el cultivo
 puede continuar cambiando de variedad en vez de abandonarse.
 
-De ahí salen las tres clases en las que se reparte el territorio en todo el trabajo, y a las que
-conviene acostumbrarse porque aparecen en cada mapa:
+De ahí salen las tres clases en las que se reparte el territorio en todo el trabajo, y que aparecen
+en cada mapa:
 
 | Clase | Significa |
 | --- | --- |
@@ -34,11 +34,9 @@ conviene acostumbrarse porque aparecen en cada mapa:
 
 ## Qué se está midiendo exactamente
 
-Conviene ser preciso, porque es fácil leer de más en un mapa de estos.
-
 El trabajo **no** predice cosechas, ni rendimientos, ni dónde va a haber albaricoque en 2100. Sólo
-responde a una pregunta de cumplimiento: en cada punto del territorio agrícola, ¿el frío invernal
-que cabe esperar supera o no supera el umbral de cada variedad?
+responde a una pregunta de cumplimiento: si el frío invernal que cabe esperar en cada punto del
+territorio agrícola supera o no supera el umbral de cada variedad.
 
 Tampoco dice que la franja "sólo Precoz" esté plantada de albaricoque. El denominador es todo el
 suelo agrícola de España, `r km2(SUPERFICIE_CULTIVABLE)`, porque es el territorio del que se tienen
@@ -54,10 +52,10 @@ necesaria, no suficiente.
 Los requerimientos vienen de Ruiz et al. (2019), que los cuantificó experimentalmente para un
 conjunto de variedades de albaricoque incluidas estas dos. No se han vuelto a medir aquí.
 
-Esto tiene una consecuencia que recorre todo el documento y que conviene tener presente desde el
-principio: **los dos umbrales están medidos con una parametrización concreta del modelo dinámico**,
-y usar otra parametrización para calcular el frío del territorio significaría comparar peras con
-manzanas. El capítulo \@ref(dinamico) explica cuál es y por qué la diferencia no es cosmética.
+Esto tiene una consecuencia que recorre todo el documento:
+**los dos umbrales están medidos con una parametrización concreta del modelo dinámico**,
+y usar otra parametrización para calcular el frío del territorio daría magnitudes que no son
+comparables. El capítulo \@ref(dinamico) explica cuál es y qué efecto tiene la diferencia.
 
 ## La geografía del asunto
 

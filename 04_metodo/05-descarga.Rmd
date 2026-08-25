@@ -4,18 +4,18 @@
 source("_common.R")
 ```
 
-Un capítulo corto, pero necesario: quince gigabytes no se descargan a mano, y cómo se bajaron
-condiciona qué estaciones hay en el resto del trabajo.
+Quince gigabytes no se descargan a mano, y cómo se bajaron condiciona qué estaciones hay en el
+resto del trabajo.
 
 ## Las proyecciones, por THREDDS
 
 El portal AdapteCCa sirve el producto del PNACC de dos maneras. La interactiva es un formulario:
-eliges variables, modelos y periodo, y te prepara un zip. La otra es un servidor THREDDS, que
+permite seleccionar variables, modelos y periodo, y devuelve un zip. La otra es un servidor THREDDS, que
 expone los ficheros NetCDF en direcciones predecibles y por tanto se puede recorrer con un script.
 
-Se eligió la segunda por tres motivos, y el tercero resultó ser el importante:
+Se eligió la segunda por tres motivos:
 
-- Las URL son predecibles, así que la descarga es un bucle y no una tarde de clicks.
+- Las URL son predecibles, así que la descarga se automatiza en un bucle.
 - Ocurre **en el HPC**, no en el portátil. Son 88 ficheros y unos 15 GB; bajarlos a un portátil
   para volverlos a subir no tiene sentido.
 - Sirve más estaciones. Esto no se sabía al elegir: se descubrió después, al cruzar censos, y es
@@ -33,13 +33,13 @@ La API de AEMET OpenData es de otra naturaleza: pide clave, responde en dos paso
 de datos, luego los datos) y limita el tamaño de cada petición, así que hay que trocear por
 intervalos y reensamblar.
 
-Tres decisiones de ese script merecen mención porque son las que hacen que la descarga termine:
+Tres decisiones de ese script determinan que la descarga termine:
 
 **Se pide por tramos de seis meses.** La API rechaza rangos largos. Seis meses es el mayor tramo
 que aceptaba de forma fiable para una serie diaria.
 
-**Se paraleliza poco.** Cuatro peticiones a la vez. Más rápido no significa más rápido cuando el
-servidor empieza a devolver errores de cuota y hay que reintentar.
+**Se paraleliza poco.** Cuatro peticiones a la vez. Con más peticiones simultáneas el
+servidor devuelve errores de cuota y los reintentos anulan la ganancia.
 
 **La clave no está en ningún fichero.** Se lee de la variable de entorno `AEMET_API_KEY`, no se
 escribe en disco, no se registra en los logs y no aparece en el repositorio.
@@ -53,8 +53,8 @@ codigo("21_aemet_observed_download.py", funcion = "fetch",
 
 ## Lo que baja del HPC
 
-Casi nada, y esa es la gracia del reparto. El cálculo pesado ocurre donde están los datos y lo que
-viaja de vuelta son tablas de frío:
+Casi nada. El cálculo pesado ocurre donde están los datos y lo que
+se transfiere de vuelta son tablas de frío:
 `r n_es(metrica("pipeline_diagram_numbers", "table_MB"))` MB para la tabla canónica entera. Los
 NetCDF nunca salen del HPC.
 
@@ -64,12 +64,12 @@ rutas compartido del proyecto: se suben al HPC como ficheros sueltos y tienen qu
 ## De los NetCDF a una serie diaria por estación
 
 Entre los 88 ficheros descargados y la "temperatura diaria por estación" con la que abre el capítulo
-siguiente hay un paso que conviene no dar por sabido.
+siguiente hay un paso intermedio.
 
 **No hay conversión previa a tablas.** El motor de frío lee los NetCDF directamente. Existe un script
 de conversión, `02_pnacc_to_tables.py`, pero es del test-run de Murcia y no interviene en la corrida
-nacional: para 3.460 estaciones, escribir tablas intermedias sólo añadiría un terabyte de tránsito
-para nada.
+nacional: para 3.460 estaciones, escribir tablas intermedias añadiría un terabyte de tránsito
+sin necesidad.
 
 Lo que hace el lector, dentro del script 15, es esto:
 
@@ -85,11 +85,10 @@ Lo que hace el lector, dentro del script 15, es esto:
 
 ### El empalme de 2014, que explica de dónde sale la línea base
 
-Aquí hay una cosa que sorprende y que un lector atento pregunta enseguida: **el experimento histórico
-de CMIP6 termina en 2014 por diseño**. Los ficheros `historical` no llegan a 2020. Entonces, ¿de
-dónde sale una línea base 1995-2020 simulada?
+**El experimento histórico de CMIP6 termina en 2014 por diseño**. Los ficheros `historical` no
+llegan a 2020, de modo que la línea base 1995-2020 simulada procede de un empalme.
 
-De un empalme. La serie se arma leyendo el fichero histórico hasta 2014 y continuándola con un
+La serie se arma leyendo el fichero histórico hasta 2014 y continuándola con un
 escenario desde 2015, tras comprobar que los dos traen exactamente el mismo conjunto de estaciones.
 El escenario que se usa para ese tramo es **SSP2-4.5**, y la razón es que antes de 2020 los tres
 escenarios apenas se han separado: calcularlo tres veces triplicaría el coste para obtener
@@ -105,13 +104,13 @@ codigo("15_chill_national_parallel.R", funcion = "read_var_spliced",
                        "dos censos distintos habría producido series mezcladas sin dar error."))
 ```
 
-Conviene saber además que la ventana 1995-2025 (`current`) **queda deliberadamente fuera** de la
-serie teselada: solapa cinco años con 2021-2040, así que sirve para la foto del clima actual pero no
-puede usarse nunca como referencia contra la que restar los futuros.
+La ventana 1995-2025 (`current`) **queda deliberadamente fuera** de la
+serie teselada: solapa cinco años con 2021-2040, así que describe el clima actual pero no puede
+usarse como referencia contra la que restar los futuros.
 
 ## Cómo se congela la versión de los datos
 
-Una limitación honesta: **el conjunto descargado no está congelado por un hash**. Si AEMET
+Una limitación: **el conjunto descargado no está congelado por un hash**. Si AEMET
 reprocesara el producto y volviera a publicarlo, una descarga futura podría no ser idéntica a esta
 y no habría forma de detectarlo desde aquí.
 
