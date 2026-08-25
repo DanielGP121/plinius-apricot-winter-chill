@@ -1,0 +1,10 @@
+metric,value
+band_agree_min_pct,0.00
+band_agree_max_pct,3.20
+band_agree_far_pct,0.00
+band_agree_need,9
+band_agree_n_situations,11
+cieza_days,5214
+cieza_first_day,2011-01-01
+cieza_last_day,2025-04-10
+cieza_missing_days,0

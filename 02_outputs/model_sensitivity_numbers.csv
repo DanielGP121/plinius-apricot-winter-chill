@@ -1,0 +1,11 @@
+metric,value
+sens_rho_tcr,-0.84
+sens_rho_ecs,-0.82
+sens_r2_tcr,0.71
+sens_r2_ecs,0.65
+sens_harsh_model,UKESM1-0-LL
+sens_harsh_tcr,2.79
+sens_mild_model,IITM-ESM
+sens_mild_tcr,1.71
+sens_n_lower_tcr_less_chill,4
+sens_n_shared_atmos,3

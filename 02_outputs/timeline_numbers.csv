@@ -1,0 +1,17 @@
+metric,value
+timeline_archive_first_year,1975
+timeline_archive_last_year,2020
+timeline_obs_first_season,1976
+timeline_obs_n_seasons,45
+timeline_api_first_year,1996
+timeline_api_last_year,2025
+timeline_splice_year,2015
+timeline_hist_first_used,1985
+timeline_ssp_last_year,2100
+timeline_n_stations_proj,3460
+timeline_n_stations_obs,3044
+timeline_seasons_base,26
+timeline_seasons_nearterm,20
+timeline_seasons_near,30
+timeline_seasons_far,30
+timeline_n_windows,4

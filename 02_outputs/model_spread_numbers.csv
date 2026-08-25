@@ -1,0 +1,12 @@
+metric,value,scenario
+n_models,11,ssp370
+agree_class_far,83.1161777753878,ssp370
+agree_sign_nearterm,29.8857311859759,ssp370
+agree_sign_far,85.8282472508268,ssp370
+km2_rescued_min_pct,39.1453436981441,ssp370
+km2_rescued_max_pct,82.1180560031798,ssp370
+km2_rescued_median_pct,52.1169613751948,ssp370
+km2_rescued_min_model,UKESM1-0-LL,ssp370
+km2_rescued_max_model,IITM-ESM,ssp370
+station_rescued_min_pct,32.603158430973,ssp370
+station_rescued_max_pct,66.0743134087238,ssp370
