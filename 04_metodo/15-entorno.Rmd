@@ -110,7 +110,7 @@ Rscript 01_scripts/23_chill_from_api.R --cores 8        # -> chill_api_seasons.c
 Rscript 01_scripts/24_observed_api_vs_archive.R         # -> el contraste de 0,13 CP + fig23
 Rscript 01_scripts/25_splice_observed_1995_2025.R       # -> el empalme hasta 2025 + fig24
 Rscript 01_scripts/26_observed_long_record.R            # -> observed_annual_series.csv + fig25
-Rscript 01_scripts/27_cieza_independent_check.R         # -> los 6,94 CP entre parametrizaciones + fig26
+Rscript 01_scripts/27_cieza_independent_check.R         # -> el hueco entre parametrizaciones + fig26
 Rscript 01_scripts/19_cropland_viability_national.R     # -> fig20-22 + talk_numbers_cropland.csv
 Rscript 01_scripts/28_threshold_sweep_cropland.R        # se autocomprueba contra el anterior
 Rscript 01_scripts/36_per_model_stats.R                 # ~3 min, análisis por modelo
@@ -123,7 +123,12 @@ Rscript 01_scripts/37_model_figures.R
 Rscript 01_scripts/38_method_figures.R
 Rscript 01_scripts/39_pipeline_diagram.R
 Rscript 01_scripts/40_attrition_funnel.R
-python  01_scripts/35_build_talk_pptx.py                # y con --annex para el anexo
+Rscript 01_scripts/42_data_timeline.R                   # -> fig53 + timeline_numbers.csv
+Rscript 01_scripts/43_model_ranking.R                   # -> fig54 + model_ranking_numbers.csv
+Rscript 01_scripts/46_model_sensitivity.R               # -> fig55; después de 43
+python  01_scripts/45_v3_numbers.py                     # -> v3_numbers.csv
+Rscript 01_scripts/47_band_and_record_numbers.R         # -> v3_gap_numbers.csv
+python  01_scripts/35_build_talk_pptx.py                # y --short, --annex o --v4 para las otras
 ```
 
 Y para regenerar este documento:
@@ -143,7 +148,8 @@ completo y no por clave abreviada, porque este documento no pasa por un gestor b
 in plants: mathematical analysis of a two-step model involving a cooperative transition.* Journal of
 Theoretical Biology 124(4), 473-483. La parametrización que usa este trabajo (capítulo
 \@ref(dinamico)). Existe una versión de 1988 de los mismos autores, que es la que trae `chillR` por
-defecto y que da resultados 6,94 CP distintos.
+defecto y que da resultados
+`r cp(abs(metrica("cieza_numbers", "param_gap_mean_CP")), 2)` distintos.
 
 **Ruiz, D. et al. (2019).** Cuantificación experimental de los requerimientos de frío de variedades
 de albaricoque, de donde salen los `r cp(CR_BULIDA)` y los `r cp(CR_PRECOZ)`.
@@ -167,7 +173,7 @@ Lo que debería estar en su sitio antes de dar el trabajo por cerrado.
 | | |
 | --- | --- |
 | Código versionado | ✅ repositorio git, un commit por bloque de trabajo |
-| Datos archivados con suma de verificación | ⏳ sin calcular, capítulo \@ref(descarga) |
+| Datos archivados con suma de verificación | ✅ manifiestos md5 de los 88 + 2 NetCDF, capítulo \@ref(descarga) |
 | Entorno declarado | ✅ `install_deps.R` y `environment.yml` |
 | Cada figura con su script | ✅ al pie de cada figura de este documento |
 | Cada cifra con su tabla | ✅ ninguna está escrita a mano |

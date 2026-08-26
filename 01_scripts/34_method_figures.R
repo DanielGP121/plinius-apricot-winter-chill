@@ -58,7 +58,7 @@ talk_theme <- theme_minimal(base_size = 14) +
 # 0.791 over 120, 0.799 over 2000). 120 days is the length of the dormancy season this project
 # integrates over (JDay 305 to 59), which is the only length whose rate means anything here, and it
 # reproduces the 0.791 CP/day already documented for the project.
-cat("1. curva de respuesta del modelo dinamico\n")
+cat("1. dynamic model response curve\n")
 source_dm_jose()
 temps <- seq(-12, 26, by = 0.5)
 DAYS  <- 120
@@ -68,7 +68,7 @@ resp  <- vapply(temps, function(tt) {
 }, numeric(1))
 rc <- data.table(temp = temps, cp_day = resp)
 opt <- rc[which.max(cp_day)]
-cat(sprintf("   optimo %.3f CP/dia a %.1f C\n", opt$cp_day, opt$temp))
+cat(sprintf("   optimum %.3f CP/day at %.1f C\n", opt$cp_day, opt$temp))
 
 pct <- function(t) 100 * rc[which.min(abs(temp - t))]$cp_day / opt$cp_day
 g34 <- ggplot(rc, aes(temp, cp_day)) +
@@ -97,7 +97,7 @@ ggsave(fig_path("fig34_dynamic_model_response.png"), g34, width = 11.5, height =
 # Drawn on the longest observed record available, so the audience sees real seasons rather than a
 # schematic. The point is that a grower is not ruined by the average winter but by the poor one,
 # which is why the statistic that matters is a low percentile.
-cat("2. concepto de Safe Winter Chill\n")
+cat("2. Safe Winter Chill concept\n")
 os <- fread(out_path("chill_obs_seasons_1975.csv"))
 cand <- os[perc_complete >= 85, .(n = .N, sdv = sd(CP), mu = mean(CP)), by = station_id]
 # A station with a full record and enough spread for the gap between mean and P10 to be visible.
@@ -126,7 +126,7 @@ ggsave(fig_path("fig35_swc_concept.png"), g35, width = 12.5, height = 5.8, dpi =
 # The step that needs showing is the middle one: a network of stations is not a map, and the jump
 # from one to the other is where a reader is entitled to be sceptical. Panel 3 also makes visible
 # that most of the surface is discarded, because only cropland is ever counted.
-cat("3. cadena estaciones -> superficie -> suelo\n")
+cat("3. chain stations -> surface -> cropland\n")
 ccaa  <- esp_get_ccaa(epsg = 4326)
 ccaa  <- st_transform(ccaa[!grepl("Canaria", ccaa$ine.ccaa.name), ], EPSG)
 disp  <- ccaa[!ccaa$ine.ccaa.name %in% c("Ceuta", "Melilla"), ]
@@ -137,7 +137,7 @@ MAP_AR <- diff(YLIM) / diff(XLIM)
 surf_f <- file.path(CACHE, sprintf("swc_presente_present_%d.tif", RES_M))
 crop_f <- file.path(CACHE, sprintf("cropfrac_%d.tif", RES_M))
 if (!file.exists(surf_f) || !file.exists(crop_f))
-  stop("faltan superficies en cache; ejecuta antes: Rscript 33_talk_figures.R")
+  stop("surfaces missing from cache; run first: Rscript 33_talk_figures.R")
 surf <- rast(surf_f); cropfrac <- rast(crop_f)
 
 d   <- fread(out_path("chill_all_windows.csv"))
@@ -221,4 +221,4 @@ fwrite(data.table(metric = c("dm_optimum_cp_day", "dm_optimum_temp_C", "dm_pct_a
                              "swc_example_station", "swc_example_mean", "swc_example_p10"),
                   value = c(opt$cp_day, opt$temp, pct(0), pick, mn, p10)),
        out_path("method_figure_numbers.csv"))
-cat(sprintf("\nescritas 3 figuras en %s\n", FIG_DIR))
+cat(sprintf("\nwrote 3 figures in %s\n", FIG_DIR))

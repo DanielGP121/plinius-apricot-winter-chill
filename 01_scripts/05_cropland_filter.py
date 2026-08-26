@@ -72,10 +72,10 @@ def main():
     rows = []
     with rasterio.open(args.clc) as src:
         if src.crs is None:
-            sys.exit("el raster no tiene CRS definido")
+            sys.exit("the raster has no CRS defined")
         if src.crs.is_geographic:
-            print("AVISO: el raster está en grados geográficos; un buffer en km no será métrico "
-                  "correcto. Usa un CORINE proyectado (EPSG:3035) para un radio en metros fiable.")
+            print("WARNING: the raster is in geographic degrees, so a buffer in km will not be "
+                  "metric. Use a projected CORINE (EPSG:3035) for a reliable radius in metres.")
         gdf_p = gdf.to_crs(src.crs)
         radius_m = args.radius_km * 1000.0
         nodata = src.nodata
@@ -104,16 +104,16 @@ def main():
     dst = Path(args.out) / fname
     out.to_csv(dst, index=False)
 
-    print(f"\nCriterio: >= {args.threshold:.0%} de cultivo en un radio de {args.radius_km} km; "
-          f"códigos de cultivo = {sorted(crop_codes)}")
-    print(f"Estaciones cultivables: {int(out.cultivable.sum())} / {len(out)}  "
-          f"(con el punto directamente sobre cultivo: {int(out.point_is_crop.sum())})")
+    print(f"\nCriterion: >= {args.threshold:.0%} cropland within a radius of {args.radius_km} km; "
+          f"crop codes = {sorted(crop_codes)}")
+    print(f"Cultivable stations: {int(out.cultivable.sum())} / {len(out)}  "
+          f"(with the point directly on cropland: {int(out.point_is_crop.sum())})")
     print(f"-> {dst}")
-    print("\nDistribución de clases del raster halladas en los buffers (código: nº de estaciones):")
+    print("\nRaster classes found inside the buffers (code: number of stations):")
     for code in sorted(seen):
-        print(f"  {code:>4}: {seen[code]}{'  <- cultivo' if code in crop_codes else ''}")
-    print("\nSi estos códigos no cuadran con la leyenda CORINE (el raster de 100 m usa 1-44; otros "
-          "productos usan 111-523), reejecuta con --crop-codes ajustado a lo que veas arriba.")
+        print(f"  {code:>4}: {seen[code]}{'  <- cropland' if code in crop_codes else ''}")
+    print("\nIf these codes do not match the CORINE legend (the 100 m raster uses 1-44; other "
+          "products use 111-523), rerun with --crop-codes set to what you see above.")
 
 
 if __name__ == "__main__":

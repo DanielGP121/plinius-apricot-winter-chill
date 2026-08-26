@@ -82,7 +82,7 @@ muni <- tryCatch(st_transform(esp_get_munic(region = "Murcia"), EPSG), error = f
 # (241-244) agriculture, and coarsen 100 m -> 1 km so it is a light context layer, not clutter.
 clc <- rast(CLC)
 clc_m <- mask(crop(clc, ext(vect(st_as_sf(murcia)))), vect(st_as_sf(murcia)))
-rcl <- rbind(c(11.5, 17.5, 1), c(18.5, 22.5, 2))   # 12-17 -> 1 (puro), 19-22 -> 2 (heterogéneo)
+rcl <- rbind(c(11.5, 17.5, 1), c(18.5, 22.5, 2))   # 12-17 -> 1 (pure), 19-22 -> 2 (heterogeneous)
 crop_cat <- classify(clc_m, rcl, others = NA)
 crop_cat <- aggregate(crop_cat, fact = 10, fun = "modal", na.rm = TRUE)
 bd <- as.data.frame(crop_cat, xy = TRUE)
@@ -118,16 +118,16 @@ f1 <- ggplot() +
   geom_raster(data = bd, aes(x, y, fill = cropland)) +
   scale_fill_manual(values = c("cultivo (211-223)" = "#a1d99b",
                                "heterogéneo (241-244)" = "#fee08b"),
-                    name = "Suelo agrícola\n(CORINE 2018)") +
+                    name = "Agricultural land\n(CORINE 2018)") +
   { if (!is.null(muni)) geom_sf(data = muni, fill = NA, color = "grey75", linewidth = 0.2) } +
   geom_sf(data = st_as_sf(murcia), fill = NA, color = "grey20", linewidth = 0.5) +
   geom_sf(data = soil_sf, aes(color = soil_cat), size = 2.4, stroke = 0.3) +
   scale_color_manual(values = c("cultivable (estricto)" = "#1a9850",
                                 "solo amplio (heterogéneo)" = "#fd8d3c",
-                                "no cultivable" = "#737373"), name = "Estación") +
+                                "no cultivable" = "#737373"), name = "Station") +
   coord_sf(crs = EPSG, datum = NA) +
-  labs(title = "Estaciones AEMET y suelo cultivable — Región de Murcia",
-       subtitle = "criterio de referencia: ≥50% de cultivo en 2 km (44 estrictas, 73 amplias, de 123)") +
+  labs(title = "AEMET stations and cultivable land — Region of Murcia",
+       subtitle = "reference criterion: ≥50% cropland within 2 km (44 strict, 73 broad, of 123)") +
   theme_minimal(base_size = 12) +
   theme(axis.title = element_blank())
 ggsave(file.path(FIG_DIR, "fig1_contexto_suelo.png"), f1, width = 9, height = 7.5, dpi = 150)
@@ -151,8 +151,8 @@ f2 <- ggplot() +
   scale_color_viridis_c(name = "SWC\n(P10, CP)", option = "D") +
   facet_wrap(~scenario, nrow = 1) +
   coord_sf(crs = EPSG, datum = NA) +
-  labs(title = "Safe Winter Chill: mediana de ensemble por escenario",
-       subtitle = "chill portions acumuladas (P10 entre inviernos); 3 modelos, futuro 2041-2070") +
+  labs(title = "Safe Winter Chill: ensemble median per scenario",
+       subtitle = "accumulated chill portions (P10 across winters); 3 models, 2041-2070 future") +
   theme_minimal(base_size = 11) +
   theme(axis.title = element_blank(), axis.text = element_blank())
 ggsave(file.path(FIG_DIR, "fig2_swc_ensemble.png"), f2, width = 13, height = 5, dpi = 150)
@@ -176,8 +176,8 @@ f3 <- ggplot() +
                                 "ninguna" = "#b2182b"), name = "") +
   facet_wrap(~scenario, nrow = 1) +
   coord_sf(crs = EPSG, datum = NA) +
-  labs(title = "¿Dónde se cumple el requerimiento de frío?",
-       subtitle = "mediana de ensemble; 'Búlida' 47.5 CP, 'Búlida Precoz' 33.7 CP") +
+  labs(title = "Where is the chill requirement met?",
+       subtitle = "ensemble median; 'Búlida' 47.5 CP, 'Búlida Precoz' 33.7 CP") +
   theme_minimal(base_size = 11) +
   theme(axis.title = element_blank(), axis.text = element_blank())
 ggsave(file.path(FIG_DIR, "fig3_case_study.png"), f3, width = 13, height = 5, dpi = 150)
@@ -190,7 +190,7 @@ tab <- ens[, .(estaciones = .N,
                cumplen_ambas = sum(case == "cumplen ambas"),
                solo_precoz   = sum(case == "solo 'Búlida Precoz'"),
                ninguna       = sum(case == "ninguna")), by = scenario]
-knitr::kable(tab, caption = "Estaciones por clase y escenario (mediana de ensemble)")
+knitr::kable(tab, caption = "Stations per class and scenario (ensemble median)")
 ```
 
 ## Distribución del Safe Winter Chill por escenario y modelo
@@ -205,8 +205,8 @@ f4 <- ggplot(chill, aes(scenario, safe_winter_chill_P10, fill = model)) +
            size = 3, color = "#2166ac") +
   annotate("text", x = 0.7, y = CR_PRECOZ - 1.8, label = "B. Precoz 33.7", hjust = 0,
            size = 3, color = "#b2182b") +
-  scale_fill_brewer(palette = "Set2", name = "Modelo") +
-  labs(title = "Safe Winter Chill por escenario y modelo (todas las estaciones)",
+  scale_fill_brewer(palette = "Set2", name = "Model") +
+  labs(title = "Safe Winter Chill per scenario and model (all stations)",
        y = "SWC (P10, chill portions)", x = NULL) +
   theme_minimal(base_size = 12) +
   theme(axis.text.x = element_text(angle = 20, hjust = 1))
@@ -215,7 +215,7 @@ f4
 ```
 
 ```{r session, results='asis'}
-cat("<hr><small>Figuras guardadas en <code>02_outputs/figures_chill/</code>. ",
-    "Frío calculado con chillR (modelo dinámico DM_JOSE, param. 1987 de J.A. Egea) por <code>06_chill_murcia.R</code>; ",
-    "datos PNACC AR6 ESD-RegBA extraídos con <code>02_pnacc_to_tables.py</code>.</small>", sep = "")
+cat("<hr><small>Figures saved in <code>02_outputs/figures_chill/</code>. ",
+    "Chill computed with chillR (dynamic model DM_JOSE, 1987 parameterisation by J.A. Egea) by <code>06_chill_murcia.R</code>; ",
+    "PNACC AR6 ESD-RegBA data extracted with <code>02_pnacc_to_tables.py</code>.</small>", sep = "")
 ```

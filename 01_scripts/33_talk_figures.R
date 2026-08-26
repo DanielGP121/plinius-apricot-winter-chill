@@ -75,7 +75,7 @@ talk_theme <- theme_minimal(base_size = 14) +
         legend.position = "bottom")
 
 # § 1 — Station chill and the geography every map is drawn on.
-cat("1. datos y geografia\n")
+cat("1. data and geography\n")
 d   <- fread(out_path("chill_all_windows.csv"))
 ens <- d[, .(SWC = median(safe_winter_chill_P10)),
          by = .(situation, scenario, window, station_id, lon, lat)]
@@ -96,7 +96,7 @@ MAP_AR <- diff(YLIM) / diff(XLIM)
 cropfrac_file <- file.path(CACHE, sprintf("cropfrac_%d.tif", RES_M))
 if (!REFRESH && file.exists(cropfrac_file)) {
   cropfrac <- rast(cropfrac_file)
-  cat("   suelo cultivable leido de cache\n")
+  cat("   cropland read from cache\n")
 } else {
   clc_c <- crop(rast(plinius_clc()), ext(project(vect(spain), crs(rast(plinius_clc())))))
   cropfrac <- mask(resample(corine_crop_mask(clc_c), tmpl, method = "average"), vect(spain))
@@ -104,7 +104,7 @@ if (!REFRESH && file.exists(cropfrac_file)) {
 }
 cell_km2 <- cell_area_km2(cropfrac)   # not (RES_M/1000)^2; see 00_corine.R
 total_crop_km2 <- global(cropfrac, "sum", na.rm = TRUE)[1, 1] * cell_km2
-cat(sprintf("   superficie cultivable: %.0f km2\n", total_crop_km2))
+cat(sprintf("   cropland area: %.0f km2\n", total_crop_km2))
 
 # IDW surface with a disk cache. Interpolating is the slow step and three figures below want the
 # same four surfaces, so paying for them once is the difference between one minute and ten.
@@ -112,7 +112,7 @@ chill_surface <- function(sit) {
   f <- file.path(CACHE, sprintf("swc_%s_%d.tif", sit, RES_M))
   if (!REFRESH && file.exists(f)) return(rast(f))
   p  <- ens[situation == sit]
-  if (!nrow(p)) stop("situacion ausente en chill_all_windows.csv: ", sit)
+  if (!nrow(p)) stop("situation missing from chill_all_windows.csv: ", sit)
   pv <- project(vect(as.data.frame(p[, .(lon, lat, SWC)]), geom = c("lon", "lat"),
                      crs = "EPSG:4326"), paste0("EPSG:", EPSG))
   s <- mask(interpIDW(tmpl, pv, field = "SWC", radius = IDW_RADIUS, power = IDW_POWER,
@@ -125,7 +125,7 @@ chill_surface <- function(sit) {
 # For each cell, the first window whose interpolated chill falls below the cultivar's requirement.
 # Classification happens AFTER interpolation, never before: interpolating an ordinal "first window"
 # index would average categories that are not numbers and invent intermediate decades.
-cat(sprintf("2. tiempo de emergencia (%s)\n", SSP_LAB[[SCEN]]))
+cat(sprintf("2. time of emergence (%s)\n", SSP_LAB[[SCEN]]))
 sits <- c("presente_present", paste0(SCEN, "_", c("nearterm", "near", "far")))
 surf <- lapply(sits, chill_surface)
 
@@ -184,13 +184,13 @@ g30 <- map_row_with_legend(list(pa$g, pb$g), leg, LEG_IN[["hatch"]]) +
                   plot.subtitle = element_text(size = 13, colour = "grey30")))
 ggsave(fig_path(sprintf("fig30_time_of_emergence_%s.png", SCEN)), g30,
        width = 13, height = slot_height(13), dpi = 190, bg = "white")
-cat("   fig30 escrita\n")
+cat("   fig30 written\n")
 
 # § 3 — fig31, the ensemble against the two requirements where the cultivar is actually grown.
 # Nationally the median station holds ~74 CP and both requirements sit far below it, so a national
 # boxplot says nothing. 'Búlida' is a Murcian cultivar, and in Murcia the lower tail is exactly
 # what crosses the two lines. This is the figure that shows the mutant buying a whole window.
-cat("3. ensemble frente a los requerimientos (Región de Murcia)\n")
+cat("3. ensemble against the requirements (Region of Murcia)\n")
 murcia <- ccaa[ccaa$ine.ccaa.name == "Murcia, Región de", ]
 # Coordinates are taken from ONE situation, not pooled across the table. chill_all_windows.csv
 # merges a modelled half (3460 stations, float32 coordinates) with an observed half (3044 stations,
@@ -205,7 +205,7 @@ pts    <- project(vect(as.data.frame(st_all), geom = c("lon", "lat"), crs = "EPS
 inside <- !is.na(extract(rasterize(vect(murcia), rast(ext(vect(murcia)), resolution = 500,
                                                      crs = paste0("EPSG:", EPSG))), pts)[, 2])
 mu_ids <- st_all$station_id[inside]
-cat(sprintf("   %d estaciones dentro de la Región de Murcia\n", length(mu_ids)))
+cat(sprintf("   %d stations inside the Region of Murcia\n", length(mu_ids)))
 
 BOX_SITS <- c("presente_present", paste0(rep(c("ssp126", "ssp245", "ssp370"), each = 3), "_",
                                          c("nearterm", "near", "far")))
@@ -236,7 +236,7 @@ mu_far <- bx[situation == paste0(SCEN, "_far")]
 MU_BELOW_P <- 100 * mean(mu_far$SWC < CR_P)
 MU_BELOW_B <- 100 * mean(mu_far$SWC < CR_B)
 MU_MED_FAR <- median(mu_far$SWC)
-cat(sprintf("   %s a fin de siglo: mediana %.1f CP · bajo 33.7: %.0f%% · bajo 47.5: %.0f%%\n",
+cat(sprintf("   %s at the end of the century: median %.1f CP · below 33.7: %.0f%% · below 47.5: %.0f%%\n",
             SSP_LAB[[SCEN]], MU_MED_FAR, MU_BELOW_P, MU_BELOW_B))
 
 g31 <- ggplot(bx, aes(xpos, SWC, group = xpos, fill = fillcol)) +
@@ -260,13 +260,13 @@ g31 <- ggplot(bx, aes(xpos, SWC, group = xpos, fill = fillcol)) +
         axis.title.y.right = element_blank())
 ggsave(fig_path("fig31_murcia_ensemble_requirements.png"), g31, width = 14, height = 7,
        dpi = 190, bg = "white")
-cat("   fig31 escrita\n")
+cat("   fig31 written\n")
 
 # § 4 — fig32, the observed record as one band per winter.
 # Fifty winters of national mean chill, drawn as bands rather than as a line because the message is
 # not a trend (there is none) but a block: the last five winters are the coldest-deficient of the
 # record. A line invites the eye to look for a slope that the data do not support.
-cat("4. registro observado 1976-2025\n")
+cat("4. observed record 1976-2025\n")
 obs <- fread(out_path("observed_annual_series.csv"))
 
 # The anomaly and its size in standard deviations are NOT recomputed here. They are read from the
@@ -304,13 +304,13 @@ g32 <- ggplot(obs, aes(season_end_year, 1, fill = anom)) +
         legend.key.width = unit(2.4, "cm"))
 ggsave(fig_path("fig32_observed_stripes.png"), g32, width = 13.5, height = 4.6, dpi = 190,
        bg = "white")
-cat("   fig32 escrita\n")
+cat("   fig32 written\n")
 
 # § 5 — fig33, the headline as a flow.
 # Three quantities and the relation between them: what Spain has, what 'Búlida' loses by the end of
 # the century, and how much of that loss the mutant takes back. A bar chart of percentages hides
 # the fact that the second number is a subset of the first.
-cat("5. titular\n")
+cat("5. headline\n")
 tn  <- fread(out_path("talk_numbers_cropland.csv"))
 far <- tn[situation == paste0(SCEN, "_far")]
 tot <- far$crop_km2_both + far$crop_km2_only_precoz + far$crop_km2_none
@@ -319,16 +319,16 @@ rescued  <- far$crop_km2_only_precoz
 gone     <- far$crop_km2_none
 
 # The same three quantities net of the baseline. `lost` is an END STATE, not a change: part of it is
-# land where 'Búlida' already fell short in 1995-2020, so calling all 45.089 km2 "what warming takes
+# land where 'Búlida' already fell short in 1995-2020, so calling all 45,089 km2 "what warming takes
 # away" overstates it. The warming-driven figures are the differences against the model baseline,
-# and they are what any sentence containing the word "quita" has to use.
+# and they are what any sentence containing the words "takes away" has to use.
 base <- tn[situation == "presente_present"]
 base_lost    <- base$crop_km2_only_precoz + base$crop_km2_none
 warm_lost    <- lost - base_lost
 warm_rescued <- rescued - base$crop_km2_only_precoz
-cat(sprintf("   pérdida total %.0f km2, de los cuales %.0f ya lo eran en la línea base\n",
+cat(sprintf("   total loss %.0f km2, of which %.0f already were so at baseline\n",
             lost, base_lost))
-cat(sprintf("   atribuible al calentamiento: %.0f km2, rescatados %.0f (%.1f%%)\n",
+cat(sprintf("   attributable to warming: %.0f km2, rescued %.0f (%.1f%%)\n",
             warm_lost, warm_rescued, 100 * warm_rescued / warm_lost))
 
 # Drawn as a bar with a zoom rather than as four columns side by side. The affected land is a fifth
@@ -374,7 +374,7 @@ g33 <- ggplot() +
   theme(legend.position = "none", panel.grid = element_blank(),
         axis.text = element_blank(), axis.ticks = element_blank())
 ggsave(fig_path("fig33_headline_flow.png"), g33, width = 13, height = 6.2, dpi = 190, bg = "white")
-cat("   fig33 escrita\n")
+cat("   fig33 written\n")
 
 # § 6 — Why the three scenarios are not comparable at 2021-2040.
 # The side-by-side frame shows SSP3-7.0 losing LESS cropland than SSP2-4.5, which reads as a result
@@ -389,7 +389,7 @@ cat("   fig33 escrita\n")
 #     and what any ensemble-median map does) gives one sign; taking it across stations first gives
 #     the other. A quantity whose sign is decided by the order of two medians is not measuring
 #     anything.
-cat("6. dispersion escenario frente a modelo en 2021-2040\n")
+cat("6. scenario against model spread in 2021-2040\n")
 nt  <- d[window == "nearterm"]
 ens_nt <- dcast(nt[, .(SWC = median(safe_winter_chill_P10)), by = .(scenario, station_id)],
                 station_id ~ scenario, value.var = "SWC")
@@ -410,12 +410,12 @@ sign_p <- binom.test(n_pos, nrow(B), 0.5)$p.value
 spread_mod <- median(sub[, .(r = diff(range(safe_winter_chill_P10))), by = .(station_id, scenario)]$r)
 spread_scen <- median(A[, pmax(ssp126, ssp245, ssp370) - pmin(ssp126, ssp245, ssp370)])
 
-cat(sprintf("   %d estaciones marginales · escenarios %.1f CP frente a modelos %.1f CP\n",
+cat(sprintf("   %d marginal stations · scenarios %.1f CP against models %.1f CP\n",
             length(marg), spread_scen, spread_mod))
-cat(sprintf("   modelos con mas frio en SSP3-7.0: %d de %d (prueba de signo p = %.2f)\n",
+cat(sprintf("   models with more chill under SSP3-7.0: %d of %d (sign test p = %.2f)\n",
             n_pos, nrow(B), sign_p))
-cat(sprintf("   orden de agregacion: modelos primero %+.2f CP, estaciones primero %+.2f CP%s\n",
-            ord_A, ord_B, if (sign(ord_A) != sign(ord_B)) "  <- SIGNOS OPUESTOS" else ""))
+cat(sprintf("   aggregation order: models first %+.2f CP, stations first %+.2f CP%s\n",
+            ord_A, ord_B, if (sign(ord_A) != sign(ord_B)) "  <- OPPOSITE SIGNS" else ""))
 
 # fig38 — the same thing as a picture, because the argument is much easier to see than to say.
 # One row per model, three points per row (the three scenarios), over the stations whose chill sits
@@ -429,10 +429,10 @@ cat(sprintf("   orden de agregacion: modelos primero %+.2f CP, estaciones primer
 # that there is no scenario signal to read at this horizon.
 coldest <- B[, .(coldest = c("ssp126", "ssp245", "ssp370")[which.min(c(ssp126, ssp245, ssp370))]),
              by = model][, .N, by = coldest][order(-N)]
-cat("   escenario mas pobre en frio, modelo a modelo: ",
-    paste(sprintf("%s en %d", SSP_LAB[coldest$coldest], coldest$N), collapse = " · "), "\n", sep = "")
+cat("   poorest scenario in chill, model by model: ",
+    paste(sprintf("%s in %d", SSP_LAB[coldest$coldest], coldest$N), collapse = " · "), "\n", sep = "")
 within_model <- median(B[, pmax(ssp126, ssp245, ssp370) - pmin(ssp126, ssp245, ssp370)])
-cat(sprintf("   rango entre escenarios DENTRO de un mismo modelo: %.1f CP (mediana)\n", within_model))
+cat(sprintf("   range between scenarios WITHIN a single model: %.1f CP (median)\n", within_model))
 
 ord_models <- B[order(ssp245)]$model
 Bl <- melt(B, id.vars = "model", variable.name = "scenario", value.name = "SWC")
@@ -462,7 +462,7 @@ g38 <- ggplot(Bl, aes(SWC, model)) +
         axis.title.x.top = element_blank())
 ggsave(fig_path("fig38_model_vs_scenario_spread.png"), g38, width = 12.5, height = 6.6, dpi = 190,
        bg = "white")
-cat("   fig38 escrita\n")
+cat("   fig38 written\n")
 
 # Numbers quoted on the slides, written out so the deck builder never retypes one.
 fwrite(data.table(
@@ -499,4 +499,4 @@ fwrite(data.table(
              coldest[coldest == "ssp370", N][1]),
   scenario = SCEN), out_path("talk_key_numbers.csv"))
 
-cat(sprintf("\nescritas 4 figuras en %s\ny talk_key_numbers.csv\n", FIGS))
+cat(sprintf("\n4 figures written in %s\nand talk_key_numbers.csv\n", FIGS))

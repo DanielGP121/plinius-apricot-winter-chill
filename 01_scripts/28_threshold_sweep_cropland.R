@@ -95,21 +95,21 @@ OUT   <- OUT_DIR
 REF   <- file.path(OUT, "talk_numbers_cropland.csv")
 
 # --- § 1 - station chill, ensemble median, same pooling as script 19 --------------------------
-cat("1. frio por estacion\n")
+cat("1. station chill\n")
 d <- fread(CHILL, colClasses = list(character = "station_id"))
 ens <- d[, .(SWC = median(safe_winter_chill_P10)), by = .(situation, station_id, lon, lat)]
 
-# 2021-2040 pooled across scenarios: at that horizon they are indistinguishable (0.62 CP between
-# scenarios against 8.91 CP between models), so three panels would invite reading noise as signal.
+# 2021-2040 pooled across scenarios: at that horizon they are indistinguishable (0.26 CP between
+# scenarios against 7.13 CP between models), so three panels would invite reading noise as signal.
 nt <- d[window == "nearterm", .(SWC = median(safe_winter_chill_P10)), by = .(station_id, lon, lat)]
 if (nrow(nt)) ens <- rbind(ens[!grepl("_nearterm$", situation)],
                            nt[, .(situation = "pooled_nearterm", station_id, lon, lat, SWC)])
 sits <- unique(ens$situation)
 if (QUICK) sits <- sits[1]
-cat(sprintf("   %d situaciones, %d estaciones\n", length(sits), uniqueN(ens$station_id)))
+cat(sprintf("   %d situations, %d stations\n", length(sits), uniqueN(ens$station_id)))
 
 # --- § 2 - template and cropland fraction, identical to script 19 -----------------------------
-cat("2. plantilla, contorno y CORINE\n")
+cat("2. template, outline and CORINE\n")
 ccaa <- esp_get_ccaa(epsg = 4326)
 ccaa <- st_transform(ccaa[!grepl("Canaria", ccaa$ine.ccaa.name), ], EPSG)
 spain <- st_union(ccaa)
@@ -125,13 +125,13 @@ cropfrac <- mask(resample(isc, tmpl, method = "average"), vect(spain))
 cell_km2 <- cell_area_km2(cropfrac)   # not (RES_M/1000)^2; see 00_corine.R
 cf <- values(cropfrac)[, 1]
 total_km2 <- sum(cf, na.rm = TRUE) * cell_km2
-cat(sprintf("   superficie cultivable nacional: %.0f km2\n", total_km2))
+cat(sprintf("   national cropland area: %.0f km2\n", total_km2))
 
 # --- § 3 - one surface per situation, then the whole curve in memory ---------------------------
 # Pulling the cell values out once and sweeping the thresholds as a vector operation avoids
 # rasterising the same surface a hundred times; the raster work is the expensive part and it does
 # not depend on the threshold.
-cat(sprintf("3. barriendo %d umbrales de %.1f a %.1f CP\n", length(THR), min(THR), max(THR)))
+cat(sprintf("3. sweeping %d thresholds from %.1f to %.1f CP\n", length(THR), min(THR), max(THR)))
 curves <- list()
 for (s in sits) {
   p <- ens[situation == s]
@@ -144,7 +144,7 @@ for (s in sits) {
   vv <- v[keep]; ww <- cf[keep]
   curves[[s]] <- data.table(situation = s, threshold = THR,
                             km2_at_or_above = vapply(THR, function(t) sum(ww[vv >= t]) * cell_km2, 0))
-  cat(sprintf("   %-24s %6.0f km2 de cultivable alcanzado por la interpolacion\n", s, sum(ww) * cell_km2))
+  cat(sprintf("   %-24s %6.0f km2 of cropland reached by the interpolation\n", s, sum(ww) * cell_km2))
 }
 sweep <- rbindlist(curves)
 sweep[, pct_at_or_above := round(100 * km2_at_or_above / total_km2, 4)]
@@ -165,13 +165,13 @@ if (file.exists(REF)) {
   }))
   chk[, `:=`(d_both = round(both_sweep - both_ref, 2), d_only = round(only_sweep - only_ref, 2))]
   worst <- max(abs(c(chk$d_both, chk$d_only)))
-  cat(sprintf("\n4. comprobacion contra talk_numbers_cropland.csv: discrepancia maxima %.2f km2\n", worst))
+  cat(sprintf("\n4. check against talk_numbers_cropland.csv: largest discrepancy %.2f km2\n", worst))
   print(chk[order(-abs(d_both))][1:min(4, .N)])
   if (worst > TOL)
-    stop(sprintf("el barrido no reproduce las cifras publicadas (%.2f km2 > %.2f de tolerancia); una de las dos rutas ha derivado", worst, TOL))
-  cat("   coinciden dentro de la tolerancia\n")
+    stop(sprintf("the sweep does not reproduce the published figures (%.2f km2 > %.2f tolerance); one of the two routes has drifted", worst, TOL))
+  cat("   they agree within the tolerance\n")
 } else {
-  cat("\n4. AVISO: no encuentro talk_numbers_cropland.csv, no se puede comprobar contra lo publicado\n")
+  cat("\n4. WARNING: talk_numbers_cropland.csv not found, cannot check against the published figures\n")
 }
 
 # --- § 5 - what the parametrisation question would cost ----------------------------------------
@@ -183,9 +183,9 @@ if (worst_sit %in% sits) {
   a_shift<- at(worst_sit, CR_P + GAP) - at(worst_sit, CR_B + GAP)
   none_now   <- total_km2 - at(worst_sit, CR_P)
   none_shift <- total_km2 - at(worst_sit, CR_P + GAP)
-  cat(sprintf("\n5. si los umbrales estuvieran %.2f CP mas altos (escala 1988), en %s:\n", GAP, worst_sit))
-  cat(sprintf("   banda 'solo Precoz': %.0f -> %.0f km2 (%+.0f%%)\n", a_now, a_shift, 100 * (a_shift / a_now - 1)))
-  cat(sprintf("   'ninguna variedad'  : %.0f -> %.0f km2 (%+.0f%%)\n", none_now, none_shift, 100 * (none_shift / none_now - 1)))
+  cat(sprintf("\n5. if the thresholds were %.2f CP higher (1988 scale), in %s:\n", GAP, worst_sit))
+  cat(sprintf("   'only Precoz' band: %.0f -> %.0f km2 (%+.0f%%)\n", a_now, a_shift, 100 * (a_shift / a_now - 1)))
+  cat(sprintf("   'neither cultivar': %.0f -> %.0f km2 (%+.0f%%)\n", none_now, none_shift, 100 * (none_shift / none_now - 1)))
 }
 
 fwrite(sweep, file.path(OUT, "cropland_threshold_sweep.csv"))
@@ -193,5 +193,5 @@ if (!is.null(chk)) fwrite(chk, file.path(OUT, "cropland_threshold_check.csv"))
 fwrite(data.table(metric = c("total_cropland_km2", "cell_km2", "idw_radius_m", "n_thresholds"),
                   value = c(round(total_km2, 2), cell_km2, IDW_RADIUS, length(THR))),
        file.path(OUT, "cropland_threshold_meta.csv"))
-cat(sprintf("\nescrito cropland_threshold_sweep.csv: %d filas (%d situaciones x %d umbrales)\n",
+cat(sprintf("\nwrote cropland_threshold_sweep.csv: %d rows (%d situations x %d thresholds)\n",
             nrow(sweep), length(sits), length(THR)))

@@ -78,7 +78,7 @@ FRAME_DIR <- out_path("gif_frames")
 dir.create(FRAME_DIR, showWarnings = FALSE, recursive = TRUE)
 
 # § 1 — Station chill, collapsed to the ensemble median per station and situation.
-cat("1. leyendo frio por estacion\n")
+cat("1. reading chill per station\n")
 d <- fread(out_path("chill_all_windows.csv"))
 stopifnot(!anyNA(d$safe_winter_chill_P10), is.numeric(d$lon))
 ens <- d[, .(SWC = median(safe_winter_chill_P10)),
@@ -89,13 +89,13 @@ sits <- c(base = "presente_present",
           setNames(paste0(rep(scen_list, each = 3), "_", c("nearterm", "near", "far")),
                    paste0(rep(scen_list, each = 3), "_", c("nearterm", "near", "far"))))
 missing <- setdiff(sits, unique(ens$situation))
-if (length(missing)) stop("faltan situaciones en chill_all_windows.csv: ", paste(missing, collapse = ", "))
-cat(sprintf("   %d superficies a interpolar, celda %.0f m\n", length(sits), RES_M))
+if (length(missing)) stop("missing situations in chill_all_windows.csv: ", paste(missing, collapse = ", "))
+cat(sprintf("   %d surfaces to interpolate, %.0f m cell\n", length(sits), RES_M))
 
 # § 2 — Country outline, 1 km template and the cropland fraction of every cell.
 # Identical to 19_cropland_viability_national.R; the area statistics printed on the frames have to
 # match talk_numbers_cropland.csv exactly or the animation contradicts the slide next to it.
-cat("2. plantilla, contorno y suelo cultivable\n")
+cat("2. template, outline and cropland\n")
 ccaa  <- esp_get_ccaa(epsg = 4326)
 ccaa  <- st_transform(ccaa[!grepl("Canaria", ccaa$ine.ccaa.name), ], EPSG)
 spain <- st_union(ccaa)
@@ -121,7 +121,7 @@ cell_km2 <- cell_area_km2(cropfrac)   # not (RES_M/1000)^2; see 00_corine.R
 total_crop_km2 <- global(cropfrac, "sum", na.rm = TRUE)[1, 1] * cell_km2
 if (!is.finite(total_crop_km2) || total_crop_km2 < 1e4)
   stop(sprintf("cropland mask selected %.0f km2, which cannot be right", total_crop_km2))
-cat(sprintf("   superficie cultivable nacional: %.0f km2\n", total_crop_km2))
+cat(sprintf("   national cropland area: %.0f km2\n", total_crop_km2))
 
 # § 3 — One IDW surface per situation, classified into the three viability classes.
 # The classified rasters are turned into data frames here, once, because ggplot needs them in that
@@ -130,7 +130,7 @@ classify_cell <- function(swc) ifel(swc >= CR_B, 1L, ifel(swc >= CR_P, 2L, 3L))
 
 panels <- list(); stats <- list(); surfaces <- list()
 for (s in unique(sits)) {
-  cat(sprintf("3. interpolando %s\n", s))
+  cat(sprintf("3. interpolating %s\n", s))
   p  <- ens[situation == s]
   pv <- project(vect(as.data.frame(p[, .(lon, lat, SWC)]), geom = c("lon", "lat"), crs = "EPSG:4326"),
                 paste0("EPSG:", EPSG))
@@ -147,7 +147,7 @@ for (s in unique(sits)) {
   panels[[s]] <- df
   surfaces[[s]] <- as.data.frame(surf, xy = TRUE, na.rm = TRUE) |> setNames(c("x", "y", "SWC"))
   stats[[s]] <- data.table(situation = s, km2_both = km2[1], km2_only = km2[2], km2_none = km2[3])
-  cat(sprintf("   ambas %.0f km2 | solo Precoz %.0f km2 | ninguna %.0f km2\n", km2[1], km2[2], km2[3]))
+  cat(sprintf("   both %.0f km2 | only Precoz %.0f km2 | neither %.0f km2\n", km2[1], km2[2], km2[3]))
 }
 ST <- rbindlist(stats)
 
@@ -182,7 +182,7 @@ hatch_for <- function(sit) {
     f <- if (length(alt)) alt[1] else f
   }
   v <- if (!file.exists(f)) {
-    message("sin capa de acuerdo para ", sit, "; ejecuta 36_per_model_stats.R")
+    message("no agreement layer for ", sit, "; run 36_per_model_stats.R")
     list()
   } else {
     ag <- rast(f)
@@ -284,8 +284,8 @@ strip_layout <- function(...) plot_layout(heights = unit(c(1, ...), c("null", re
 km2_fmt <- function(x) formatC(round(x), format = "d", big.mark = ",")
 
 # § 5 — One animation per scenario.
-# The caption on step 2 is not decoration. At 2021-2040 the three scenarios differ by 0.62 CP at the
-# median station while the eleven models span 8.91, so a viewer watching three panels move apart
+# The caption on step 2 is not decoration. At 2021-2040 the three scenarios differ by 0.26 CP at the
+# median station while the eleven models span 7.13, so a viewer watching three panels move apart
 # there would be reading model noise as policy. Saying it on the frame costs nothing.
 manifest <- list()
 frame_file <- function(tag, i) file.path(FRAME_DIR, sprintf("%s_%02d.png", tag, i))
@@ -305,7 +305,7 @@ for (scen in scen_list) {
       anim = scen, step = i, file = basename(frame_file(scen, i)),
       duration_ms = c(1800, 1400, 1400, 2500)[i])
   }
-  cat(sprintf("5. frames de %s escritos\n", SSP_LAB[[scen]]))
+  cat(sprintf("5. frames for %s written\n", SSP_LAB[[scen]]))
 }
 
 # § 6 — The three scenarios side by side, advancing together.
@@ -343,7 +343,7 @@ for (i in 1:4) {
     anim = "sidebyside", step = i, file = basename(frame_file("sidebyside", i)),
     duration_ms = c(2000, 1500, 1500, 2800)[i])
 }
-cat("6. frames side-by-side escritos\n")
+cat("6. side-by-side frames written\n")
 
 # § 7 — The continuous chill surface, same four steps, pooled scenarios aside.
 # Kept for the annex: the classified map answers the question, but the surface behind it is what
@@ -367,12 +367,12 @@ for (scen in scen_list) {
       duration_ms = c(1800, 1400, 1400, 2500)[i])
   }
 }
-cat("7. frames de superficie SWC escritos\n")
+cat("7. SWC surface frames written\n")
 
 MAN <- rbindlist(manifest)[order(anim, step)]
 fwrite(MAN, file.path(FRAME_DIR, "frames_manifest.csv"))
 fwrite(ST,  out_path("gif_frame_stats.csv"))
 
-cat(sprintf("\nescritos %d frames en %s\n", nrow(MAN), FRAME_DIR))
-cat(sprintf("%d animaciones: %s\n", uniqueN(MAN$anim), paste(unique(MAN$anim), collapse = ", ")))
-cat("siguiente: python 32_make_gifs.py\n")
+cat(sprintf("\nwrote %d frames in %s\n", nrow(MAN), FRAME_DIR))
+cat(sprintf("%d animations: %s\n", uniqueN(MAN$anim), paste(unique(MAN$anim), collapse = ", ")))
+cat("next: python 32_make_gifs.py\n")

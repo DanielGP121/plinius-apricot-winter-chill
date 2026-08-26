@@ -9,8 +9,10 @@ documento, así que no puede quedarse desfasada como se quedó la lista que hab�
 del proyecto, que se paró en el script 30 mientras el directorio llegaba al 41.
 
 La columna "Qué hace" viene **literal de la cabecera de cada fichero y por tanto en inglés**, que es
-el idioma del código en este proyecto. Traducirla aquí obligaría a mantener dos versiones y una de
-las dos envejecería; se prefiere que sea evidente de dónde sale.
+el idioma del código en este proyecto. La única fila en español es la de `DM_JOSE.R`, que no es
+código del proyecto sino de J.A. Egea (capítulo \@ref(dinamico)) y lleva la cabecera anotada en
+español. Traducirla aquí obligaría a mantener dos versiones y una de las dos envejecería; se
+prefiere que sea evidente de dónde sale.
 
 ## Los scripts
 
@@ -74,13 +76,16 @@ knitr::kable(ref, booktabs = TRUE, align = "lrll")
 
 ## Dónde corre cada cosa
 
-Sólo dos scripts se ejecutan fuera del portátil, y son los que manejan el grueso de los datos:
+Tres scripts se ejecutan fuera del portátil, en el HPC:
 
-- `14_ladon_download_thredds.sh` descarga los 88 NetCDF en el HPC.
+- `14_ladon_download_thredds.sh` descarga allí los 88 NetCDF, unos 15 GB que nunca bajan al
+  portátil.
 - `15_chill_national_parallel.R` calcula el frío allí mismo, en paralelo por estación, con punto de
   control por combinación para que un corte cueste como mucho la combinación en curso.
+- `21_aemet_observed_download.py` baja de la API de AEMET el observado de 1995 a 2025, también
+  allí. Usa sólo la biblioteca estándar, así que no hace falta montarle un entorno.
 
-Los dos se suben como ficheros sueltos y por eso no dependen del resolvedor de rutas compartido.
+Los tres se suben como ficheros sueltos y por eso no dependen del resolvedor de rutas compartido.
 Todo lo demás corre en local sobre las tablas que bajan de allí.
 
 ## Las corridas del motor de frío

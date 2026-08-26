@@ -58,8 +58,9 @@ se transfiere de vuelta son tablas de frío:
 `r n_es(metrica("pipeline_diagram_numbers", "table_MB"))` MB para la tabla canónica entera. Los
 NetCDF nunca salen del HPC.
 
-Esto explica también por qué los scripts 14 y 15 son los únicos que no dependen del resolvedor de
-rutas compartido del proyecto: se suben al HPC como ficheros sueltos y tienen que funcionar solos.
+Esto explica también por qué los tres scripts que corren allí (14, 15 y 21) no dependen del
+resolvedor de rutas compartido del proyecto: se suben al HPC como ficheros sueltos y tienen que
+funcionar solos.
 
 ## De los NetCDF a una serie diaria por estación
 
@@ -110,9 +111,46 @@ usarse como referencia contra la que restar los futuros.
 
 ## Cómo se congela la versión de los datos
 
-Una limitación: **el conjunto descargado no está congelado por un hash**. Si AEMET
-reprocesara el producto y volviera a publicarlo, una descarga futura podría no ser idéntica a esta
-y no habría forma de detectarlo desde aquí.
+El conjunto descargado **queda identificado por un hash**, calculado el 26 de agosto de 2026 sobre
+los ficheros tal como están en el HPC. El procedimiento tiene dos niveles: un md5 por fichero,
+escritos en un manifiesto ordenado por nombre, y un md5 de ese manifiesto, que resume todo el
+conjunto en una sola cadena.
 
-Las sumas de verificación de los 88 NetCDF no se han calculado ni guardado junto al código. Mientras no se haga, lo que sí queda registrado es la fecha de descarga
-y la vía, que es lo mínimo para que otro sepa qué pedir.
+| | ficheros | bytes | md5 del manifiesto |
+| --- | --- | --- | --- |
+| Proyecciones | 88 | 15.525.872.039 | `85875678cbc655ff06d3a5a0964a846b` |
+| Observado archivado | 2 | 409.529.152 | `12c87c8fa4a17333f8872f02d62e11cb` |
+
+Una descarga futura se compara contra esto con un solo comando, desde el directorio de datos del
+HPC:
+
+```bash
+md5sum -c proyecciones_peninsula/netcdf_md5.txt
+```
+
+El orden fijo del `sort` es lo que hace que dos ejecuciones produzcan el mismo manifiesto, y por
+tanto el mismo md5. Se comprobó por accidente: el archivo del observado se procesó dos veces y las
+dos pasadas dieron `12c87c8f…`.
+
+De paso quedó resuelta una duda que venía de la propia descarga. El bucle del script 14 salta
+cualquier fichero que ya exista y no esté vacío, de modo que uno cortado a medias habría pasado por
+bueno sin avisar. Los tamaños descartan que ocurriera: se agrupan en dos bandas, 140,7 MB los
+`historical` y 192-193 MB los de escenario, y por debajo de la banda histórica no hay nada. La
+proporción entre ambas, 1,37, se corresponde con los 86 años que cubre un escenario (2015-2100)
+frente a los algo más de sesenta del tramo histórico, que es justo la relación que un truncamiento
+rompería. Ningún md5 aparece repetido, así que tampoco hay dos ficheros distintos con los mismos
+bytes.
+
+Queda una limitación, bastante más estrecha que la anterior. Esto congela la versión **de aquí en
+adelante**: cualquier divergencia futura es detectable. Lo que no puede demostrar es que el portal
+sirviera exactamente estos bytes, porque AdapteCCa no publica checksum propio contra el que
+contrastar. Para eso lo único que queda es la vía de descarga y la fecha.
+
+```{r descarga-checksums, results = "asis"}
+codigo("48_ladon_checksums.sh", entero = TRUE,
+       titulo = "el manifiesto de checksums, entero",
+       resumen = paste("Corre en el HPC y sólo lee: los NetCDF no se tocan. Repara además en que",
+                       "la cuenta de 88 sólo se exige cuando el manifiesto lleva ficheros de",
+                       "proyección, para que archivar el observado por separado no dé una alarma",
+                       "falsa."))
+```

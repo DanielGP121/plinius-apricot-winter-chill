@@ -59,7 +59,7 @@ comparables. El capítulo \@ref(dinamico) explica cuál es y qué efecto tiene l
 
 ## La geografía del asunto
 
-```{r pregunta-fig, fig.cap = pie("El frío que hay hoy sobre el suelo agrícola español, antes de meter ningún escenario. Las dos líneas de referencia son los requerimientos de las dos variedades.", "34_method_figures.R", "ggplot2 4.0.2")}
+```{r pregunta-fig, fig.cap = pie("El reparto del suelo agrícola español entre las tres clases con el frío de la línea base simulada 1995-2020, antes de meter ningún escenario.", "34_method_figures.R", "ggplot2 4.0.2")}
 knitr::include_graphics(figura("fig37_baseline_today.png"))
 ```
 

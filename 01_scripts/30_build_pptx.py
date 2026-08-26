@@ -132,7 +132,7 @@ def fig(s, name, x, y, w, h, cap=None):
     """Place a figure inside the given box, preserving aspect and centring the leftover space."""
     p = os.path.join(FIGDIR, name + ".png")
     if not os.path.exists(p):
-        print("   falta figura:", name)
+        print("   missing figure:", name)
         return
     from PIL import Image
     iw, ih = Image.open(p).size
@@ -439,5 +439,5 @@ for b in DECK:
 os.makedirs(PRES, exist_ok=True)
 prs.save(OUT)
 print(f"escrito {OUT}")
-print(f"  {len(prs.slides.__iter__.__self__._sldIdLst)} diapositivas, {n_fig} figuras, "
+print(f"  {len(prs.slides.__iter__.__self__._sldIdLst)} slides, {n_fig} figures, "
       f"{os.path.getsize(OUT)/1048576:.1f} MB")

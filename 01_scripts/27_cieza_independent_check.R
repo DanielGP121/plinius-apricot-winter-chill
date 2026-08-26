@@ -86,7 +86,7 @@ for (s in excel_sheets(CIEZA)) {
 }
 if (is.null(best)) stop("no sheet carries Year/Month/Day/Tmax/Tmin")
 cie <- best$d
-cat(sprintf("Cieza: hoja '%s', %s filas, %d-%d, NA en Tmax %d y en Tmin %d\n",
+cat(sprintf("Cieza: sheet '%s', %s rows, %d-%d, NA in Tmax %d and in Tmin %d\n",
             best$sheet, format(nrow(cie), big.mark = ","), min(cie$Year), max(cie$Year),
             sum(is.na(cie$Tmax)), sum(is.na(cie$Tmin))))
 
@@ -103,16 +103,16 @@ cz <- as.data.table(tr)[, .(season_end_year = as.integer(End_year),
 cz[, gap := round(CP_1988 - CP_1987, 2)]
 czk <- cz[perc_complete >= MIN_PERC & season_end_year >= FIRST_BASE]
 
-cat(sprintf("\ntemporadas utilizables: %d (%d-%d)\n", nrow(czk), min(czk$season_end_year), max(czk$season_end_year)))
-cat("\n=== desfase entre parametrizaciones ===\n")
-cat(sprintf("  media CP_1987 %.2f, media CP_1988 %.2f\n", mean(czk$CP_1987), mean(czk$CP_1988)))
-cat(sprintf("  desfase medio %+.2f CP, rango %+.2f a %+.2f, sd %.2f\n",
+cat(sprintf("\nusable seasons: %d (%d-%d)\n", nrow(czk), min(czk$season_end_year), max(czk$season_end_year)))
+cat("\n=== gap between parametrisations ===\n")
+cat(sprintf("  mean CP_1987 %.2f, mean CP_1988 %.2f\n", mean(czk$CP_1987), mean(czk$CP_1988)))
+cat(sprintf("  mean gap %+.2f CP, range %+.2f to %+.2f, sd %.2f\n",
             mean(czk$gap), min(czk$gap), max(czk$gap), sd(czk$gap)))
-cat(sprintf("  brecha entre cultivares (Ruiz 2019): 13.8 CP -> el desfase es el %.0f%% de ella\n",
+cat(sprintf("  gap between cultivars (Ruiz 2019): 13.8 CP -> the parametrisation gap is %.0f%% of it\n",
             100 * abs(mean(czk$gap)) / 13.8))
-cat(sprintf("  correlacion del desfase con el frio de la temporada: %.3f",
+cat(sprintf("  correlation of the gap with seasonal chill: %.3f",
             cor(czk$gap, czk$CP_1987)))
-cat("  (positiva = el desfase crece en los inviernos suaves)\n")
+cat("  (positive = the gap grows in mild winters)\n")
 
 # --- § 3 - the recent block, three instruments -----------------------------------------------
 anom <- function(base, rec, label) data.table(
@@ -121,7 +121,7 @@ anom <- function(base, rec, label) data.table(
   anomaly_CP = round(mean(rec) - mean(base), 2), anomaly_sd = round((mean(rec) - mean(base)) / sd(base), 2))
 
 blocks <- list(anom(czk[season_end_year <= SPLIT]$CP_1987, czk[season_end_year > SPLIT]$CP_1987,
-                    sprintf("Cieza huerto CEBAS (%d-%d)", FIRST_BASE, SPLIT)))
+                    sprintf("Cieza CEBAS orchard (%d-%d)", FIRST_BASE, SPLIT)))
 
 arc <- fread(ARCH, colClasses = list(character = "station_id"))[perc_complete >= MIN_PERC]
 api <- fread(APIF, colClasses = list(character = "station_id"))[perc_complete >= MIN_PERC]
@@ -134,9 +134,9 @@ stable <- Filter(function(s) {
   nrow(arc[station_id == s & season_end_year %between% c(FIRST_BASE, SPLIT)]) >= 5 &&
   nrow(api[station_id == s & season_end_year %between% c(SPLIT + 1L, LAST)]) >= 3
 }, cand)
-cat(sprintf("\nestaciones AEMET a menos de %g km: %d; con serie estable a ambos lados: %d (%s)\n",
+cat(sprintf("\nAEMET stations within %g km: %d; with a stable series on both sides: %d (%s)\n",
             RADIUS, length(cand), length(stable), paste(stable, collapse = ", ")))
-if (!length(stable)) cat("  ninguna sirve para un contraste de composicion estable\n")
+if (!length(stable)) cat("  none usable for a stable-composition contrast\n")
 
 for (s in stable) {
   b <- arc[station_id == s & season_end_year %between% c(FIRST_BASE, SPLIT)]$CP
@@ -149,18 +149,18 @@ for (s in stable) {
 if (file.exists(SERIES)) {
   ns <- fread(SERIES)
   blocks[[length(blocks) + 1]] <- anom(ns[season_end_year <= SPLIT]$mean_CP,
-                                       ns[season_end_year > SPLIT]$mean_CP, "Nacional (665 est.)")
+                                       ns[season_end_year > SPLIT]$mean_CP, "National (665 stations)")
 }
 tab <- rbindlist(blocks)
-cat("\n=== el bloque 2021-2025 visto por instrumentos distintos ===\n")
+cat("\n=== the 2021-2025 block seen by different instruments ===\n")
 print(tab)
-cat("\nLas anomalias absolutas no son comparables entre si (Murcia es zona de frio bajo y una\n")
-cat("estacion sola tiene mas varianza que una media de 665). La columna que se compara es anomaly_sd.\n")
+cat("\nAbsolute anomalies are not comparable with each other (Murcia is a low-chill area and a\n")
+cat("single station has more variance than a mean of 665). The column to compare is anomaly_sd.\n")
 
 # --- § 4 - figures -----------------------------------------------------------------------------
 dir.create(FIGDIR, showWarnings = FALSE, recursive = TRUE)
 old <- list.files(FIGDIR, pattern = "^fig26_", full.names = TRUE)
-if (length(old)) { file.remove(old); cat(sprintf("\nborradas %d figuras fig26_ previas\n", length(old))) }
+if (length(old)) { file.remove(old); cat(sprintf("\nremoved %d previous fig26_ figures\n", length(old))) }
 
 th <- theme_minimal(base_size = 11) +
       theme(panel.grid.minor = element_blank(), legend.position = "top",
@@ -216,4 +216,4 @@ fwrite(data.table(
   value = c(round(mean(czk$gap), 4), round(min(czk$gap), 4),
             round(max(czk$gap), 4), nrow(czk))
 ), file.path(OUTDIR, "cieza_numbers.csv"))
-cat(sprintf("\nescritas 2 figuras en %s y 3 tablas en %s\n", FIGDIR, OUTDIR))
+cat(sprintf("\nwrote 2 figures to %s and 3 tables to %s\n", FIGDIR, OUTDIR))

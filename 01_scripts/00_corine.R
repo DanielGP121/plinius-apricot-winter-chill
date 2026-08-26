@@ -86,11 +86,11 @@ corine_crop_mask <- function(clc, verbose = TRUE) {
     }
 
     if (verbose) {
-      cat("   clases CORINE seleccionadas:\n")
+      cat("   CORINE classes selected:\n")
       cat(sprintf("     %2d  %s\n", CORINE_CROP_CODES, lv[[lab_col[1]]][got]), sep = "")
     }
   } else if (verbose) {
-    cat("   el raster CORINE no trae tabla de atributos; se usan los codigos numericos directos\n")
+    cat("   the CORINE raster has no attribute table; the raw numeric codes are used\n")
   }
 
   # Categories are dropped before comparing. On a categorical SpatRaster the comparison operators

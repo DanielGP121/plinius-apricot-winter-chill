@@ -53,7 +53,7 @@ talk_theme <- theme_minimal(base_size = 14) +
         plot.subtitle = element_text(size = 12.5, colour = "grey30"),
         panel.grid.minor = element_blank(), legend.position = "bottom")
 
-cat("1. datos\n")
+cat("1. data\n")
 d  <- fread(out_path("chill_all_windows.csv"))
 dm <- d[model != "obs"]
 models <- sort(unique(dm$model))
@@ -66,7 +66,7 @@ CROP_KM2 <- fread(out_path("talk_numbers_cropland.csv"))[1,
 # § 1 — fig43, how far each model sits from the observations.
 # Same window and the same 3044 stations for both sides, because comparing a model over one period
 # with observations over another measures the periods, not the model.
-cat("2. fig43 sesgo por modelo\n")
+cat("2. fig43 bias per model\n")
 obs <- d[situation == "observaciones_present", .(station_id, obs = safe_winter_chill_P10)]
 mod <- dm[situation == "presente_present", .(station_id, model, mod = safe_winter_chill_P10)]
 mm  <- merge(mod, obs, by = "station_id")
@@ -105,7 +105,7 @@ ggsave(fig_path("fig43_model_bias.png"), g43, width = 12.5, height = 6, dpi = 19
 # Drawn because "the median of eleven models" hides four other reductions that happen before it,
 # and the audience cannot judge the result without knowing that the map is the last of five
 # collapses, not the first.
-cat("3. fig44 cadena de agregacion\n")
+cat("3. fig44 aggregation chain\n")
 n_st <- uniqueN(dm$station_id); n_md <- length(models)
 n_seasons_far <- max(dm[window == "far"]$n_seasons)
 surf <- rast(file.path(CACHE, sprintf("swc_presente_present_%d.tif", RES_M)))
@@ -155,7 +155,7 @@ ggsave(fig_path("fig44_aggregation_chain.png"), g44, width = 13.5, height = 6.4,
 # § 3 — fig45, absolute against delta.
 # Each model is compared to its own baseline, so any constant offset it carries cancels. If the
 # conclusion only survived on absolute values it would depend on the bias correction not applied.
-cat("4. fig45 delta frente a absoluto\n")
+cat("4. fig45 delta against absolute\n")
 base_m <- dm[situation == "presente_present", .(station_id, model, base = safe_winter_chill_P10)]
 delt <- rbindlist(lapply(c("ssp126_far", "ssp245_far", "ssp370_far"), function(s) {
   fut <- dm[situation == s, .(station_id, model, fut = safe_winter_chill_P10)]
@@ -182,10 +182,10 @@ ggsave(fig_path("fig45_delta_vs_absolute.png"), g45, width = 12.5, height = 4.6,
 # § 4 — fig46, one real station from its record to its class.
 # Abstract chains are hard to trust. This is the same chain applied to a single named station, with
 # every number visible, so the audience can check the arithmetic of the method on one case.
-cat(sprintf("5. fig46 recorrido de la estacion %s\n", STN))
+cat(sprintf("5. fig46 walkthrough of station %s\n", STN))
 os <- fread(out_path("chill_obs_seasons_1975.csv"))[station_id == STN & perc_complete >= 85]
 setorder(os, season_end_year)
-if (!nrow(os)) stop("la estacion ", STN, " no tiene temporadas observadas suficientes")
+if (!nrow(os)) stop("station ", STN, " does not have enough observed seasons")
 p10_obs <- quantile(os$CP, 0.10)
 
 pa <- ggplot(os, aes(season_end_year, CP)) +
@@ -221,9 +221,9 @@ pb <- ggplot(stm, aes(SWC, w)) +
 # station's own 50 km neighbourhood, the radius within which it actually weighs on the
 # interpolation, with the cropland classified before and after. It is the step where the audience
 # sees a chill portion become a hectare.
-cat("6. fig46 panel 3, del punto al terreno\n")
+cat("6. fig46 panel 3, from the point to the ground\n")
 crop_f <- file.path(CACHE, sprintf("cropfrac_%d.tif", RES_M))
-if (!file.exists(crop_f)) stop("falta ", basename(crop_f), "; ejecuta antes 36_per_model_stats.R",
+if (!file.exists(crop_f)) stop("missing ", basename(crop_f), "; run 36_per_model_stats.R first",
                                call. = FALSE)
 cropfrac <- rast(crop_f)
 CELL <- cell_area_km2(cropfrac)
@@ -255,7 +255,7 @@ built <- lapply(names(SIT3), function(s) {
                      SIT3[[s]], i_en(km[1]), i_en(km[2]), i_en(km[3])))
 })
 built <- Filter(Negate(is.null), built)
-if (!length(built)) stop("no hay superficies cacheadas para el panel 3 de fig46")
+if (!length(built)) stop("no cached surfaces for panel 3 of fig46")
 labs3 <- vapply(built, `[[`, character(1), "lab")
 loc <- rbindlist(Map(function(b, l) b$df[, sit := l], built, labs3))
 loc[, sit := factor(sit, levels = labs3)]
@@ -315,4 +315,4 @@ fwrite(rbindlist(lapply(built, function(b) data.table(
   km2_both = b$km[1], km2_only_precoz = b$km[2], km2_none = b$km[3]))),
   out_path("station_walkthrough_km2.csv"))
 
-cat(sprintf("\nescritas 4 figuras en %s y method_chain_numbers.csv\n", FIG_DIR))
+cat(sprintf("\nwrote 4 figures in %s and method_chain_numbers.csv\n", FIG_DIR))

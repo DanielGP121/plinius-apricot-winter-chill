@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------------------
 # The pipeline drawn at two zoom levels, plus the table that would be a third.
 #
-#   fig49  seven conceptual stages, from four sources to three classes of cropland
+#   fig49  seven conceptual stages, from three sources to three classes of cropland
 #   fig50  the same chain at file level: which script reads what, writes what, and runs where
 #   pipeline_runs.csv  the combinatorics (model x experiment x window), which is a table and not
 #                      a graph, because 484 model runs drawn as nodes is a grey rectangle
@@ -132,7 +132,7 @@ stages <- data.table(
             "Median across models",
             "Interpolation to a surface",
             "Classified cropland"),
-  detail = c("Tmin and Tmax per station and day, from the four sources above",
+  detail = c("Tmin and Tmax per station and day, from the three sources above",
              "from two daily values to twenty-four, using the latitude of each station",
              sprintf("one number per station, model and season · up to %d seasons per window", N_SEASONS),
              "10th percentile across the seasons of the window: the chill of the second-worst winter in ten",
@@ -201,7 +201,7 @@ if (!is.na(note6))
              lineheight = 0.95, label = note6)
 
 g49 <- g49 +
-  labs(title = ttl("From four temperature files to a map of where each cultivar fits"),
+  labs(title = ttl("From three temperature files to a map of where each cultivar fits"),
        subtitle = paste("Seven successive reductions, each with its parameters in italics.",
                         "The background colour separates what arrives ready-made from outside",
                         "(PNACC, AEMET, Copernicus) from what is computed here."),

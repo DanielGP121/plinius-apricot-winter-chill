@@ -4,7 +4,7 @@
 # each with and without the AEMET stations overlaid. The national CORINE is processed once.
 #
 # CORINE broad cropland (211-244) is turned into a 100 m 0/1 raster, then aggregated to 500 m
-# two ways: the mean gives cropland DENSITY (% per cell), the modal gives a BINARY cultivo/no.
+# two ways: the mean gives cropland DENSITY (% per cell), the modal gives a BINARY cropland/non-cropland.
 # Stations (red, when overlaid) come from the AEMET ESD-RegBA network (constant coordinates
 # across observed/historical/future, per J.A. Egea). National maps do NOT highlight Murcia.
 #
@@ -30,9 +30,9 @@ source(file.path(if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]
 CLC     <- plinius_clc()
 ST_NAT  <- plinius_data("tables", "peninsula", "stations.csv")
 ST_MUR  <- plinius_data("tables", "murcia", "stations.csv")
-RCL     <- rbind(c(11.5, 17.5, 1), c(18.5, 22.5, 1))   # CORINE 211-244 -> cultivo
-CAP_CLEAN <- "Fuente: CORINE Land Cover 2018 (Copernicus/EEA), 100 m. Límites: mapSpain (IGN)."
-CAP_ST    <- "Fuente: CORINE Land Cover 2018 (Copernicus/EEA), 100 m. Límites y estaciones: mapSpain (IGN) / AEMET."
+RCL     <- rbind(c(11.5, 17.5, 1), c(18.5, 22.5, 1))   # CORINE 211-244 -> cropland
+CAP_CLEAN <- "Source: CORINE Land Cover 2018 (Copernicus/EEA), 100 m. Boundaries: mapSpain (IGN)."
+CAP_ST    <- "Source: CORINE Land Cover 2018 (Copernicus/EEA), 100 m. Boundaries and stations: mapSpain (IGN) / AEMET."
 
 clc <- rast(CLC)
 theme_map <- theme_minimal(base_size = 12) +
@@ -51,7 +51,7 @@ make_map <- function(bd, kind, base, stations, size, title, sub, out, w, h) {
   g <- ggplot()
   if (kind == "density") {
     g <- g + geom_raster(data = bd, aes(x, y, fill = pct)) +
-      scale_fill_viridis_c(option = "D", name = "% de suelo\nde cultivo", limits = c(0, 100))
+      scale_fill_viridis_c(option = "D", name = "% cropland\nper cell", limits = c(0, 100))
   } else {
     g <- g + geom_raster(data = bd, aes(x, y, fill = clase)) +
       scale_fill_manual(values = c("no cultivo" = "grey88", "cultivo" = "#1a9850"), name = NULL, drop = FALSE)
@@ -77,45 +77,45 @@ base_mur <- list(if (!is.null(muni)) geom_sf(data = muni, fill = NA, color = "gr
                  geom_sf(data = murcia, fill = NA, color = "grey15", linewidth = 0.6))
 
 # --- national (heavy CORINE step, once) ---------------------------------------------------
-cat("nacional: CORINE -> densidad y binario 500 m...\n")
+cat("national: CORINE -> density and binary 500 m...\n")
 isc_nat <- binary_100m(spain)
 bd_nat_d <- density_df(isc_nat); bd_nat_b <- binary_df(isc_nat)
 st_nat <- stations_sf(ST_NAT); n_nat <- nrow(st_nat)
-cat(sprintf("  celdas densidad: %d, estaciones: %d\n", nrow(bd_nat_d), n_nat))
+cat(sprintf("  density cells: %d, stations: %d\n", nrow(bd_nat_d), n_nat))
 
-T_NAT <- "Suelo cultivable en España (CORINE Land Cover 2018)"
-T_NAT_S <- "Suelo cultivable y estaciones AEMET en España (CORINE 2018)"
+T_NAT <- "Cropland in Spain (CORINE Land Cover 2018)"
+T_NAT_S <- "Cropland and AEMET stations in Spain (CORINE 2018)"
 make_map(bd_nat_d, "density", base_nat, NULL, NA, T_NAT,
-         "densidad de cultivo (211-244) por celda de 500 m; Península y Baleares",
+         "cropland density (211-244) per 500 m cell; Peninsular Spain and the Balearics",
          file.path(FIG_DIR, "fig10_spain_cropland_density_500m.png"), 11, 9)
 make_map(bd_nat_d, "density", base_nat, st_nat, 1.0, T_NAT_S,
-         sprintf("densidad de cultivo (211-244) por celda de 500 m; %d estaciones AEMET en rojo (Península y Baleares)", n_nat),
+         sprintf("cropland density (211-244) per 500 m cell; %d AEMET stations in red (Peninsular Spain and the Balearics)", n_nat),
          file.path(FIG_DIR, "fig8_spain_cropland_density_stations.png"), 11, 9)
 make_map(bd_nat_b, "binary", base_nat, NULL, NA, T_NAT,
-         "cultivo / no cultivo por celda de 500 m; Península y Baleares",
+         "cropland / non-cropland per 500 m cell; Peninsular Spain and the Balearics",
          file.path(FIG_DIR, "fig12_spain_cropland_binary_500m.png"), 11, 9)
 make_map(bd_nat_b, "binary", base_nat, st_nat, 1.0, T_NAT_S,
-         sprintf("cultivo / no cultivo por celda de 500 m; %d estaciones AEMET en rojo (Península y Baleares)", n_nat),
+         sprintf("cropland / non-cropland per 500 m cell; %d AEMET stations in red (Peninsular Spain and the Balearics)", n_nat),
          file.path(FIG_DIR, "fig13_spain_cropland_binary_500m_stations.png"), 11, 9)
 
 # --- Murcia -------------------------------------------------------------------------------
-cat("Murcia: CORINE -> densidad y binario 500 m...\n")
+cat("Murcia: CORINE -> density and binary 500 m...\n")
 isc_mur <- binary_100m(murcia)
 bd_mur_d <- density_df(isc_mur); bd_mur_b <- binary_df(isc_mur)
 st_mur <- stations_sf(ST_MUR); n_mur <- nrow(st_mur)
 
-T_MUR <- "Suelo cultivable en la Región de Murcia (CORINE Land Cover 2018)"
-T_MUR_S <- "Suelo cultivable y estaciones AEMET en la Región de Murcia (CORINE 2018)"
+T_MUR <- "Cropland in the Region of Murcia (CORINE Land Cover 2018)"
+T_MUR_S <- "Cropland and AEMET stations in the Region of Murcia (CORINE 2018)"
 make_map(bd_mur_d, "density", base_mur, NULL, NA, T_MUR,
-         "densidad de cultivo (211-244) por celda de 500 m",
+         "cropland density (211-244) per 500 m cell",
          file.path(FIG_DIR, "fig11_murcia_cropland_density_500m.png"), 9, 7.5)
 make_map(bd_mur_d, "density", base_mur, st_mur, 2.6, T_MUR_S,
-         sprintf("densidad de cultivo (211-244) por celda de 500 m; %d estaciones AEMET en rojo", n_mur),
+         sprintf("cropland density (211-244) per 500 m cell; %d AEMET stations in red", n_mur),
          file.path(FIG_DIR, "fig9_murcia_cropland_density_stations.png"), 9, 7.5)
 make_map(bd_mur_b, "binary", base_mur, NULL, NA, T_MUR,
-         "cultivo / no cultivo por celda de 500 m",
+         "cropland / non-cropland per 500 m cell",
          file.path(FIG_DIR, "fig14_murcia_cropland_binary_500m.png"), 9, 7.5)
 make_map(bd_mur_b, "binary", base_mur, st_mur, 2.6, T_MUR_S,
-         sprintf("cultivo / no cultivo por celda de 500 m; %d estaciones AEMET en rojo", n_mur),
+         sprintf("cropland / non-cropland per 500 m cell; %d AEMET stations in red", n_mur),
          file.path(FIG_DIR, "fig15_murcia_cropland_binary_500m_stations.png"), 9, 7.5)
-cat("hecho: 8 figuras (densidad + binario, nacional + Murcia, con y sin estaciones)\n")
+cat("done: 8 figures (density + binary, national + Murcia, with and without stations)\n")

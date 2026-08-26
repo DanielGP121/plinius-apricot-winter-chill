@@ -42,19 +42,19 @@ dens <- aggregate(isc, fact = fact, fun = "mean", na.rm = TRUE) * 100
 bd <- as.data.frame(dens, xy = TRUE); names(bd)[3] <- "pct"; bd <- bd[!is.na(bd$pct), ]
 
 pct_murcia <- as.numeric(global(isc, "mean", na.rm = TRUE)) * 100
-cat(sprintf("suelo agrícola (211-244) en Murcia: %.1f%%; celda %d m; %d celdas\n",
+cat(sprintf("cropland (211-244) in Murcia: %.1f%%; cell %d m; %d cells\n",
             pct_murcia, CELL_M, nrow(bd)))
 
 g <- ggplot() +
   geom_raster(data = bd, aes(x, y, fill = pct)) +
-  scale_fill_viridis_c(option = "D", name = "% de suelo\nde cultivo", limits = c(0, 100)) +
+  scale_fill_viridis_c(option = "D", name = "% cropland\nper cell", limits = c(0, 100)) +
   { if (!is.null(muni)) geom_sf(data = muni, fill = NA, color = "grey80", linewidth = 0.2) } +
   geom_sf(data = murcia, fill = NA, color = "grey15", linewidth = 0.6) +
   coord_sf(crs = EPSG, datum = NA) +
-  labs(title = "Suelo cultivable en la Región de Murcia (CORINE Land Cover 2018)",
-       subtitle = sprintf("densidad de suelo agrícola (clases 211-244) por celda de %d m", CELL_M),
-       caption = "Fuente: CORINE Land Cover 2018 (Copernicus/EEA), 100 m. Límites: mapSpain (IGN).") +
+  labs(title = "Cropland in the Region of Murcia (CORINE Land Cover 2018)",
+       subtitle = sprintf("cropland density (classes 211-244) per %d m cell", CELL_M),
+       caption = "Source: CORINE Land Cover 2018 (Copernicus/EEA), 100 m. Boundaries: mapSpain (IGN).") +
   theme_minimal(base_size = 12) +
   theme(axis.title = element_blank(), axis.text = element_blank(), panel.grid = element_blank())
 ggsave(FIG, g, width = 9, height = 7.5, dpi = 160)
-cat("mapa ->", FIG, "\n")
+cat("map ->", FIG, "\n")

@@ -48,8 +48,12 @@ territorio, de los cuales `r km2(SUPERFICIE_CULTIVABLE)` son suelo agrícola.
 ## Las otras palabras
 
 **Chill portion (CP).** La unidad de frío del modelo dinámico. No son horas ni grados: es una
-unidad fisiológica sin equivalencia directa en temperatura. Un invierno del sur de España ronda las
-40 o 50; uno del interior norte pasa de 90.
+unidad fisiológica sin equivalencia directa en temperatura. Para dar escala: sobre el registro
+observado de este trabajo el SWC mediano de las estaciones de la red en 1995-2020 es
+`r cp(tabla("observed_swc_by_window")[window == "1995-2020", swc_median])`, y la estación con
+más frío de toda la red se queda en
+`r cp(max(tabla("observed_spliced_swc")$swc_1995_2020))`. El litoral mediterráneo del sureste
+baja bastante por debajo de esa mediana; el interior del norte queda por encima.
 
 **Temporada.** Un invierno, contado del 1 de noviembre al 28 de febrero (días julianos 305 a 59).
 Se nombra por el año en que acaba: la temporada 2020 va de noviembre de 2019 a febrero de 2020.
@@ -96,8 +100,10 @@ cons <- data.table::data.table(
 knitr::kable(cons, booktabs = TRUE)
 ```
 
-Y tres filtros más que no aparecen en ninguna figura y sin embargo deciden qué entra en el cálculo.
-Los tres están definidos en el motor de frío (`15_chill_national_parallel.R`):
+Y cinco filtros más que no aparecen en ninguna figura y sin embargo deciden qué entra en el
+cálculo. Los cuatro primeros están definidos en el motor de frío
+(`15_chill_national_parallel.R`) y el último en el módulo de sombreado (`00_hatch.R`, constante
+`AR6_FRAC`):
 
 ```{r constantes-filtros}
 knitr::kable(data.table::data.table(

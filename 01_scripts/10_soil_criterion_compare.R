@@ -41,13 +41,13 @@ TAB  <- plinius_data("tables", "murcia")
 CLC  <- plinius_clc()
 FIG  <- fig_path("fig6_soil_criteria_compare.png")
 OUT  <- file.path(TAB, "soil_criteria_compare.csv")
-BROAD_CODES <- c(12:17, 19:22)   # 211-244, "zona cultivada" broad, as Egea means it
+BROAD_CODES <- c(12:17, 19:22)   # 211-244, broad "cultivated area", as Egea means it
 
 # --- stations + DEM -----------------------------------------------------------------------
 stations <- fread(file.path(TAB, "stations.csv"))
 st_sf <- st_as_sf(stations, coords = c("lon", "lat"), crs = 4326)
 
-cat("bajando DEM (elevatr z=", ZOOM, ")...\n", sep = "")
+cat("downloading DEM (elevatr z=", ZOOM, ")...\n", sep = "")
 dem <- rast(get_elev_raster(locations = st_sf, z = ZOOM, clip = "bbox", expand = 0.05, verbose = FALSE))
 dem <- project(dem, paste0("EPSG:", EPSG))
 
@@ -59,13 +59,13 @@ st_elev <- terra::extract(dem, st_3035)[, 2]
 murcia <- st_transform(esp_get_prov("Murcia"), EPSG)
 clc <- rast(CLC)
 clc_m <- crop(clc, ext(vect(st_buffer(murcia, 2000))))
-cult <- classify(clc_m, rbind(c(11.5, 17.5, 1), c(18.5, 22.5, 1)), others = NA)  # 1 = cultivo
+cult <- classify(clc_m, rbind(c(11.5, 17.5, 1), c(18.5, 22.5, 1)), others = NA)  # 1 = cropland
 dem_al <- resample(dem, cult)                     # DEM on the CORINE 100 m grid
 cc <- c(cult, dem_al); names(cc) <- c("cult", "elev")
 cd <- as.data.frame(cc, xy = TRUE)
 cd <- cd[!is.na(cd$cult) & !is.na(cd$elev), ]      # cultivated cells with a valid elevation
 cx <- cd$x; cy <- cd$y; ce <- cd$elev
-cat("celdas de cultivo (broad, 100 m):", nrow(cd), "\n")
+cat("cropland cells (broad, 100 m):", nrow(cd), "\n")
 
 # --- Egea criterion per station -----------------------------------------------------------
 # For each station keep the cultivated cells inside a DIST_M box (cheap prefilter), then apply
@@ -94,11 +94,11 @@ res <- merge(res, strict, by = "station_id", all.x = TRUE)
 fwrite(res, OUT)
 
 n <- nrow(res)
-cat(sprintf("\n=== criterios de suelo (Murcia, %d estaciones) ===\n", n))
-cat(sprintf("Egea (<=%dm cultivo + <=%dm altitud): %d cultivables\n", DIST_M, DALT_M, sum(res$cultivable_egea)))
+cat(sprintf("\n=== soil criteria (Murcia, %d stations) ===\n", n))
+cat(sprintf("Egea (<=%dm to cropland + <=%dm elevation): %d cultivable\n", DIST_M, DALT_M, sum(res$cultivable_egea)))
 cat(sprintf("Buffer-%% broad (2 km, 50%%, 211-244):  %d\n", sum(res$pct_broad, na.rm = TRUE)))
 cat(sprintf("Buffer-%% strict (2 km, 50%%, 211-223): %d\n", sum(res$pct_strict, na.rm = TRUE)))
-cat("\nEgea vs buffer-% broad (nº estaciones):\n")
+cat("\nEgea vs buffer-% broad (no. of stations):\n")
 print(table(egea = res$cultivable_egea, pct_broad = res$pct_broad))
 
 # --- map: where the two criteria (Egea vs buffer-% broad) agree/disagree ------------------
@@ -106,6 +106,10 @@ res[, cat := fifelse(cultivable_egea & pct_broad, "both",
              fifelse(cultivable_egea & !pct_broad, "Egea only",
              fifelse(!cultivable_egea & pct_broad, "buffer-% only", "neither")))]
 res[, cat := factor(cat, levels = c("both", "Egea only", "buffer-% only", "neither"))]
+# Every station the buffer criterion keeps is also kept by Egea's, so "buffer-% only" is empty
+# and ggplot draws its label with no key beside it. Dropping the unused level says the same
+# thing without the gap, and the level comes back on its own if data ever falls in it.
+res[, cat := droplevels(cat)]
 res_sf <- st_transform(st_as_sf(res, coords = c("lon", "lat"), crs = 4326), EPSG)
 
 g <- ggplot() +
@@ -123,4 +127,4 @@ g <- ggplot() +
 # Sized to the figure_side slot of the deck (6.77 x 5.30 in, an aspect of 1.28). A map of one
 # region is nearly square, so a full-width slot would leave half of it blank.
 ggsave(FIG, g, width = 9, height = 9 / 1.28, dpi = 150)
-cat("\nmapa ->", FIG, "\ntabla ->", OUT, "\n")
+cat("\nmap ->", FIG, "\ntable ->", OUT, "\n")

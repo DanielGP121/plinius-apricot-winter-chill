@@ -34,16 +34,16 @@ SRC  <- c("chill_national.csv", "chill_present.csv", "chill_near.csv",
 # been through a spreadsheet, which silently rewrites coordinates and drops leading zeros from ids.
 tabs <- lapply(SRC, function(f) {
   p <- file.path(OUT, f)
-  if (!file.exists(p)) stop("falta ", f)
+  if (!file.exists(p)) stop("missing ", f)
   d <- fread(p)
   if (!is.numeric(d$lon) || !is.numeric(d$lat))
-    stop(f, ": lon/lat no son numericas, el fichero ha pasado por Excel")
+    stop(f, ": lon/lat are not numeric, the file has been through Excel")
   if (any(!grepl("^[A-Z0-9]+$", unique(d$station_id))))
-    stop(f, ": hay station_id con formato inesperado")
-  cat(sprintf("  %-22s %7d filas\n", f, nrow(d)))
+    stop(f, ": station_id values with an unexpected format")
+  cat(sprintf("  %-22s %7d rows\n", f, nrow(d)))
   d
 })
-cat("leyendo:\n"); m <- rbindlist(tabs, use.names = TRUE)
+cat("reading:\n"); m <- rbindlist(tabs, use.names = TRUE)
 
 # § 2 — Label each scenario-window pair once, so no figure has to re-derive what a period means.
 LAB <- data.table(
@@ -58,7 +58,7 @@ LAB <- data.table(
   tiled    = c(FALSE, FALSE, TRUE, FALSE, FALSE, rep(TRUE, 9))
 )
 m <- merge(m, LAB, by = c("scenario", "window"), all.x = TRUE)
-if (anyNA(m$periodo)) stop("hay combinaciones escenario-ventana sin etiquetar: ",
+if (anyNA(m$periodo)) stop("unlabelled scenario-window combinations: ",
                            paste(unique(m[is.na(periodo), paste(scenario, window)]), collapse = ", "))
 m[, situation := paste(scenario, window, sep = "_")]
 
@@ -73,7 +73,7 @@ setcolorder(m, c("situation", "scenario", "window", "periodo", "clase", "tiled",
 setorder(m, clase, periodo, scenario, model, station_id)
 fwrite(m, file.path(OUT, "chill_all_windows.csv"))
 
-cat(sprintf("\nescrito chill_all_windows.csv: %d filas, %d estaciones, %d situaciones\n",
+cat(sprintf("\nwrote chill_all_windows.csv: %d rows, %d stations, %d situations\n",
             nrow(m), uniqueN(m$station_id), uniqueN(m$situation)))
 print(m[, .(filas = .N, est = uniqueN(station_id), modelos = uniqueN(model),
             SWC = round(median(safe_winter_chill_P10), 1)), by = .(clase, periodo, scenario)], row.names = FALSE)

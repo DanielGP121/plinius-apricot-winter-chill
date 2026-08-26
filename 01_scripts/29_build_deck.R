@@ -70,7 +70,7 @@ emb_cache <- new.env(parent = emptyenv())
 embed_fig <- function(name) {
   if (!is.null(emb_cache[[name]])) return(emb_cache[[name]])
   p <- file.path(FIGDIR, paste0(name, ".png"))
-  if (!file.exists(p)) { warning(sprintf("falta la figura %s", name)); return(NULL) }
+  if (!file.exists(p)) { warning(sprintf("figure %s is missing", name)); return(NULL) }
   sz <- file.size(p)
   uri <- if (sz <= MAXKB * 1024) {
     paste0("data:image/png;base64,", base64encode(p))
@@ -87,7 +87,7 @@ embed_fig <- function(name) {
 }
 
 # --- § 2 - data for the interactive panels ----------------------------------------------------
-cat("1. datos de los paneles\n")
+cat("1. panel data\n")
 
 # response curve: run the project's own model over a temperature range, so the panel cannot drift
 # from what the pipeline actually computes
@@ -99,7 +99,7 @@ resp <- list(t = temps, cp = round(cpday, 4))
 # threshold sweep, from script 28
 SWEEP <- file.path(ROOT, "02_outputs", "cropland_threshold_sweep.csv")
 META  <- file.path(ROOT, "02_outputs", "cropland_threshold_meta.csv")
-if (!file.exists(SWEEP)) stop("falta cropland_threshold_sweep.csv; corre antes el script 28")
+if (!file.exists(SWEEP)) stop("cropland_threshold_sweep.csv is missing; run script 28 first")
 sw <- fread(SWEEP)
 meta <- fread(META)
 total_km2 <- meta[metric == "total_cropland_km2"]$value
@@ -155,7 +155,7 @@ viab_table <- function() {
 }
 
 # --- § 4 - assemble ----------------------------------------------------------------------------
-cat("2. montando bloques\n")
+cat("2. assembling blocks\n")
 body <- character(0)
 toc  <- character(0)
 sec_n <- 0
@@ -410,6 +410,6 @@ writeLines(html, OUT, useBytes = TRUE)
 json_out <- file.path(OUTD, "deck_content.json")
 writeLines(toJSON(list(deck = DECK, viability = viab, sweep = sweep_js, response = resp),
                   auto_unbox = TRUE, digits = 6, null = "null"), json_out, useBytes = TRUE)
-cat(sprintf("   contenido exportado a %s\n", basename(json_out)))
-cat(sprintf("\n3. escrito %s\n   %.1f MB, %d figuras incrustadas, %d bloques\n",
+cat(sprintf("   content exported to %s\n", basename(json_out)))
+cat(sprintf("\n3. wrote %s\n   %.1f MB, %d figures embedded, %d blocks\n",
             OUT, file.size(OUT) / 1048576, length(ls(emb_cache)), length(DECK)))

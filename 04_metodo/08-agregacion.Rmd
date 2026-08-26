@@ -58,9 +58,12 @@ nunca se hacen sobre el SWC agregado, sino temporada a temporada.
 ## Las ventanas
 
 Siete, y se distinguen por lo que hacen. Cuatro tesela el periodo 1995-2100 y son las que
-producen los mapas de futuro. Las otras tres existen para contrastar: dos del registro observado
-(1995-2020 para el contraste directo con el modelo, y 1991-2020 para las anomalías de la serie
-larga) y una del histórico simulado de CMIP6, que acaba en 2014 porque ahí acaba el experimento.
+producen los mapas de futuro. Las otras tres existen para contrastar: la del clima actual
+simulado (1995-2025), que solapa cinco años con 2021-2040 y por eso queda fuera de la teselación;
+la del registro observado de treinta temporadas (1991-2020), que es la referencia observada de los
+mapas; y la del histórico simulado de CMIP6, que acaba en 2014 porque ahí acaba el experimento. El
+contraste directo entre modelo y observación no necesita ventana propia: las dos fuentes comparten
+la ventana 1995-2020, la primera de las cuatro que teselan.
 
 ```{r agregacion-ventanas}
 v <- data.table::copy(tabla("season_attrition_by_window"))

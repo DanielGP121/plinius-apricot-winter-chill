@@ -3,11 +3,17 @@
 Kept apart from the builder so the wording can be reworked without touching layout code, the same
 split the project already uses for deck_content.R and 29_build_deck.R.
 
-Every slide title is an assertion, not a label. That is the convention the IPCC WGI Visual Style
-Guide calls the intent rule and applied to every visual in the AR6 Summary for Policymakers: write
-the message as a sentence, then use the sentence as the title. A title that reads "Results" makes
-the audience find the message; a title that states it lets them spend their attention on the
-evidence underneath.
+In the conference talk and its backup every slide title is an assertion, not a label. That is the
+convention the IPCC WGI Visual Style Guide calls the intent rule and applied to every visual in the
+AR6 Summary for Policymakers: write the message as a sentence, then use the sentence as the title.
+A title that reads "Results" makes the audience find the message; a title that states it lets them
+spend their attention on the evidence underneath.
+
+The review deck v4() does not follow it. Fifty assertion titles read one after another stop being
+titles and become a voice, so there they are the name of the thing the slide is about instead.
+The requirement that survives is precision, which is what the supervision meeting of 24 August 2026
+actually asked for: "Interpolation error" and "The shared atmosphere" name a variable, "Results"
+does not.
 
 Every number that comes out of the analysis arrives through `N`, loaded from talk_key_numbers.csv
 and method_figure_numbers.csv, so those cannot drift from the tables that produced them. Numbers
@@ -197,14 +203,16 @@ def slides(N):
                    "which is what makes the validation shown later possible."),
 
         dict(kind="figure_side",
-             title="Cropland is defined by CORINE classes; the choice was tested",
+             title="How much the answer depends on where cropland is drawn",
              image=f"{FIG}/fig6_soil_criteria_compare.png",
-             points=[f"Criterion adopted: CORINE classes 211 to 244, excluding 231 (pastures). "
-                     f"That is {en(N['total_cropland_km2'])} km² of cropland.",
-                     "The map compares it, over the 123 Murcia stations, against a criterion "
-                     "based on the percentage of cropland inside a buffer.",
+             points=[f"Adopted for the national maps: CORINE classes 211 to 244, excluding 231 "
+                     f"(pastures). That is {en(N['total_cropland_km2'])} km² of cropland.",
+                     "The map is the earlier Murcia test of the same question, over its 123 "
+                     "stations: two ways of deciding whether a station sits on cropland.",
                      "Egea's criterion (≤1 km to a crop, ≤100 m of elevation difference) keeps "
-                     "113 stations; the wide buffer criterion 73 and the strict one 44.",
+                     "113 of them, the broad buffer criterion 73 and the strict one 44. No "
+                     "station passes the buffer criterion without passing Egea's, so the map "
+                     "has three classes and not four.",
                      "Measured on the final percentages, the choice moves the result by two and "
                      "a half points at most."],
              source="§ 2.3 of canonical document v2 · 05_cropland_filter.py",
@@ -219,7 +227,7 @@ def slides(N):
              lead="Getting from a daily temperature to a classified square kilometre takes five "
                   "steps, and each one cuts down the number of values."),
 
-        dict(kind="figure",
+        dict(kind="figure_max",
              title="Chill accumulation rate peaks at 8 °C in the Dynamic Model",
              image=f"{FIG}/fig34_dynamic_model_response.png",
              caption="The fruit tree has to accumulate chill in winter to break dormancy. It is "
@@ -234,7 +242,7 @@ def slides(N):
                    "below −4 °C nothing accumulates at all. Which is why warming does not reduce "
                    "chill in a straight line."),
 
-        dict(kind="figure",
+        dict(kind="figure_max",
              title="Safe Winter Chill is the 10th percentile across winters",
              image=f"{FIG}/fig35_swc_concept.png",
              caption="What ruins a grower is not the average winter, it is the poor one. Safe "
@@ -300,7 +308,7 @@ def slides(N):
              lead="What was corrected, what was deliberately left uncorrected, and the evidence "
                   "behind each of the two decisions."),
 
-        dict(kind="figure",
+        dict(kind="figure_max",
              title="Model bias in Safe Winter Chill, and why none was corrected",
              image=f"{FIG}/fig43_model_bias.png",
              caption=f"The eleven models span {en(N['bias_range_CP'], 1)} CP, on a variable whose "
@@ -526,7 +534,7 @@ def slides(N):
                    "take the problem out of the century: over that 9.5% it is crossed all the "
                    "same, only later."),
 
-        dict(kind="figure",
+        dict(kind="figure_max",
              spoken=True,
              title="By 2100 half of Murcia falls in the mutant-only chill band",
              image=f"{FIG}/fig31_murcia_ensemble_requirements.png",
@@ -653,6 +661,23 @@ def slides(N):
                      "decades is the cultivar, not the policy.",
                      "And the observed record has already moved: the 2021-2025 five-year block is "
                      f"the poorest in chill of the {en(N['obs_n_baseline_blocks'])} before it."],
+             # The fifteen-minute cut drops slides 15, 16 and 31, which are where the bias
+             # argument and the per-model range are shown. Everything below is anchored in a slide
+             # that subset keeps: the headline flow, the Murcia panel, the animation and the
+             # observed stripes.
+             points_short=[f"Of the {en(N['total_cropland_km2'])} km² of cropland in Spain, "
+                           f"'Búlida' stops meeting its chill requirement over "
+                           f"{en(N['lost_km2'])} by the end of the century under SSP3-7.0. "
+                           f"Warming accounts for {en(N['warming_lost_km2'])} of them.",
+                           f"Its somatic mutant covers {en(N['rescued_km2'])} km², half of it.",
+                           f"In Murcia, where the crop is, "
+                           f"{N['murcia_below_bulida_pct']:.0f}% of the stations fall below "
+                           f"the 'Búlida' requirement by then.",
+                           "Before 2040 the three panels of the animation are hard to tell "
+                           "apart: at that horizon the cultivar decides more than the policy.",
+                           "And the observed record has already moved: the 2021-2025 five-year "
+                           f"block is the poorest in chill of the "
+                           f"{en(N['obs_n_baseline_blocks'])} before it."],
              foot="Code and figures: https://github.com/DanielGP121/plinius-apricot-winter-chill",
              notes="Close by restating the problem and the answer, not with a 'thank you'. The "
                    "line that sums it up: the mutation does not solve the warming, it shifts the "
@@ -1628,9 +1653,8 @@ def _v3_results(N):
              title="Baseline 1995-2020: almost all Spanish cropland still meets both requirements",
              image=f"{FIG}/fig20_02_viability_presente_present.png",
              caption=f"Blue: both cultivars viable. Orange: only 'Búlida Precoz'. Red: neither. "
-                     f"Grey hatching marks cropland where fewer than 9 of 11 models agree on the "
-                     f"class. National median Safe Winter Chill "
-                     f"{N['base_swc_median_CP']:.1f} CP.",
+                     f"Model agreement is reported separately, not on this map. National median "
+                     f"Safe Winter Chill {N['base_swc_median_CP']:.1f} CP.",
              source="§ 19_cropland_viability_national.R",
              notes="This is the reference every later map is read against. The orange band already "
                    f"exists at the baseline, covering {en(N['baseline_already_lost_km2'])} km², "
@@ -1697,7 +1721,7 @@ def _v3_results(N):
              blocks=[
                  dict(head="What it shows",
                       body=["The window in which each parcel of cropland first stops meeting "
-                            "'Búlida''s requirement, under SSP3-7.0."]),
+                            "the 'Búlida' requirement, under SSP3-7.0."]),
                  dict(head="Why it is worth separating",
                       body=[f"An end-of-century map says {N['toe_pct_lost_bulida']:.1f}% of "
                             f"cropland is lost. It does not say whether that happens in 2035 or "
@@ -1725,7 +1749,7 @@ def _v3_results(N):
                  dict(head="What happens there",
                       body=[f"By 2071-2100 under SSP3-7.0, "
                             f"{N['murcia_below_bulida_pct']:.1f}% of those stations fall below "
-                            f"'Búlida''s requirement and {N['murcia_below_precoz_pct']:.1f}% fall "
+                            f"the 'Búlida' requirement and {N['murcia_below_precoz_pct']:.1f}% fall "
                             f"below the mutant's."]),
                  dict(head="The reading",
                       body=["In the region that matters most commercially, the mutant is not a "
@@ -2076,4 +2100,1054 @@ def _v3_open(N):
              foot="Code and documentation: https://github.com/DanielGP121/plinius-apricot-winter-chill",
              notes="The purpose of this deck is to make each step arguable on its own. Comments "
                    "on any single slide are more useful than a verdict on the whole."),
+    ]
+
+# --- v4: the review deck ------------------------------------------------------------------------
+#
+# Same material as v3 and a different contract with the reader. v3 put the whole argument on the
+# slides, 33,860 characters of it, and left its figures at a fifth of the page. Here each slide
+# carries one claim and its evidence, the argument that used to sit beside a picture moves to the
+# method book that travels with this deck, and anything that was a list of relations is drawn as
+# one: a chain as a chain, four windows on an axis, three thresholds as three bands of a scale.
+#
+# The two national maps are the case that motivated the rework. They arrive from R with a printed
+# title, a subtitle and a legend row, all of which the slide already carried, plus a quarter of the
+# canvas in white. Cropped and given a side rail, the same picture goes from a fifth of the page to
+# nearly half of it, which is what the supervision meeting of 24 August 2026 asked for.
+#
+# MAP_CROP is tied to the layout of 19_cropland_viability_national.R: the fractions remove the
+# title band above the map and the legend row below it. Measured on the row ink profile of
+# fig20_15, not guessed. If that script's layout changes, this is the constant to re-measure.
+
+MAP_CROP = (0.114, 0.056)
+
+# The scripts the parameter tables point at, named once so a rename is one edit and the tables
+# cannot disagree about how a file is spelled. A row gives (file, [lines]), where a line is an int
+# or an inclusive (from, to) pair; the builder checks every one of them against the file on disk
+# and prints only the file name on the slide.
+CHILL = "15_chill_national_parallel.R"
+VIABILITY = "19_cropland_viability_national.R"
+CORINE = "00_corine.R"
+DM_JOSE = "DM_JOSE.R"
+
+
+def v4(N):
+    """The review deck, built with `--v4`.
+
+    Ten parts in the order a reader needs them: the question, the data, chill from temperature, the
+    time windows, points to a surface, what was checked, what came out, what the ensemble median
+    hides, the observed record, and what is still open. Built from the same metric tables as the
+    talk and as v3, so none of the three can disagree with the others.
+    """
+    return (_v4_open(N) + _v4_data(N) + _v4_chill(N) + _v4_windows(N) + _v4_surface(N)
+            + _v4_checks(N) + _v4_results(N) + _v4_spread(N) + _v4_observed(N)
+            + _v4_questions(N))
+
+
+def _v4_open(N):
+    return [
+        dict(kind="cover",
+             title="Where a low-chill apricot mutant still works, and how that was calculated.",
+             subtitle="Method and results for review: the data, the parameters, the checks, and "
+                      "the questions still open",
+             authors="Daniel González-Palazón¹ · José A. Egea² · José Antonio Campoy Corbalán¹",
+             affil="¹ Estación Experimental de Aula Dei (EEAD-CSIC), Zaragoza    "
+                   "² Centro de Edafología y Biología Aplicada del Segura (CEBAS-CSIC), Murcia",
+             venue="Working document for the co-authors · August 2026",
+             notes="This deck is meant to be read rather than delivered. Each slide carries one "
+                   "claim so that it can be argued with on its own. The full reasoning behind "
+                   "every step is in the method book that travels with it."),
+
+        dict(kind="scale",
+             title="The two chill requirements",
+             span=(0, 80), thresholds=(33.7, 47.5),
+             marks=[dict(at=N["base_swc_median_CP"],
+                         label=f"cropland median today, "
+                               f"{N['base_swc_median_CP']:.1f} CP")],
+             foot="'Búlida' needs 47.5 chill portions, its bud sport 'Búlida Precoz' 33.7. Both "
+                  "were phenotyped side by side in Ruiz et al. (2019), which is what makes them "
+                  "comparable.",
+             source="Ruiz et al. 2019, Table 2 · § 19_cropland_viability_national.R",
+             notes="Each threshold carries a standard error of 3.3 CP from three seasons, so the "
+                   "absolute positions of the two lines are poorly determined. The distance "
+                   "between them is not, because it is a paired difference within each season. "
+                   "Every claim in this deck that rests on the gap is firmer than one that rests "
+                   "on a threshold, and the deck says which is which."),
+
+        dict(kind="bignum", slim=True,
+             title="Cropland lost and recovered, SSP3-7.0 at 2071-2100",
+             items=[
+                 dict(value=f"{en(N['total_cropland_km2'])} km²", label="Spanish cropland"),
+                 dict(value=f"{en(N['lost_km2'])} km²",
+                      label=f"below the 'Búlida' requirement ({N['toe_pct_lost_bulida']:.1f}%)"),
+                 dict(value=f"{en(N['rescued_km2'])} km²",
+                      label=f"of that, still viable for the mutant "
+                            f"({N['rescued_pct_of_lost']:.1f}%)"),
+                 dict(value=f"{en(N['gone_km2'])} km²",
+                      label=f"below both ({N['far_pct_none']:.1f}% of cropland)"),
+             ],
+             source="§ 19_cropland_viability_national.R · talk_numbers_cropland.csv",
+             notes="The mutant buys time rather than immunity. Under milder scenarios it recovers "
+                   "almost all of a smaller loss; under the severe one it recovers half, because "
+                   "chill falls below even its own requirement across a growing area.\n\n"
+                   "These are areas of cropland, not counts of weather stations, and the two units "
+                   "give different answers. The section on going from points to a surface deals "
+                   "with why area is the one reported. Under milder scenarios the mutant recovers "
+                   "almost all of a smaller loss; under the severe one it recovers half, because "
+                   "chill falls below even its own requirement across a growing area."),
+
+        dict(kind="flow",
+             title="The chain, end to end",
+             steps=[
+                 dict(head="Acquire", body="Daily maximum and minimum temperature.",
+                      param="88 NetCDF · 15 GB"),
+                 dict(head="Reconstruct", body="Daily values become an hourly curve.",
+                      param="latitude, inside chillR"),
+                 dict(head="Accumulate", body="Hourly temperature becomes chill portions.",
+                      param="Fishman et al. 1987"),
+                 dict(head="Aggregate", body="A window of winters gives one value.",
+                      param="10th percentile"),
+                 dict(head="Summarise", body="Eleven models become one number per station.",
+                      param="median, not mean"),
+                 dict(head="Interpolate", body="Stations become a continuous surface.",
+                      param="IDW, 50 km"),
+                 dict(head="Classify", body="Each cell of cropland gets one of three classes.",
+                      param="47.5 and 33.7 CP"),
+             ],
+             foot=f"{en(N['chain_stations'])} stations × {en(N['chain_models'])} models = "
+                  f"{en(N['chain_swc_values'])} values per situation, over 15 situations. "
+                  f"Interpolating one fills {en(N['chain_cells'])} cells.",
+             source="§ 39_pipeline_diagram.R",
+             notes="Steps 1 to 3 run on the cluster as one 23 h single-node run that checkpoints, "
+                   "and everything after them on a workstation, because what comes back is "
+                   "megabytes of chill rather than gigabytes of temperature. No queueing system "
+                   "is involved anywhere.\n\n"
+                   "Each step gets its own slides later. The order matters more than it looks: "
+                   "three of the choices argued about in this deck are about where in this chain "
+                   "an operation happens rather than about which operation it is."),
+
+    ]
+
+
+def _v4_data(N):
+    return [
+        dict(kind="section", n="1", title="The data",
+             lead="Four sources, none of them produced here."),
+
+        dict(kind="cards",
+             title="The four inputs",
+             items=[
+                 dict(head="Climate projections", stat="11 models",
+                      body="PNACC AR6, ESD-RegBA downscaling, from THREDDS. 88 files, 15 GB, "
+                           "1950-2100.",
+                      chip=f"{en(N['timeline_n_stations_proj'])} stations"),
+                 dict(head="Observed archive", stat=f"{N['timeline_archive_last_year']:.0f}",
+                      body="PNACC observational product, by web form. Daily, no gaps. The year it "
+                           "stops, not an access limit.",
+                      chip=f"{en(N['timeline_n_stations_obs'])} stations"),
+                 dict(head="Observed, recent", stat="22%",
+                      body=f"AEMET OpenData REST API. Extends the record to "
+                           f"{N['timeline_api_last_year']:.0f}, and covers 22% of the network.",
+                      chip="666 stations"),
+                 dict(head="Cropland", stat=f"{en(N['total_cropland_km2'])} km²",
+                      body="CORINE 2018, 100 m raster, classes 211-244. Decides what is counted "
+                           "at all.",
+                      chip="46% of Spain"),
+             ],
+             source="§ 2 of the canonical project document",
+             notes="The two warnings here are the ones that would cost someone else time. The "
+                   "archive cannot be extended past 2020 by any route, and the API covers 22% of "
+                   "the network with only 131 stations reaching back to 1995, so it extends the "
+                   "record rather than defining it.\n\n"
+                   "The projections are also served over a second station set by the portal's web "
+                   "form, which is the subject of a later slide: the route has to be declared or "
+                   "the areas cannot be reproduced."),
+
+        dict(kind="figure_max",
+             title="Coverage of each source",
+             image=f"{FIG}/fig53_data_coverage_timeline.png",
+             source="§ 42_data_timeline.R",
+             notes="Upper lanes: the period each source spans, with the stretch actually used "
+                   "shaded. Lower lanes: the four analysis windows, which tile 1995-2100 without "
+                   "gaps or overlaps. The seam at 2015 is where the CMIP6 historical experiment "
+                   "ends and the scenarios begin, so any window crossing it is assembled from two "
+                   "files."),
+
+        dict(kind="figure_note",
+             title="Archive against API",
+             image=f"{FIG}/fig23_02_api_vs_archive_swc.png",
+             note_frac=0.30,
+             notes_side=[
+                 dict(head="How", body="Season by season over the 8,979 winters both report, with "
+                                       "the same completeness filter on each."),
+                 dict(head="Result", body="0.13 CP over the 196 stations with fifteen seasons in "
+                                          "common, spatial correlation 0.9865."),
+                 dict(head="Caveat", body="Season by season the agreement is looser, MAE 1.35 CP. "
+                                          "The statistic in use is a percentile."),
+             ],
+             source="§ 24_observed_api_vs_archive.R",
+             notes="The rule adopted: the archive supplies every season to 2020 and the API only "
+                   "the 2021-2025 extension, so the thinner source never overwrites the denser "
+                   "one. Neither product spans the period alone.\n\n"
+                   "Comparing the aggregates instead would have measured sample size rather than "
+                   "agreement. The residual worry is that both halves come from the same national "
+                   "network, so a change in AEMET processing around 2021 would look like a "
+                   "climate signal. That is what the Cieza check later in the deck is for."),
+
+        dict(kind="table", slim=True,
+             title="Two download routes, two station sets",
+             head=["", "THREDDS, used here", "The portal's web form"],
+             rows=[
+                 ["Stations", "3,460", "3,044"],
+                 ["Models", "the same 11", "the same 11"],
+                 ["Downscaling", "ESD-RegBA", "ESD-RegBA"],
+                 ["Scenarios", "5, incl. SSP5-8.5", "one per request"],
+                 ["Values", "rounded to 0.1 °C", "full decimals"],
+             ],
+             widths=[0.28, 0.36, 0.36],
+             numeric=False, emphasis=0,
+             foot="One product in two packagings: the 3,044 are an ordered subset of the 3,460.",
+             source="§ 2.1.1 of the canonical project document",
+             notes="Established by arithmetic on the delivered file, then confirmed value by value "
+                   "on the 123 stations of Murcia for UKESM1-0-LL, the model most at risk because "
+                   "it uses a different realisation: correlation 0.9999916, maximum difference "
+                   "0.05 °C, which disappears on rounding.\n\n"
+                   "Two consequences. Methods has to name the route, and the model-observation "
+                   "comparison could only be measured on the 3,044 common stations, so 416 "
+                   "stations enter the interpolation without an observed counterpart."),
+    ]
+
+
+def _v4_chill(N):
+    return [
+        dict(kind="section", n="2", title="From temperature to chill",
+             lead="How two daily temperatures become one number per winter per station."),
+
+        dict(kind="flow",
+             title="From daily temperature to Safe Winter Chill",
+             steps=[
+                 dict(head="Daily to hourly",
+                      body="An idealised curve from latitude and day of year.",
+                      param="fix_weather()"),
+                 dict(head="Hourly to portions",
+                      body="Accumulated hour by hour, through a state warm spells can reverse.",
+                      param="DM_JOSE, Fishman 1987"),
+                 dict(head="Portions to a season",
+                      body="1 November to 28 February. The total is that winter's chill.",
+                      param="Julian day 305 to 59"),
+                 dict(head="Seasons to one number",
+                      body="The 10th percentile across a window: a bad year, not a typical one.",
+                      param="P10 across seasons"),
+             ],
+             foot="The winter in ten that falls short is the one that costs the crop.",
+             source="§ 15_chill_national_parallel.R:116, :318-319, :346",
+             notes="No hourly observations are used anywhere in this work: the reconstruction is "
+                   "chillR's own, from latitude and day of year. Worth flagging to anyone who "
+                   "works with chill, because it is the largest un-inspected component of the "
+                   "chain.\n\n"
+                   "The argument for a percentile rather than a mean is agronomic. An orchard is "
+                   "not helped by knowing that a typical winter delivers enough chill."),
+
+        dict(kind="figure_note",
+             title="Response of the Dynamic Model",
+             image=f"{FIG}/fig34_dynamic_model_response.png",
+             note_frac=0.27,
+             notes_side=[
+                 dict(head="Where it accumulates",
+                      body=f"Peak near {N['dm_optimum_temp_C']:.0f} °C, at "
+                           f"{N['dm_optimum_cp_day']:.2f} CP per day."),
+                 dict(head="Where it does not",
+                      body=f"{N['dm_pct_at_0C']:.0f}% of the optimum at 0 °C. Nothing above 14 °C, "
+                           f"and effectively nothing below −4 °C."),
+                 dict(head="Why it matters",
+                      body="Storm Filomena was a memorable freeze in a winter this work records "
+                           "as chill-poor. No contradiction."),
+             ],
+             source="§ 34_method_figures.R · DM_JOSE.R",
+             notes="This slide exists because the commonest misreading of these maps is to treat "
+                   "chill portions as a proxy for how cold a winter was. The same curve shape "
+                   "means a warm Mediterranean winter loses chill faster than a linear index "
+                   "would suggest, because it spends its hours on the falling side."),
+
+        dict(kind="table", slim=True,
+             title="Chill model parameters",
+             head=["Setting", "Value", "Set in · 01_scripts/"],
+             rows=[
+                 ["Implementation", "Dynamic Model, Fishman et al. (1987), unmodified",
+                  (DM_JOSE, [(4, 5)])],
+                 ["Constants", "E0 4457.8 · E1 10161.9 · A0 419700 · A1 1.797e14 · slope 1.6 · "
+                               "Tf 277", (DM_JOSE, [(4, 5)])],
+                 ["Called as", "models = list(Chill_Portions = DM_JOSE)", (CHILL, [318])],
+                 ["Season", "Julian day 305 to 59", (CHILL, [116])],
+                 ["Safe Winter Chill", "10th percentile within station and window", (CHILL, [346])],
+                 ["Season dropped if", "fewer than 85% of days present", (CHILL, [116, 339])],
+                 ["Station dropped if", "over 40% missing, or fewer than 3 seasons",
+                  (CHILL, [117, 344])],
+                 ["Fill-value guard", "values outside −90 to 70 °C masked", (CHILL, [118, 271])],
+             ],
+             widths=[0.19, 0.55, 0.26],
+             numeric=False,
+             foot="Every value is read from the file named in the last column.",
+             source="§ 15_chill_national_parallel.R · DM_JOSE.R",
+             notes="The fill-value guard was not defensive programming. Four of the eleven models "
+                   "ship −999 as a fill value while declaring NaN in the metadata, so ncdf4 reads "
+                   "them as real temperatures of −999 °C."),
+
+        dict(kind="figure_note",
+             title="The 1987 and 1988 parametrisations",
+             image=f"{FIG}/fig26_02_parametrisation_gap.png",
+             note_frac=0.29,
+             notes_side=[
+                 dict(head="Compared how",
+                      body=f"Both run over the same {N['param_gap_n_seasons']:.0f} seasons at "
+                           f"Cieza, everything else identical."),
+                 dict(head="The size",
+                      body=f"chillR's 1988 default returns "
+                           f"{abs(N['param_gap_mean_CP']):.2f} CP less on average, ranging "
+                           f"{abs(N['param_gap_max_CP']):.2f} to "
+                           f"{abs(N['param_gap_min_CP']):.2f}."),
+                 dict(head="What is at stake",
+                      body=f"Half the {N['rank_cultivar_gap_CP']:.1f} CP signal being measured. "
+                           f"Supply and demand have to share a scale."),
+             ],
+             source="§ 27_cieza_independent_check.R · cieza_numbers.csv",
+             notes="A constant offset would not fix it: the gap widens in the mildest winters, "
+                   "which are precisely the ones that decide whether a threshold is crossed.\n\n"
+                   "This is why the project uses DM_JOSE rather than chillR's default. The "
+                   "methods section of Ruiz et al. 2019 states that the requirements were "
+                   "quantified with Fishman 1987, which is what makes the choice consistent. "
+                   "Confirming that reading is the first open question at the end of this deck."),
+
+        dict(kind="figure_note",
+             title="Safe Winter Chill on one station",
+             image=f"{FIG}/fig35_swc_concept.png",
+             note_frac=0.27,
+             notes_side=[
+                 dict(head="The construction",
+                      body="Each winter gives one total. Safe Winter Chill is the value nine "
+                           "winters in ten exceed."),
+                 dict(head="On a real station",
+                      body=f"Station {N['swc_example_station']} averages "
+                           f"{N['swc_example_mean']:.1f} CP but its Safe Winter Chill is "
+                           f"{N['swc_example_p10']:.1f} CP."),
+             ],
+             source="§ 34_method_figures.R · § 15_chill_national_parallel.R:346",
+             notes="Planting to the mean at that station would over-state what the site supports "
+                   "by "
+                   + f"{N['swc_example_mean'] - N['swc_example_p10']:.1f} CP. "
+                   "The definition, the season limits and the percentile are all taken from Egea "
+                   "et al. (2022), so the numbers here are comparable with that work. The "
+                   "window-length point is why the archive and the API were never compared on "
+                   "their aggregates: a P10 over 12 seasons is close to a minimum, while a P10 "
+                   "over 26 is a genuine decile."),
+
+        dict(kind="figure_max",
+             title="The quality filters",
+             image=f"{FIG}/fig51_attrition_funnel.png",
+             source="§ 40_attrition_funnel.R",
+             notes="One panel per unit, because stations, seasons and square kilometres cannot "
+                   "share an axis: on a common scale the discarded seasons would draw a bar four "
+                   "times the width of the discarded stations and say nothing. The figure carries "
+                   "a guard that refuses to draw if its denominator disagrees with "
+                   "talk_numbers_cropland.csv."),
+    ]
+
+
+def _v4_windows(N):
+    return [
+        dict(kind="section", n="3", title="The time windows",
+             lead="Which periods are compared against which, and why the baseline stops in 2020."),
+
+        dict(kind="timeline",
+             title="The four analysis windows",
+             span=(1990, 2100), ticks=[2000, 2020, 2040, 2060, 2080, 2100],
+             bands=[
+                 dict(head="Baseline", sub="the reference for every difference",
+                      **{"from": 1995, "to": 2020},
+                      label=f"{N['timeline_seasons_base']:.0f} seasons · spliced"),
+                 dict(head="Near term", sub="the horizon of a planting decision",
+                      **{"from": 2021, "to": 2040},
+                      label=f"{N['timeline_seasons_nearterm']:.0f} seasons"),
+                 dict(head="Mid century", sub="tiles the middle",
+                      **{"from": 2041, "to": 2070},
+                      label=f"{N['timeline_seasons_near']:.0f} seasons"),
+                 dict(head="End century", sub="where the headlines come from",
+                      **{"from": 2071, "to": 2100},
+                      label=f"{N['timeline_seasons_far']:.0f} seasons"),
+                 dict(head="Observed", sub="validates the baseline",
+                      **{"from": 1995, "to": 2020}, label="PNACC archive"),
+                 dict(head="Current climate", sub="shown, never a reference",
+                      **{"from": 1995, "to": 2025}, label="31 seasons · overlaps the near term"),
+             ],
+             source="§ 15_chill_national_parallel.R:126-132 · § 22_merge_chill_tables.R:49-59",
+             notes="An apricot orchard produces for 25 to 30 years, which is why 2021-2040 exists "
+                   "at all: the original plan jumped straight from the historical period to "
+                   "2041-2070.\n\n"
+                   "The last row is the one to watch. The current-climate panel overlaps the near "
+                   "term by five years, so it can be shown but must never be the reference a "
+                   "future is differenced against."),
+
+        dict(kind="cards",
+             title="The baseline splice",
+             items=[
+                 dict(head="CMIP6 historical", stat="≤ 2014",
+                      body="The experiment ends on 31 December 2014 by protocol. No amount of "
+                           "downloading extends it.",
+                      chip="first 20 years of the baseline"),
+                 dict(head="SSP scenarios", stat="≥ 2015",
+                      body="SSP2-4.5 supplies 2015-2020, once per model. By 2020 the scenarios "
+                           "have barely separated.",
+                      chip="saves two thirds of the compute"),
+             ],
+             foot="Checked on the real series: no duplicated or missing days, and a physically "
+                  "continuous transition across the join.",
+             source="§ 15_chill_national_parallel.R:159, :295-302",
+             notes="This is the step most likely to be questioned, and it is worth being explicit "
+                   "that the splice scenario is a parameter (--splice-scenario) rather than "
+                   "something hard-wired. The assembled situation is labelled 'presente' "
+                   "throughout the outputs."),
+
+        dict(kind="figure_note",
+             title="Why the baseline stops in 2020",
+             image=f"{FIG}/fig37_baseline_today.png",
+             note_frac=0.31,
+             notes_side=[
+                 dict(head="The temptation",
+                      body="The most recent baseline looks honest: it is the climate growers "
+                           "actually experience."),
+                 dict(head="Why it fails",
+                      body="It would share 2021-2025 with the near-term window, so a quarter of "
+                           "the change would cancel by construction."),
+                 dict(head="What it costs",
+                      body="A baseline five years older than it could be, worth about half a "
+                           "chill portion on the observed record."),
+             ],
+             source="§ 34_method_figures.R · § 25_splice_observed_1995_2025.R",
+             notes="If a reviewer only argues with one window choice, it will be this one, and "
+                   "the answer is that the alternative is not neutral. The baseline stops at 2020 "
+                   "and the current-climate panel exists separately, shown but never differenced "
+                   "against."),
+    ]
+
+
+def _v4_surface(N):
+    return [
+        dict(kind="section", n="4", title="From points to a surface",
+             lead="Chill is computed at stations and the question is about territory. This is the "
+                  "step that bridges them."),
+
+        dict(kind="cards",
+             title="Stations against cropland area",
+             items=[
+                 dict(head="Stations", stat=f"{N['station_rescued_min_pct']:.1f}-"
+                                            f"{N['station_rescued_max_pct']:.1f}%",
+                      body="Stations cluster in valleys, airports and towns: 306 of them sit on "
+                           "151 coordinates.",
+                      chip="not the unit used"),
+                 dict(head="Cropland area", stat=f"{N['km2_rescued_min_pct']:.1f}-"
+                                                 f"{N['km2_rescued_max_pct']:.1f}%",
+                      body="Each 1 km cell contributes its own fraction of CORINE cropland, not a "
+                           "whole cell.",
+                      chip="every headline in this work"),
+             ],
+             foot="The same quantity, the share of the loss the mutant recovers, measured two "
+                  "ways. Choosing area buys an interpolation, and therefore an error.",
+             source="§ 19_cropland_viability_national.R · § 36_per_model_stats.R",
+             notes="That interpolation error is measured two sections later rather than assumed "
+                   "away. An earlier version of the project documentation quoted the station "
+                   "range beside a claim that only holds on the area range, so keeping the two "
+                   "units clearly apart is deliberate."),
+
+        dict(kind="table", slim=True,
+             title="Interpolation parameters",
+             head=["Setting", "Value", "Set in · 01_scripts/"],
+             rows=[
+                 ["Ensemble statistic", "median across 11 models, at the station, before anything "
+                                        "spatial", (VIABILITY, [66])],
+                 ["Interpolation", "inverse distance weighting, terra::interpIDW",
+                  (VIABILITY, [151])],
+                 ["Power", "2", (VIABILITY, [44])],
+                 ["Search radius", "50 km, which is also the mask", (VIABILITY, [43, 151])],
+                 ["Neighbours", "at most 12 per cell", (VIABILITY, [45])],
+                 ["Grid", "1 km, EPSG:3035, equal-area", (VIABILITY, [37, 40])],
+                 ["Cell area", "from the realised resolution, not the nominal one",
+                  (CORINE, [(43, 46)])],
+                 ["Cropland mask", "CORINE 2018 classes 211-244, pasture excluded",
+                  (CORINE, [(24, 28)])],
+                 ["Area weighting", "each cell contributes its cropland fraction",
+                  (VIABILITY, [124])],
+                 ["Classification", "≥ 47.5 both · ≥ 33.7 mutant only · below, neither",
+                  (VIABILITY, [(139, 141)])],
+             ],
+             widths=[0.19, 0.55, 0.26],
+             numeric=False,
+             foot=f"The method replicates Egea et al. (2022), which interpolated by IDW and masked "
+                  f"to 50 km. That work had 270 stations after quality control; this one has "
+                  f"{en(N['chain_stations'])}.",
+             source="§ 19_cropland_viability_national.R · § 00_corine.R",
+             notes="The cell-area row looks like pedantry and is not. terra honours the extent it "
+                   "is given and adjusts the resolution to fit whole cells, so a nominal 1 km grid "
+                   "over Spain has cells of 1000.32 by 999.99 m. Using the nominal value put every "
+                   "area in this project 0.031% low until it was found."),
+
+        dict(kind="figure_note",
+             title="Where the median is taken",
+             image=f"{FIG}/fig44_aggregation_chain.png",
+             note_frac=0.28,
+             notes_side=[
+                 dict(head="What the pipeline does",
+                      body="Median first, then interpolate and classify. Every published km² is a "
+                           "statistic of a surface no single model produced."),
+                 dict(head="Median, not mean",
+                      body="The distribution across models is skewed by its harshest members. "
+                           "Egea et al. (2022) used a mean."),
+                 dict(head="The alternative",
+                      body="Classify each model, aggregate the eleven areas at the end. Measured "
+                           "later in this deck."),
+             ],
+             source="§ 38_method_figures.R · § 36_per_model_stats.R",
+             notes="This is one of the two places where a reviewer could reasonably say the "
+                   "pipeline does the wrong thing, so the deck measures it rather than defending "
+                   "it. It does not apply to the agreement counter, which compares each model "
+                   "against itself in the baseline, never against the ensemble."),
+
+        dict(kind="figure_max",
+             title=f"One station end to end: {N['walk_station']}",
+             image=f"{FIG}/fig46_station_walkthrough.png",
+             source="§ 38_method_figures.R",
+             notes=f"Observed Safe Winter Chill {N['walk_p10_obs']:.1f} CP, modelled baseline "
+                   f"{N['walk_med_base']:.1f} CP, and {N['walk_med_far']:.1f} CP at 2071-2100 "
+                   f"under SSP3-7.0, ending in the classified land within 50 km of the station. A "
+                   f"single worked example is the fastest way to check that the chain does what "
+                   f"the previous slides claim."),
+    ]
+
+
+def _v4_checks(N):
+    return [
+        dict(kind="section", n="5", title="What was checked",
+             lead="Four things could have made the maps wrong without anything failing. Each was "
+                  "measured."),
+
+        dict(kind="figure_note",
+             title="Model against observations",
+             image=f"{FIG}/fig43_model_bias.png",
+             note_frac=0.29,
+             notes_side=[
+                 dict(head="How",
+                      body=f"Identical window, 1995-2020, and the {en(N['n_bias_stations'])} "
+                           f"stations both products share. Ensemble bias "
+                           f"{N['bias_ensemble_CP']:.2f} CP."),
+                 dict(head="Per model",
+                      body=f"{N['bias_min_CP']:.2f} ({N['bias_min_model']}) to "
+                           f"+{N['bias_max_CP']:.2f} CP ({N['bias_max_model']}), a span of "
+                           f"{N['bias_range_CP']:.1f} CP."),
+                 dict(head="The caveat",
+                      body="ESD-RegBA was calibrated against these same stations, so this is not "
+                           "an independent test."),
+             ],
+             source="§ 38_method_figures.R · method_chain_numbers.csv",
+             notes="No bias correction is applied and absolute values are used rather than "
+                   "differences from a baseline. The caveat is not a formality: it is the reason "
+                   "the deck also carries a check against a record from outside the AEMET "
+                   "network."),
+
+        dict(kind="figure_note",
+             title="Interpolation error",
+             image=f"{FIG}/fig52_idw_crossval.png",
+             note_frac=0.30,
+             notes_side=[
+                 dict(head="The test",
+                      body=f"Each of {en(N['idw_n_stations_far'])} stations removed in turn and "
+                           f"predicted from the others, at its own coordinate."),
+                 dict(head="The size",
+                      body=f"{N['idw_rmse_base_CP']:.2f} CP at the baseline, "
+                           f"{N['idw_rmse_far_CP']:.2f} at 2071-2100: "
+                           f"{N['idw_pct_of_gap_base']:.0f}% and "
+                           f"{N['idw_pct_of_gap_far']:.0f}% of the cultivar gap."),
+                 dict(head="Not a confidence interval",
+                      body="Measured at stations, with a floor of 1.02 CP and an uncorrected "
+                           "altitude slope of −2.94 CP per 1,000 m."),
+             ],
+             source="§ 41_idw_crossval.R · idw_crossval_summary.csv",
+             notes="Until this was run the interpolation was justified by citing Egea et al. "
+                   "(2022) and its error had never been measured. Three limits on reading it: the "
+                   "network is dense enough that no station is more than 27 km from a neighbour, "
+                   "so it says nothing about genuinely isolated ground; where two station codes "
+                   "share a coordinate their own observations differ by 1.02 CP; and the altitude "
+                   "slope is the way an IDW fails in a mountainous country."),
+
+        dict(kind="bignum", slim=True,
+             title="Land within one RMSE of a threshold",
+             items=[
+                 dict(value=f"{N['idw_band_pct_base']:.1f}%",
+                      label="of cropland within one RMSE of a threshold at the baseline"),
+                 dict(value=f"{N['idw_band_pct_far']:.1f}%",
+                      label="the same at 2071-2100 under SSP3-7.0"),
+                 dict(value=f"{en(N['idw_band_km2_far'])} km²",
+                      label=f"that figure as area, of {en(N['total_cropland_km2'])} km²"),
+             ],
+             body=["The band widens through the century because the surface flattens as it warms."],
+             source="§ 41_idw_crossval.R · idw_threshold_band.csv",
+             notes="This is the number to quote when asked how firm the boundary between classes "
+                   "is. It is a statement about where the map is fragile, not a claim that those "
+                   "cells are misclassified. Reported alongside the maps rather than buried, "
+                   "because a reader who sees a crisp three-colour map will otherwise assume the "
+                   "boundaries are crisp too."),
+
+        dict(kind="figure_note",
+             title="An independent record: the Cieza orchard",
+             image=f"{FIG}/fig26_01_independent_records.png",
+             note_frac=0.30,
+             notes_side=[
+                 dict(head="Why it was needed",
+                      body="Both halves of the observed record come from the same network."),
+                 dict(head="The series",
+                      body=f"CEBAS orchard at Cieza, {N['cieza_first_day']} to "
+                           f"{N['cieza_last_day']}, {en(float(N['cieza_days']))} days, "
+                           f"{float(N['cieza_missing_days']):.0f} missing."),
+                 dict(head="What it shows",
+                      body="A recent anomaly of −1.66 standard deviations against −1.95 "
+                           "nationally."),
+             ],
+             source="§ 27_cieza_independent_check.R",
+             notes="In absolute chill portions the local drop is much larger, because Murcia is a "
+                   "low-chill area where the model is more sensitive, but in standard deviations "
+                   "the two agree. It corroborates that the winters were warm; no published "
+                   "series of accumulated chill exists to check the magnitude against.\n\n"
+                   "A first attempt averaged the five AEMET stations nearest Cieza and was "
+                   "discarded: only one of them has recent data, so the average changed "
+                   "composition in 2021."),
+
+        dict(kind="figure_note",
+             title="Absolute chill against change from baseline",
+             image=f"{FIG}/fig45_delta_vs_absolute.png",
+             note_frac=0.28,
+             notes_side=[
+                 dict(head="Why absolute",
+                      body="The question is whether a threshold is crossed, and a threshold is an "
+                           "absolute quantity."),
+                 dict(head="What the change says",
+                      body=f"Median loss of {abs(N['delta_median_CP']):.1f} CP by 2071-2100, "
+                           f"{abs(N['delta_max_CP']):.1f} to {abs(N['delta_min_CP']):.1f} across "
+                           f"models."),
+                 dict(head="The limit",
+                      body="Differencing cancels a model's bias only for the change. The "
+                           "classification never benefits from it."),
+             ],
+             source="§ 38_method_figures.R",
+             notes="Raised by a cold-read audit of the method book, which pointed out that the "
+                   "bias-cancels argument was being applied to a step it does not cover. This is "
+                   "the strongest reason the bias check had to be run."),
+    ]
+
+
+def _v4_results(N):
+    return [
+        dict(kind="section", n="6", title="What came out",
+             lead="The maps, the areas, and how the answer moves across the century."),
+
+        dict(kind="map",
+             title="Baseline, 1995-2020",
+             image=f"{FIG}/fig20_02_viability_presente_present.png",
+             crop=MAP_CROP,
+             legend=[
+                 dict(key="both", label="Both cultivars"),
+                 dict(key="only", label="Only 'Búlida Precoz'",
+                      value=f"{en(N['baseline_already_lost_km2'])} km²"),
+                 dict(key="neither", label="Neither"),
+             ],
+             rail=[f"National median Safe Winter Chill {N['base_swc_median_CP']:.1f} CP.",
+                   "Model agreement is reported separately, not on this map."],
+             source="§ 19_cropland_viability_national.R",
+             notes="This is the reference every later map is read against. The orange band already "
+                   f"exists at the baseline, covering {en(N['baseline_already_lost_km2'])} km², "
+                   "which matters when attributing the future band to warming."),
+
+        dict(kind="map",
+             title="SSP3-7.0, 2071-2100",
+             image=f"{FIG}/fig20_15_viability_ssp370_far.png",
+             crop=MAP_CROP,
+             legend=[
+                 dict(key="both", label="Both cultivars", value=f"{N['far_pct_both']:.1f}%"),
+                 dict(key="only", label="Only 'Búlida Precoz'",
+                      value=f"{N['far_pct_only']:.1f}%"),
+                 dict(key="neither", label="Neither", value=f"{N['far_pct_none']:.1f}%"),
+             ],
+             rail=[f"National median Safe Winter Chill {N['far_swc_median_CP']:.1f} CP."],
+             source="§ 19_cropland_viability_national.R",
+             notes="The red is the part that matters agronomically: it is where the mutant stops "
+                   "being an answer at all. It concentrates on the Mediterranean coast and the "
+                   "southern valleys, which is where the crop actually is."),
+
+        dict(kind="figure_max",
+             title="Three scenarios, 1995 to 2100",
+             image=f"{GIF}/sidebyside.gif",
+             gif=True,
+             source="§ 31_scenario_frames.R · § 32_make_gifs.py",
+             notes="One frame per window, the same colour scale and extent throughout, so what "
+                   "moves is the land and not the legend. Before 2040 the three panels are hard "
+                   "to tell apart, and that is the finding rather than a defect of the animation. "
+                   "The observed section quantifies it."),
+
+        dict(kind="figure_max",
+             title="Shares of cropland, fifteen situations",
+             image=f"{FIG}/fig22_viability_bars.png",
+             source="§ 19_cropland_viability_national.R",
+             notes="Fifteen situations on one axis, from the observed baseline at the top to "
+                   "SSP3-7.0 at end of century at the bottom. The shape to notice is that the "
+                   "orange band grows steadily while the red one stays near zero until the severe "
+                   "scenario at end of century, and then jumps. The mutant absorbs the loss until "
+                   "it cannot."),
+
+        dict(kind="bignum", slim=True,
+             title="Loss already there, loss from warming",
+             items=[
+                 dict(value=f"{en(N['baseline_already_lost_km2'])} km²",
+                      label="already beyond 'Búlida' in the 1995-2020 baseline"),
+                 dict(value=f"{en(N['warming_lost_km2'])} km²",
+                      label="lost to warming by 2071-2100, net of that"),
+                 dict(value=f"{N['warming_rescued_pct']:.1f}%",
+                      label=f"of that warming-driven loss recovered by the mutant "
+                            f"({en(N['warming_rescued_km2'])} km²)"),
+             ],
+             body=[f"Both {N['rescued_pct_of_lost']:.1f}% and "
+                   f"{N['warming_rescued_pct']:.1f}% are correct answers to different questions."],
+             source="§ 19_cropland_viability_national.R · talk_key_numbers.csv",
+             notes="Reporting the larger figure without this subtraction would credit the mutant "
+                   "with land it already covered before any warming. A cold-read audit found this "
+                   "exact figure unreconstructable in an earlier draft, because the numerator was "
+                   "never published."),
+
+        dict(kind="figure_note",
+             title="When each parcel first falls below",
+             image=f"{FIG}/fig30_time_of_emergence_ssp370.png",
+             note_frac=0.26,
+             notes_side=[
+                 dict(head="What it shows",
+                      body="The window in which each parcel first stops meeting the 'Búlida' "
+                           "requirement, under SSP3-7.0."),
+                 dict(head="Why separate it",
+                      body=f"An end-of-century map says {N['toe_pct_lost_bulida']:.1f}% is lost. "
+                           f"It does not say whether in 2035 or in 2095."),
+                 dict(head="How to read it",
+                      body="Land failing in the near term is already committed. Land failing only "
+                           "at end of century is still open to cultivar choice."),
+             ],
+             source="§ 33_talk_figures.R",
+             notes="This is the figure that turns the work from a map into advice, and it is where "
+                   "a conversation with growers would start."),
+
+        dict(kind="figure_note",
+             title="Murcia",
+             image=f"{FIG}/fig31_murcia_ensemble_requirements.png",
+             note_frac=0.26,
+             notes_side=[
+                 dict(head="Why zoom",
+                      body=f"Región de Murcia holds the production this work is about. Its "
+                           f"{N['murcia_stations']:.0f} stations, against both requirements."),
+                 dict(head="What happens",
+                      body=f"By 2071-2100 the regional median is "
+                           f"{N['murcia_median_far']:.1f} CP. "
+                           f"{N['murcia_below_bulida_pct']:.1f}% of the stations fall below the "
+                           f"'Búlida' requirement and {N['murcia_below_precoz_pct']:.1f}% below "
+                           f"the mutant's."),
+                 dict(head="The reading",
+                      body="In the region that matters commercially, the mutant is a delay for "
+                           "half the sites rather than a solution."),
+             ],
+             source="§ 33_talk_figures.R",
+             notes="Requested in supervision on 24 August. The national figures are kinder than "
+                   "the regional ones because the north of Spain carries them."),
+    ]
+
+
+def _v4_spread(N):
+    return [
+        dict(kind="section", n="7", title="What the ensemble median hides",
+             lead="Every map so far is the median of eleven models. This is what that median "
+                  "costs, measured four ways."),
+
+        dict(kind="figure_max",
+             title="The eleven models, ranked",
+             image=f"{FIG}/fig54_model_ranking_ssp370.png",
+             source="§ 43_model_ranking.R",
+             notes=f"National mean Safe Winter Chill per model under SSP3-7.0. "
+                   f"{N['rank_worst_model']} leaves {N['rank_worst_swc']:.1f} CP and "
+                   f"{N['rank_best_model']} leaves {N['rank_best_swc']:.1f} CP, a spread of "
+                   f"{N['rank_spread_far_CP']:.1f} CP against {N['rank_spread_base_CP']:.1f} CP at "
+                   f"the baseline.\n\n"
+                   f"Two cautions carried on the figure itself. The ordering is not stable: "
+                   f"{N['rank_order_swaps_mean_vs_median']:.0f} of eleven positions move between a "
+                   f"mean and a median. And {N['rank_short_window_models']} computes its "
+                   f"percentile over {N['rank_short_window_seasons']:.0f} seasons rather than "
+                   f"{N['rank_modal_seasons']:.0f}, while leading the next model by only "
+                   f"{N['rank_best_margin_CP']:.2f} CP, so its first place is not secure."),
+
+        dict(kind="figure_max",
+             title="The eleven maps, unsummarised",
+             image=f"{FIG}/fig40_small_multiples_ssp370_far.png",
+             source="§ 37_model_figures.R",
+             notes="Four things to look for on this sheet.\n\n"
+                   "IITM-ESM, top left, is the optimistic bound: the band where only the mutant "
+                   "works barely leaves the coast and almost nothing is lost outright. "
+                   "UKESM1-0-LL, bottom right, is the pessimistic one: red covers the whole "
+                   "southern half and the orange band has moved inland behind it. ACCESS-CM2 and "
+                   "KACE-1-0-G sit beside it, and those three share an atmospheric component, so "
+                   "a third of the panels are not independent draws. And the northern half stays "
+                   "blue in all eleven: where the models disagree is the southern and coastal "
+                   "ground, which is where the crop is.\n\n"
+                   "This is the sheet to look at before accepting any single map in this deck."),
+
+        dict(kind="figure_note",
+             title="Climate sensitivity against chill left",
+             image=f"{FIG}/fig55_model_sensitivity.png",
+             note_frac=0.30,
+             notes_side=[
+                 dict(head="What is plotted",
+                      body="Each model's transient climate response against the chill it leaves, "
+                           "from IPCC AR6 WG1 Table 7.SM.5."),
+                 dict(head="The harsh end",
+                      body="UKESM1-0-LL has the highest sensitivity of the eleven and leaves the "
+                           "least chill."),
+                 dict(head="The mild end is not explained",
+                      body="IITM-ESM leaves the most chill with a mid-table response, above four "
+                           "models that leave less."),
+             ],
+             source="§ 46_model_sensitivity.R · IPCC AR6 WG1 Ch.7 SM Table 7.SM.5",
+             notes="If the optimistic bound of this work rests on a regional feature of one model "
+                   "rather than on its global sensitivity, screening the ensemble by sensitivity "
+                   "would not address it. ACCESS-CM2 leaves the second least chill, though on "
+                   "sensitivity it ranks third by transient response and fourth by equilibrium. "
+                   "The AR6 table leaves IITM-ESM's equilibrium sensitivity blank; the value "
+                   "shown comes from Zelinka et al. 2020 and is marked as such on the figure."),
+
+        dict(kind="table", slim=True,
+             title="The shared atmosphere",
+             head=["Model", "Chill left, CP", "TCR °C", "ECS °C", "Atmosphere"],
+             rows=[
+                 ["UKESM1-0-LL", "41.1", "2.79", "5.34", "MetUM-HadGEM3-GA7.1"],
+                 ["ACCESS-CM2", "46.0", "2.10", "4.72", "MetUM-HadGEM3-GA7.1"],
+                 ["EC-Earth3-Veg", "51.5", "2.62", "4.31", "other"],
+                 ["CMCC-CM2-SR5", "53.7", "2.09", "3.52", "other"],
+                 ["KACE-1-0-G", "56.3", "2.04", "4.75", "MetUM-HadGEM3-GA7.1"],
+                 ["CNRM-ESM2-1", "57.1", "1.86", "4.76", "other"],
+                 ["MRI-ESM2-0", "58.2", "1.64", "3.15", "other"],
+                 ["NorESM2-MM", "59.6", "1.33", "2.50", "other"],
+                 ["MIROC6", "60.8", "1.55", "2.61", "other"],
+                 ["MPI-ESM1-2-HR", "60.9", "1.66", "2.98", "other"],
+                 ["IITM-ESM", "62.3", "1.71", "2.37 *", "other"],
+             ],
+             widths=[0.24, 0.16, 0.13, 0.13, 0.34],
+             numeric=True,
+             foot="The three declare a byte-identical atmosphere but come from different "
+                  "institutions, and they hold ranks 1, 2 and 5 for harshness. "
+                  "* from Zelinka et al. 2020.",
+             source="AEMET Nota Técnica 41 · WCRP CMIP6 controlled vocabulary · AR6 Table 7.SM.5",
+             notes="The eleven were selected by AEMET on skill, on data availability, and on one "
+                   "model per institutional family, with a final check that the subset still "
+                   "spanned the spread of the full ensemble. That filter operates on the "
+                   "institution, so three models sharing MetUM-HadGEM3-GA7.1 pass through it as "
+                   "independent draws.\n\n"
+                   "This is a question for a reviewer, not a claim that the ensemble is wrong. The "
+                   "measured effect on the national median is small; whether the shared atmosphere "
+                   "biases the spatial pattern over Iberia has not been tested."),
+
+        dict(kind="table", slim=True,
+             title="Order of aggregation",
+             head=["Class", "Median first, km²", "Classify first, km²", "Difference"],
+             rows=[
+                 ["Both cultivars", f"{en(N['agg_both_median_first_km2'])}",
+                  f"{en(N['agg_both_classify_first_km2'])}",
+                  f"{N['agg_both_shift_pct']:+.1f}%"],
+                 ["Only 'Búlida Precoz'", f"{en(N['agg_only_median_first_km2'])}",
+                  f"{en(N['agg_only_classify_first_km2'])}",
+                  f"{N['agg_only_shift_pct']:+.1f}%"],
+                 ["Neither", f"{en(N['agg_none_median_first_km2'])}",
+                  f"{en(N['agg_none_classify_first_km2'])}",
+                  f"{N['agg_none_shift_pct']:+.1f}%"],
+                 ["Share of the loss recovered",
+                  f"{N['agg_headline_median_first_pct']:.1f}%",
+                  f"{N['agg_headline_classify_first_pct']:.1f}%",
+                  f"{N['agg_headline_shift_points']:+.1f} points"],
+             ],
+             widths=[0.34, 0.22, 0.22, 0.22],
+             emphasis=3,
+             source="§ 45_v3_numbers.py · per_model_cropland_km2.csv",
+             notes="The objection is real and general: averaging a climate before running an "
+                   "impact model can destroy the signal, and plant thresholds are the textbook "
+                   "case. Measured here on SSP3-7.0 at 2071-2100 it is a second-order effect. The "
+                   "middle column does not sum to the national cropland, and cannot: each class "
+                   "median comes from a different model.\n\n"
+                   "It compares the median of eleven areas against the area of the median "
+                   "surface. It does not test reporting the fraction of models placing each cell "
+                   "in each class, which is a different and arguably better presentation."),
+
+        dict(kind="cards",
+             title="Three kinds of agreement",
+             items=[
+                 dict(head="On the class", stat=f"{N['agree_class_far']:.1f}%",
+                      bar=N["agree_class_far"] / 100.0,
+                      body="At least 9 of 11 models on the same side of a threshold, at 2071-2100.",
+                      chip="this is what the maps show"),
+                 dict(head="On the direction", stat=f"{N['agree_sign_nearterm']:.1f}%",
+                      bar=N["agree_sign_nearterm"] / 100.0,
+                      body=f"On the sign of the change at 2021-2040, against "
+                           f"{N['agree_sign_far']:.1f}% at end of century.",
+                      chip="why the near term is pooled"),
+                 dict(head="On the narrow band", stat=f"{N['band_agree_far_pct']:.2f}%",
+                      bar=max(0.02, N["band_agree_far_pct"] / 100.0),
+                      body="That a cell falls between 33.7 and 47.5 CP, a 13.8 CP target rather "
+                           "than a side.",
+                      chip="a far harder target"),
+             ],
+             foot=f"Across all situations the band figure runs "
+                  f"{N['band_agree_min_pct']:.2f}% to {N['band_agree_max_pct']:.2f}%, so it alone "
+                  f"would understate what the models do support.",
+             source="§ 37_model_figures.R · § 00_hatch.R",
+             notes="With eleven models, agreement counted as the larger side can only take six "
+                   "values: 6, 7, 8, 9, 10 or 11 out of 11. A legend promising a 50% band would "
+                   "describe something the data cannot produce, which is why the hatching is "
+                   "binary at the AR6 80% criterion."),
+
+        dict(kind="figure_max",
+             title="Where the models disagree on the class",
+             image=f"{FIG}/fig39_model_agreement_far.png",
+             source="§ 37_model_figures.R · § 00_hatch.R",
+             notes="Hatched cropland is where fewer than 9 of 11 models place the cell in the same "
+                   "class. It falls on the boundaries between classes, which is where it should "
+                   "fall, and in the other situations agreement runs between 92.6% and 99.1%."),
+
+        dict(kind="bignum", slim=True,
+             title="The spread in area",
+             items=[
+                 dict(value=f"{en(N['spread_none_min_km2'])} – {en(N['spread_none_max_km2'])}",
+                      label=f"km² where neither cultivar works: a factor of "
+                            f"{N['spread_none_ratio']:.1f}"),
+                 dict(value=f"{en(N['spread_only_min_km2'])} – {en(N['spread_only_max_km2'])}",
+                      label="km² recovered by the mutant"),
+                 dict(value=f"{N['km2_rescued_min_pct']:.1f} – {N['km2_rescued_max_pct']:.1f}%",
+                      label=f"the share of the loss it recovers, median "
+                            f"{N['km2_rescued_median_pct']:.1f}%"),
+             ],
+             body=["The right-hand figure is the most robust statement in this work; the "
+                   "left-hand one is the least, and no single-number headline for it is honest."],
+             source="§ 36_per_model_stats.R · per_model_cropland_km2.csv",
+             notes="The right-hand figure rests on the gap between the cultivars rather than on "
+                   "either threshold, and no model puts it below a third. The data provider's own "
+                   "guidance discourages reducing an ensemble to one value, and whether the area "
+                   "figures should carry a band is an open question at the end of this deck.\n\n"
+                   "Putting the factor on a slide is deliberate: it is the number a reviewer "
+                   "would find on their own, and finding it unannounced would undermine "
+                   "everything else."),
+    ]
+
+
+def _v4_observed(N):
+    return [
+        dict(kind="section", n="8", title="The observed record",
+             lead="A result that is not a projection: what the last fifty winters actually did."),
+
+        dict(kind="figure_max",
+             title="Fifty observed winters",
+             image=f"{FIG}/fig25_01_observed_chill_series_1976_2025.png",
+             source="§ 26_observed_long_record.R",
+             notes=f"Observed Safe Winter Chill as anomalies over "
+                   f"{N['obs_record_n_seasons']:.0f} seasons. The 1976-2020 baseline has no trend "
+                   f"(p = 0.90); 2021-2025 sits {abs(N['obs_recent_anom_CP']):.2f} CP below it, "
+                   f"{abs(N['obs_recent_sd']):.2f} standard deviations.\n\n"
+                   f"Four of the five recent winters are among the ten mildest of the fifty "
+                   f"(p = {N['obs_p_exchangeable']:.3f} under exchangeability), and of the "
+                   f"{N['obs_n_baseline_blocks']:.0f} five-season blocks in the baseline, "
+                   f"{N['obs_blocks_as_mild']:.0f} reach as low. One caveat travels with it: the "
+                   f"five-year running mean has been falling since 2005, so the recent block "
+                   f"sharpens a decline that had already begun."),
+
+        dict(kind="figure_note",
+             title="Model spread against scenario spread",
+             image=f"{FIG}/fig38_model_vs_scenario_spread.png",
+             note_frac=0.29,
+             notes_side=[
+                 dict(head="Measured where it matters",
+                      body=f"On the {N['nearterm_marginal_stations']:.0f} stations sitting near "
+                           f"the 'Búlida' threshold at 2021-2040."),
+                 dict(head="The comparison",
+                      body=f"Scenarios differ by {N['nearterm_spread_scenarios_CP']:.1f} CP, "
+                           f"models by {N['nearterm_spread_models_CP']:.1f} CP: five times as "
+                           f"much."),
+                 dict(head="Not even ordered",
+                      body=f"{N['nearterm_models_favouring_ssp370']:.0f} of eleven models give "
+                           f"more chill under SSP3-7.0 than under SSP2-4.5."),
+             ],
+             source="§ 33_talk_figures.R · talk_key_numbers.csv",
+             notes=f"The near term is shown as one pooled panel rather than three, because three "
+                   f"panels would invite the reader to conclude that the pessimistic scenario is "
+                   f"better, which the data do not support. Sign test p = "
+                   f"{N['nearterm_sign_test_p']:.2f}; the chill-poorest scenario is SSP1-2.6 in "
+                   f"{N['nearterm_coldest_is_ssp126']:.0f} models, SSP2-4.5 in "
+                   f"{N['nearterm_coldest_is_ssp245']:.0f} and SSP3-7.0 in "
+                   f"{N['nearterm_coldest_is_ssp370']:.0f}.\n\n"
+                   f"The sign even depends on the order of averaging: median across models first "
+                   f"gives SSP3-7.0 {N['nearterm_order_models_first_CP']:+.1f} CP against "
+                   f"SSP2-4.5, and across stations first gives "
+                   f"{N['nearterm_order_stations_first_CP']:+.1f}."),
+    ]
+
+
+def _v4_questions(N):
+    return [
+        dict(kind="section", n="9", title="What is still open",
+             lead="Five questions whose answers would change either the numbers or how they have "
+                  "to be reported, in the order of how much they would move."),
+
+        dict(kind="cards", rows=True,
+             title="Five open questions",
+             items=[
+                 dict(head="1. Parametrisation",
+                      body="Were the two requirements quantified with Fishman 1987, or with "
+                           "chillR's 1988 default? Supply uses 1987.",
+                      stat="would move every area"),
+                 dict(head="2. Interpolation",
+                      body="Gómez-Ramos et al. (2024) found chill overestimated in warm coastal "
+                           "areas, where the cultivars separate.",
+                      stat="would change every map"),
+                 dict(head="3. Reporting the spread",
+                      body="Should the areas carry a band rather than a median, given a factor of "
+                           "fifteen across models?",
+                      stat="would change the framing"),
+                 dict(head="4. Model subset",
+                      body="Does the shared atmosphere warrant down-weighting, and why is "
+                           "IITM-ESM the mild outlier?",
+                      stat="would move the median"),
+                 dict(head="5. Excluding SSP5-8.5",
+                      body="The accepted abstract names RCP8.5. The reference justifying the "
+                           "exclusion is not recorded.",
+                      stat="needed for the caption"),
+             ],
+             source="§ 10.4 of the canonical project document",
+             notes="None is a defect found after the fact. Each was raised while the pipeline was being built and left open because answering it is not the analyst's decision alone.\n\n"
+                   "Question 1 has been open longest and has the largest consequence: the offset "
+                   "between the two parametrisations is half the gap between the two cultivars. "
+                   "If the answer is 1988, the equivalent thresholds on the 1987 scale are near "
+                   "54 and 41 CP and every area figure is recomputed, which the threshold sweep "
+                   "already supports.\n\n"
+                   "Questions 2 and 3 change presentation rather than analysis: station-level "
+                   "classification with an uncertainty mask instead of a continuous surface, and "
+                   "a band instead of a median. The per-model areas are already computed."),
+
+        dict(kind="close",
+             title="Where this stands",
+             points=[
+                 f"'Búlida' loses {en(N['lost_km2'])} km² by 2071-2100 under SSP3-7.0, and the "
+                 f"mutant recovers {N['rescued_pct_of_lost']:.1f}% of it.",
+
+                 "That share is the firmest number here; the absolute areas are the weakest.",
+
+                 "Comments on a single slide are more useful than a verdict on the whole.",
+             ],
+             foot="Code and documentation: https://github.com/DanielGP121/plinius-apricot-winter-chill",
+             notes="Everything here is reproducible from the repository, and every figure quoted "
+                   "is read from a table at build time rather than typed onto a slide. The method "
+                   "book carries the reasoning that this deck deliberately leaves off the "
+                   "slides."),
     ]

@@ -57,7 +57,7 @@ def sample_fractions(stations, clc_path, radii_km):
     rmax = max(radii_km)
     with rasterio.open(clc_path) as src:
         if src.crs is not None and src.crs.is_geographic:
-            print("AVISO: raster en grados; el radio en km no será métrico. Usa EPSG:3035.")
+            print("WARNING: raster in degrees; the radius in km will not be metric. Use EPSG:3035.")
         gdf_p = gdf.to_crs(src.crs)
         px = abs(src.transform.a)  # pixel size in CRS units (metres for EPSG:3035)
         nodata = src.nodata
@@ -154,13 +154,13 @@ def main():
 
     draw_map(frac, args.map_radius, args.map_threshold, out / "soil_criterion_map.png")
 
-    print(f"estaciones: {len(frac)}")
-    print("\n=== sensibilidad (nº de estaciones cultivables) ===")
+    print(f"stations: {len(frac)}")
+    print("\n=== sensitivity (number of cultivable stations) ===")
     piv = sens.pivot_table(index=["class_set", "radius_km"], columns="threshold",
                            values="n_cultivable")
     print(piv.to_string())
     print(f"\nmapa -> {out / 'soil_criterion_map.png'}")
-    print(f"tabla -> {out / 'soil_criterion_sensitivity.csv'}")
+    print(f"table -> {out / 'soil_criterion_sensitivity.csv'}")
 
 
 if __name__ == "__main__":

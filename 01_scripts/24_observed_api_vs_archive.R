@@ -82,9 +82,9 @@ load_one <- function(path, tag) {
 arch <- load_one(ARCH, "archive")
 api  <- load_one(APIF, "API")
 
-cat(sprintf("archivo : %d filas, %d estaciones, temporadas %d-%d\n", nrow(arch), uniqueN(arch$station_id),
+cat(sprintf("archive : %d rows, %d stations, seasons %d-%d\n", nrow(arch), uniqueN(arch$station_id),
             min(arch$season_end_year), max(arch$season_end_year)))
-cat(sprintf("API     : %d filas, %d estaciones, temporadas %d-%d\n", nrow(api), uniqueN(api$station_id),
+cat(sprintf("API     : %d rows, %d stations, seasons %d-%d\n", nrow(api), uniqueN(api$station_id),
             min(api$season_end_year), max(api$season_end_year)))
 
 pair_at <- function(min_perc) {
@@ -97,7 +97,7 @@ pair_at <- function(min_perc) {
 
 j <- pair_at(MIN_PERC)
 if (!nrow(j)) stop("no season is reported by both sources at this completeness threshold")
-cat(sprintf("\npareadas: %d temporadas en %d estaciones (filtro %.0f%%), %d-%d\n\n",
+cat(sprintf("\npaired: %d seasons at %d stations (filter %.0f%%), %d-%d\n\n",
             nrow(j), uniqueN(j$station_id), MIN_PERC, min(j$season_end_year), max(j$season_end_year)))
 
 # --- § 2 - agreement, pooled and within station ----------------------------------------------
@@ -117,21 +117,21 @@ per_st <- j[, .(n = .N, bias = mean(d), mae = mean(abs(d)), sd_arch = sd(CP_arch
                 lon = lon[1], lat = lat[1]), by = station_id]
 st_ok <- per_st[n >= MIN_SEASONS]
 
-cat("=== 1. acuerdo temporada a temporada ===\n")
+cat("=== 1. agreement season by season ===\n")
 print(pooled)
-cat(sprintf("\npor estacion (>= %d temporadas, n = %d):\n", MIN_SEASONS, nrow(st_ok)))
-cat(sprintf("  sesgo mediano        : %+.2f CP  (p10 %+.2f, p90 %+.2f)\n",
+cat(sprintf("\nper station (>= %d seasons, n = %d):\n", MIN_SEASONS, nrow(st_ok)))
+cat(sprintf("  median bias          : %+.2f CP  (p10 %+.2f, p90 %+.2f)\n",
             median(st_ok$bias), quantile(st_ok$bias, .10), quantile(st_ok$bias, .90)))
-cat(sprintf("  correlacion mediana  : %.3f  (p10 %.3f)\n",
+cat(sprintf("  median correlation   : %.3f  (p10 %.3f)\n",
             median(st_ok$r, na.rm = TRUE), quantile(st_ok$r, .10, na.rm = TRUE)))
-cat(sprintf("  MAE mediano          : %.2f CP\n", median(st_ok$mae)))
-cat(sprintf("  estaciones con |sesgo| > 5 CP: %d de %d (%.1f%%)\n",
+cat(sprintf("  median MAE           : %.2f CP\n", median(st_ok$mae)))
+cat(sprintf("  stations with |bias| > 5 CP: %d of %d (%.1f%%)\n",
             sum(abs(st_ok$bias) > 5), nrow(st_ok), 100 * mean(abs(st_ok$bias) > 5)))
-cat(sprintf("  estaciones con MAE > %.0f CP (candidatas a excluir): %d de %d (%.1f%%)\n",
+cat(sprintf("  stations with MAE > %.0f CP (candidates to exclude): %d of %d (%.1f%%)\n",
             MAX_MAE, sum(st_ok$mae > MAX_MAE), nrow(st_ok), 100 * mean(st_ok$mae > MAX_MAE)))
-cat(sprintf("  tras excluirlas: sesgo mediano %+.2f CP, MAE mediano %.2f\n",
+cat(sprintf("  after excluding them: median bias %+.2f CP, median MAE %.2f\n",
             median(st_ok[mae <= MAX_MAE]$bias), median(st_ok[mae <= MAX_MAE]$mae)))
-cat(sprintf("  referencia: el sesgo modelo-observado que el proyecto ya acepta es %+.2f CP\n\n", REF_MODEL_BIAS))
+cat(sprintf("  reference: the model-observed bias the project already accepts is %+.2f CP\n\n", REF_MODEL_BIAS))
 
 # --- § 3 - does the disagreement live in the barely-complete seasons? -------------------------
 # The smoke test on 12 stations showed a median bias of zero with a right tail. If that tail sits in
@@ -142,7 +142,7 @@ j[, pc_bin := cut(pc_api, breaks = c(85, 90, 95, 99.999, 100.001), right = FALSE
 by_pc <- j[!is.na(pc_bin), .(n = .N, bias_mean = round(mean(d), 2), bias_median = round(median(d), 2),
                              mae = round(mean(abs(d)), 2), pct_gt5 = round(100 * mean(abs(d) > 5), 1)),
            by = pc_bin][order(pc_bin)]
-cat("=== 2. desacuerdo segun la completitud de la temporada en la API ===\n")
+cat("=== 2. disagreement against how complete the API season is ===\n")
 print(by_pc)
 
 sweep <- rbindlist(lapply(c(85, 90, 95, 100), function(p) {
@@ -152,7 +152,7 @@ sweep <- rbindlist(lapply(c(85, 90, 95, 100), function(p) {
              mae = round(mean(abs(k$d)), 3), r = round(cor(k$CP_api, k$CP_arch), 4),
              pct_abs_gt5 = round(100 * mean(abs(k$d) > 5), 2))
 }))
-cat("\nbarrido del umbral de completitud:\n")
+cat("\ncompleteness threshold sweep:\n")
 print(sweep)
 
 # --- § 4 - Safe Winter Chill on the seasons the two sources share ------------------------------
@@ -166,13 +166,13 @@ swc <- j[, .(n = .N,
 swc[, d := swc_api - swc_arch]
 swc_ok <- swc[n >= MIN_SWC_SEASONS]
 
-cat(sprintf("\n=== 3. Safe Winter Chill sobre las temporadas comunes (>= %d temporadas) ===\n", MIN_SWC_SEASONS))
-cat(sprintf("estaciones: %d de %d\n", nrow(swc_ok), nrow(swc)))
-cat(sprintf("  SWC archivo mediano : %.2f CP\n", median(swc_ok$swc_arch)))
-cat(sprintf("  SWC API mediano     : %.2f CP\n", median(swc_ok$swc_api)))
-cat(sprintf("  sesgo API-archivo   : media %+.2f, mediana %+.2f CP\n", mean(swc_ok$d), median(swc_ok$d)))
-cat(sprintf("  correlacion espacial: %.4f\n", cor(swc_ok$swc_api, swc_ok$swc_arch)))
-cat(sprintf("  estaciones con |sesgo| > 5 CP: %d (%.1f%%)\n",
+cat(sprintf("\n=== 3. Safe Winter Chill on the common seasons (>= %d seasons) ===\n", MIN_SWC_SEASONS))
+cat(sprintf("stations: %d of %d\n", nrow(swc_ok), nrow(swc)))
+cat(sprintf("  median archive SWC  : %.2f CP\n", median(swc_ok$swc_arch)))
+cat(sprintf("  median API SWC      : %.2f CP\n", median(swc_ok$swc_api)))
+cat(sprintf("  API-archive bias    : mean %+.2f, median %+.2f CP\n", mean(swc_ok$d), median(swc_ok$d)))
+cat(sprintf("  spatial correlation : %.4f\n", cor(swc_ok$swc_api, swc_ok$swc_arch)))
+cat(sprintf("  stations with |bias| > 5 CP: %d (%.1f%%)\n",
             sum(abs(swc_ok$d) > 5), 100 * mean(abs(swc_ok$d) > 5)))
 
 # --- § 5 - figures -----------------------------------------------------------------------------
@@ -180,7 +180,7 @@ cat(sprintf("  estaciones con |sesgo| > 5 CP: %d (%.1f%%)\n",
 # than accumulating panels from earlier parameter choices.
 dir.create(FIGDIR, showWarnings = FALSE, recursive = TRUE)
 old <- list.files(FIGDIR, pattern = "^fig23_", full.names = TRUE)
-if (length(old)) { file.remove(old); cat(sprintf("\nborradas %d figuras fig23_ previas\n", length(old))) }
+if (length(old)) { file.remove(old); cat(sprintf("\ndeleted %d previous fig23_ figures\n", length(old))) }
 
 th <- theme_minimal(base_size = 11) +
       theme(panel.grid.minor = element_blank(), plot.title = element_text(face = "bold", size = 12))
@@ -242,4 +242,4 @@ fwrite(sweep, file.path(OUTDIR, "api_vs_archive_threshold_sweep.csv"))
 fwrite(merge(per_st, swc[, .(station_id, n_swc = n, swc_arch, swc_api, swc_d = d)],
              by = "station_id", all.x = TRUE), file.path(OUTDIR, "api_vs_archive_by_station.csv"))
 
-cat(sprintf("\nescritas 3 figuras en %s y 3 tablas en %s\n", FIGDIR, OUTDIR))
+cat(sprintf("\nwrote 3 figures to %s and 3 tables to %s\n", FIGDIR, OUTDIR))

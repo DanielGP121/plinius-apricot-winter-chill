@@ -77,8 +77,8 @@ api  <- load_seasons(APIF, "API")
 recent <- api[season_end_year > SPLIT_YEAR & season_end_year <= LAST_YEAR]
 past   <- arch[season_end_year <= SPLIT_YEAR]
 
-cat(sprintf("archivo hasta %d : %d temporadas, %d estaciones\n", SPLIT_YEAR, nrow(past), uniqueN(past$station_id)))
-cat(sprintf("API %d-%d       : %d temporadas, %d estaciones\n", SPLIT_YEAR + 1L, LAST_YEAR,
+cat(sprintf("archive to %d : %d seasons, %d stations\n", SPLIT_YEAR, nrow(past), uniqueN(past$station_id)))
+cat(sprintf("API %d-%d   : %d seasons, %d stations\n", SPLIT_YEAR + 1L, LAST_YEAR,
             nrow(recent), uniqueN(recent$station_id)))
 
 # --- § 2 - splice --------------------------------------------------------------------------------
@@ -86,14 +86,14 @@ cat(sprintf("API %d-%d       : %d temporadas, %d estaciones\n", SPLIT_YEAR + 1L,
 # reported separately, because a "1995-2025" value built from a series that stops in 2020 would be
 # a mislabelled 1995-2020 value.
 ids <- intersect(unique(past$station_id), unique(recent$station_id))
-cat(sprintf("estaciones empalmables: %d\n", length(ids)))
+cat(sprintf("spliceable stations: %d\n", length(ids)))
 
 spliced <- rbindlist(list(past[station_id %in% ids][, src := "archive"],
                           recent[station_id %in% ids][, src := "api"]))
 setorder(spliced, station_id, season_end_year)
 
 n_recent <- recent[station_id %in% ids, .(n_recent = .N), by = station_id]
-cat("\ntemporadas recientes aportadas por estacion:\n")
+cat("\nrecent seasons contributed per station:\n")
 print(n_recent[, .(estaciones = .N), by = n_recent][order(n_recent)])
 
 # --- § 3 - does the extension move the baseline? -------------------------------------------------
@@ -128,29 +128,29 @@ if (file.exists(AGREE)) {
 }
 
 report <- function(d, label) {
-  if (!nrow(d)) { cat(sprintf("\n%s: sin estaciones\n", label)); return(NULL) }
+  if (!nrow(d)) { cat(sprintf("\n%s: no stations\n", label)); return(NULL) }
   cat(sprintf("\n--- %s (n = %d) ---\n", label, nrow(d)))
-  cat(sprintf("  SWC 1995-2020 mediano : %.2f CP\n", median(d$swc_1995_2020)))
-  cat(sprintf("  SWC 1995-2025 mediano : %.2f CP\n", median(d$swc_1995_2025)))
-  cat(sprintf("  cambio                : mediana %+.2f CP, media %+.2f (p10 %+.2f, p90 %+.2f)\n",
+  cat(sprintf("  SWC 1995-2020 median : %.2f CP\n", median(d$swc_1995_2020)))
+  cat(sprintf("  SWC 1995-2025 median : %.2f CP\n", median(d$swc_1995_2025)))
+  cat(sprintf("  change               : median %+.2f CP, mean %+.2f (p10 %+.2f, p90 %+.2f)\n",
               median(d$d_swc), mean(d$d_swc), quantile(d$d_swc, .10), quantile(d$d_swc, .90)))
-  cat(sprintf("  estaciones que pierden frio al anadir 2021-2025: %.1f%%\n", 100 * mean(d$d_swc < 0)))
-  cat(sprintf("  media CP 1996-2020 %.2f  vs  2021-2025 %.2f  -> %+.2f CP\n",
+  cat(sprintf("  stations losing chill when 2021-2025 is added: %.1f%%\n", 100 * mean(d$d_swc < 0)))
+  cat(sprintf("  mean CP 1996-2020 %.2f  vs  2021-2025 %.2f  -> %+.2f CP\n",
               median(d$mean_past), median(d$mean_recent), median(d$d_mean)))
   invisible(NULL)
 }
 
-cat(sprintf("\n=== efecto de anadir las temporadas %d-%d ===", SPLIT_YEAR + 1L, LAST_YEAR))
-cat(sprintf("\n(referencia: el modelo daba %+.1f CP para la misma extension)\n", MODEL_SHIFT))
-report(swc, "todas las estaciones empalmables")
-report(swc[n_recent >= MIN_RECENT], sprintf("con al menos %d temporadas recientes", MIN_RECENT))
+cat(sprintf("\n=== effect of adding seasons %d-%d ===", SPLIT_YEAR + 1L, LAST_YEAR))
+cat(sprintf("\n(reference: the model gave %+.1f CP for the same extension)\n", MODEL_SHIFT))
+report(swc, "all spliceable stations")
+report(swc[n_recent >= MIN_RECENT], sprintf("with at least %d recent seasons", MIN_RECENT))
 report(swc[n_recent >= MIN_RECENT & !is.na(mae) & mae <= MAX_MAE],
-       sprintf("ademas con MAE <= %.0f CP (acuerdo verificado)", MAX_MAE))
+       sprintf("plus MAE <= %.0f CP (agreement verified)", MAX_MAE))
 
 # --- § 5 - figure and tables ----------------------------------------------------------------------
 dir.create(FIGDIR, showWarnings = FALSE, recursive = TRUE)
 old <- list.files(FIGDIR, pattern = "^fig24_", full.names = TRUE)
-if (length(old)) { file.remove(old); cat(sprintf("\nborradas %d figuras fig24_ previas\n", length(old))) }
+if (length(old)) { file.remove(old); cat(sprintf("\nremoved %d previous fig24_ figures\n", length(old))) }
 
 core <- swc[n_recent >= MIN_RECENT & !is.na(mae) & mae <= MAX_MAE]
 p <- ggplot(core, aes(d_swc)) +
@@ -184,5 +184,5 @@ summary_out <- rbindlist(lapply(names(blocks), function(k) {
              d_mean_cp = round(median(d$d_mean), 3))
 }))
 fwrite(summary_out, file.path(OUTDIR, "observed_spliced_summary.csv"))
-cat(sprintf("\nescritas 1 figura en %s y 2 tablas en %s\n", FIGDIR, OUTDIR))
+cat(sprintf("\nwrote 1 figure to %s and 2 tables to %s\n", FIGDIR, OUTDIR))
 print(summary_out)

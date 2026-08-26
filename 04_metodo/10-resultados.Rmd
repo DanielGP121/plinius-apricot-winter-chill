@@ -64,7 +64,7 @@ knitr::include_graphics(figura("fig33_headline_flow.png"))
 
 ## Los mapas
 
-```{r resultados-mapa, fig.cap = pie("Viabilidad varietal sobre suelo cultivable, SSP3-7.0 a fin de siglo. El rayado diagonal marca dónde menos del 80 % de los modelos coinciden.", "19_cropland_viability_national.R", "ggplot2 4.0.2 · terra 1.9.34")}
+```{r resultados-mapa, fig.cap = pie("Viabilidad varietal sobre suelo cultivable, SSP3-7.0 a fin de siglo.", "19_cropland_viability_national.R", "ggplot2 4.0.2 · terra 1.9.34")}
 knitr::include_graphics(figura("fig20_15_viability_ssp370_far.png"))
 ```
 

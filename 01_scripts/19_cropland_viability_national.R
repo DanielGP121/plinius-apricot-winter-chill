@@ -60,14 +60,14 @@ dir.create(FIGS, showWarnings = FALSE, recursive = TRUE)
 # The ensemble is summarised with the median across the 11 models for the maps. The spread it
 # hides is large (24.8 CP between models at a typical station) and is reported separately by the
 # agreement layer, never silently.
-cat("1. leyendo frio por estacion\n")
+cat("1. reading chill per station\n")
 d <- fread(CHILL)
 stopifnot(!anyNA(d$safe_winter_chill_P10), is.numeric(d$lon))
 ens <- d[, .(SWC = median(safe_winter_chill_P10), n_models = .N),
          by = .(situation, scenario, window, periodo, clase, station_id, lon, lat)]
 
 # 2021-2040 pooled over the three scenarios. At that horizon they are not distinguishable: the
-# median station differs by 0.62 CP between SSP1-2.6 and SSP3-7.0 while the 11 models span 8.91 CP,
+# median station differs by 0.26 CP between SSP1-2.6 and SSP3-7.0 while the 11 models span 7.13 CP,
 # and in 62% of stations the pessimistic scenario returns MORE chill than the optimistic one. Three
 # separate panels would invite reading that noise as a scenario effect, so the pooled panel is the
 # one that says what the data support. By 2071-2100 the scenarios do separate (-8.61 CP) and are
@@ -99,12 +99,12 @@ SIT_LABEL <- c(
 
 sits <- SIT_ORDER[SIT_ORDER %in% unique(ens$situation)]
 missing <- setdiff(unique(ens$situation), sits)
-if (length(missing)) stop("situaciones sin etiqueta: ", paste(missing, collapse = ", "))
+if (length(missing)) stop("situations with no label: ", paste(missing, collapse = ", "))
 if (QUICK) sits <- sits[1]
-cat(sprintf("   %d situaciones\n", length(sits)))
+cat(sprintf("   %d situations\n", length(sits)))
 
 # § 2 — Country outline and the 1 km template every layer is aligned to.
-cat("2. plantilla y contorno\n")
+cat("2. template and outline\n")
 ccaa <- esp_get_ccaa(epsg = 4326)
 ccaa <- st_transform(ccaa[!grepl("Canaria", ccaa$ine.ccaa.name), ], EPSG)
 spain <- st_union(ccaa)
@@ -115,7 +115,7 @@ tmpl <- rast(ext(vect(spain)), resolution = RES_M, crs = paste0("EPSG:", EPSG))
 # excluding 231 pasture, matching the "broad" criterion used earlier in the project. Aggregating
 # the 0/1 mask by mean gives the fraction of each cell that is cropland, which is what turns a
 # per-cell classification into an area statistic.
-cat("3. suelo cultivable CORINE\n")
+cat("3. CORINE cropland\n")
 clc <- rast(CLC)
 clc_c <- crop(clc, ext(project(vect(spain), crs(clc))))
 # Class selection and its verification live in 00_corine.R, shared with 31_scenario_frames.R so the
@@ -131,7 +131,7 @@ total_crop_km2 <- global(cropfrac, "sum", na.rm = TRUE)[1, 1] * cell_km2
 if (!is.finite(total_crop_km2) || total_crop_km2 < 1e4)
   stop(sprintf("cropland mask selected %.0f km2, which cannot be right; check the CORINE product and its class codes",
                total_crop_km2))
-cat(sprintf("   superficie cultivable nacional: %.0f km2\n", total_crop_km2))
+cat(sprintf("   national cropland area: %.0f km2\n", total_crop_km2))
 
 # § 4 — IDW surface per situation, masked to cropland, then classified by cultivar viability.
 # Three classes: both cultivars viable, only the low-chill mutant, neither. The middle class is
@@ -144,7 +144,7 @@ pretty_sit <- function(s) unname(SIT_LABEL[s])
 
 rows <- list(); surfaces <- list(); classes <- list()
 for (s in sits) {
-  cat(sprintf("4. interpolando %s\n", s))
+  cat(sprintf("4. interpolating %s\n", s))
   p <- ens[situation == s]
   pv <- vect(as.data.frame(p[, .(lon, lat, SWC)]), geom = c("lon", "lat"), crs = "EPSG:4326")
   pv <- project(pv, paste0("EPSG:", EPSG))
@@ -162,20 +162,20 @@ for (s in sits) {
                           pct_none = 100 * km2[3] / sum(km2),
                           swc_median = median(values(surf), na.rm = TRUE))
   surfaces[[s]] <- surf; classes[[s]] <- cls
-  cat(sprintf("   ambas %.1f%% | solo Precoz %.1f%% | ninguna %.1f%%\n",
+  cat(sprintf("   both %.1f%% | only Precoz %.1f%% | neither %.1f%%\n",
               rows[[s]]$pct_both, rows[[s]]$pct_only_precoz, rows[[s]]$pct_none))
 }
 tab <- rbindlist(rows)
 
 # § 5 — Figures. One viability map per situation plus the chill surface behind it, and a summary
 # bar chart that carries the whole story in a single slide.
-cat("5. figuras\n")
+cat("5. figures\n")
 # Clear the two families this script owns before writing them again. The panel index used to come
 # from the loop position, so changing how many situations are drawn renamed every file and left the
 # previous run's figures behind, indistinguishable from the current ones. The index is now taken
 # from SIT_ORDER, which is fixed, and the directory is cleaned so it always reflects one run.
 old <- list.files(FIGS, pattern = "^fig2[01]_.*\\.png$", full.names = TRUE)
-if (length(old)) { file.remove(old); cat(sprintf("   %d figuras previas retiradas\n", length(old))) }
+if (length(old)) { file.remove(old); cat(sprintf("   %d previous figures removed\n", length(old))) }
 base_map <- function() list(
   geom_sf(data = ccaa, fill = NA, colour = "grey55", linewidth = 0.15),
   coord_sf(crs = EPSG, datum = NA),
@@ -225,7 +225,7 @@ gb <- ggplot(bars, aes(label, pct, fill = clase)) +
 ggsave(file.path(FIGS, "fig22_viability_bars.png"), gb, width = 9, height = 5.5, dpi = 200)
 
 fwrite(tab, file.path(ROOT, "02_outputs", "talk_numbers_cropland.csv"))
-cat("\n=== RESUMEN (% de superficie cultivable) ===\n")
+cat("\n=== SUMMARY (% of cropland area) ===\n")
 print(tab[match(ord, situation), .(label, pct_both = round(pct_both, 1),
       pct_only_precoz = round(pct_only_precoz, 1), pct_none = round(pct_none, 1))], row.names = FALSE)
-cat(sprintf("\nescrito talk_numbers_cropland.csv y %d figuras en %s\n", 2 * length(ord) + 1, FIGS))
+cat(sprintf("\nwritten talk_numbers_cropland.csv and %d figures in %s\n", 2 * length(ord) + 1, FIGS))

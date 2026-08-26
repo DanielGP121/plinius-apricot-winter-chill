@@ -119,13 +119,13 @@ def inspect(root):
     for scen in SCENARIOS:
         d = root / scen
         files = sorted(d.glob("*.nc")) if d.is_dir() else []
-        print(f"\n=== {scen} : {len(files)} ficheros en {d} ===")
+        print(f"\n=== {scen} : {len(files)} files in {d} ===")
         if not files:
             continue
         # raw xarray view of the first file so the exact dims/coords/attrs are visible
         with xr.open_dataset(files[0]) as ds:
             print(ds)
-        print("-- resumen por fichero --")
+        print("-- summary per file --")
         for f in files:
             info = describe_file(f)
             print(f"  {info['file']:<55} n_est={info['n_stations']:>4}  "
@@ -181,9 +181,9 @@ def write_stations(root, out_dir):
         out_dir.mkdir(parents=True, exist_ok=True)
         dst = out_dir / "stations.csv"
         st.to_csv(dst, index=False)
-        print(f"[stations] {len(st)} estaciones (de {files[0].name}) -> {dst}")
+        print(f"[stations] {len(st)} stations (from {files[0].name}) -> {dst}")
         return
-    print("no se encontró ningún .nc para extraer la lista de estaciones")
+    print("found no .nc from which to extract the station list")
 
 
 def _keep_model(model, wanted):
@@ -208,7 +208,7 @@ def build_scenario_table(root, scen, models=None, year_min=None, year_max=None):
     for f in files:
         m = _MODEL_RE.match(f.name) or _OBS_RE.match(f.name)
         if not m:
-            print(f"  aviso: nombre no reconocido, se ignora: {f.name}")
+            print(f"  warning: name not recognised, skipping: {f.name}")
             continue
         model = m.groupdict().get("model", "obs")
         if not _keep_model(model, models):
@@ -218,7 +218,7 @@ def build_scenario_table(root, scen, models=None, year_min=None, year_max=None):
     frames, any_converted = [], False
     for model, vp in groups.items():
         if "tasmax" not in vp or "tasmin" not in vp:
-            print(f"  aviso: {scen}/{model} sin pareja Tmax+Tmin, se ignora")
+            print(f"  warning: {scen}/{model} has no Tmax+Tmin pair, skipping")
             continue
         tmax, c1 = read_variable(vp["tasmax"], "Tmax")
         tmin, c2 = read_variable(vp["tasmin"], "Tmin")
@@ -282,7 +282,7 @@ def main():
         table, converted = build_scenario_table(root, scen, models=models,
                                                  year_min=args.year_min, year_max=args.year_max)
         if table is None:
-            print(f"[{scen}] sin datos utilizables")
+            print(f"[{scen}] no usable data")
             continue
         if args.chill_format:
             table = table.rename(columns={"year": "Year", "month": "Month", "day": "Day"})
@@ -292,8 +292,8 @@ def main():
         else:
             table.to_csv(dst, index=False)
         note = " (convertido K->C)" if converted else ""
-        print(f"[{scen}] {len(table):>9} filas, {table['station_id'].nunique() if 'station_id' in table else '?'} estaciones, "
-              f"{table['model'].nunique()} modelos -> {dst}{note}")
+        print(f"[{scen}] {len(table):>9} rows, {table['station_id'].nunique() if 'station_id' in table else '?'} stations, "
+              f"{table['model'].nunique()} models -> {dst}{note}")
 
 
 if __name__ == "__main__":

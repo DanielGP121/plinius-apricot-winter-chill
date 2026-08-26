@@ -62,7 +62,7 @@ map_theme <- function(base = 13) theme_minimal(base_size = base) +
         plot.subtitle = element_text(colour = "grey35"))
 
 # § 1 — Geography, shared with every other map in the project.
-cat("1. geografia\n")
+cat("1. geography\n")
 ccaa  <- esp_get_ccaa(epsg = 4326)
 ccaa  <- st_transform(ccaa[!grepl("Canaria", ccaa$ine.ccaa.name), ], EPSG)
 spain <- st_union(ccaa)
@@ -113,7 +113,7 @@ base_map <- function() list(
 # Colour is the ensemble median, exactly as in the headline maps. Diagonal lines mark the cropland
 # where fewer than 80 % of the models place the cell on the same side of the requirement, so the
 # viewer can see at once which parts of the pattern the ensemble actually supports.
-cat("2. fig39 mapa de acuerdo AR6\n")
+cat("2. fig39 AR6 agreement map\n")
 agree_panel <- function(sit, title) {
   ag  <- rast(file.path(AGREE_DIR, sprintf("%s_%d.tif", sit, RES_M)))
   cls <- classify(ens_surface(sit))
@@ -197,7 +197,7 @@ for (s in names(SHEETS)) per_model_sheet(s, SHEETS[[s]])
 
 # § 3b — the observed map, which is the only one of these that is measured rather than simulated.
 # It opens the results section: before any model is shown, this is what the instruments say.
-cat("4. mapa observado\n")
+cat("4. observed map\n")
 # `d` is filtered to the model runs, so the observed situation has to be read separately: its only
 # "model" is the label obs, which that filter removes.
 obs_pts <- fread(out_path("chill_all_windows.csv"))[situation == "observaciones_present",
@@ -233,7 +233,7 @@ ggsave(fig_path("fig47_observed_viability.png"), g_obs, width = 9.5, height = 9.
 # STATIONS, while every headline in the project is measured over AREA. On area the same eleven
 # models give a different range, and the difference decides whether the sentence "none falls below
 # a third" is true. Both are drawn.
-cat("4. fig41 rango por modelo\n")
+cat("4. fig41 per-model range\n")
 far <- PM[grepl("_far$", situation)]
 far[, scen := sub("_far", "", situation)]
 st_rng <- d[grepl("_far$", situation), .(
@@ -266,7 +266,7 @@ ggsave(fig_path("fig41_per_model_range.png"), g41, width = 13.5, height = 4.6, d
 # This is the figure that justifies pooling the near term and separating the far one, and it does
 # it without a single number: the near-term map is almost entirely hatched, the far-term one almost
 # entirely clean.
-cat("5. fig42 acuerdo cercano frente a lejano\n")
+cat("5. fig42 near-term against far-term agreement\n")
 sign_panel <- function(sit, title) {
   ag <- rast(file.path(AGREE_DIR, sprintf("%s_%d.tif", sit, RES_M)))
   cls <- classify(ens_surface(sit))
@@ -298,7 +298,7 @@ ggsave(fig_path(sprintf("fig42_sign_agreement_%s.png", SCEN)), g42, width = 13,
 # Here nothing competes for the colour channel, so all six possible levels are shown: with eleven
 # models the majority side can only be 6, 7, 8, 9, 10 or 11, and there is no such thing as an
 # agreement below 6 of 11. Kept for the annex, where the extra resolution is worth the extra map.
-cat("6. fig48 acuerdo con escala propia\n")
+cat("6. fig48 agreement with its own scale\n")
 AG_LAB <- c("6 of 11 (55%)", "7 of 11 (64%)", "8 of 11 (73%)",
             "9 of 11 (82%)", "10 of 11 (91%)", "11 of 11 (100%)")
 AG_COL <- c("#67000d", "#cb181d", "#fb6a4a", "#c7e9c0", "#74c476", "#238b45")
@@ -353,4 +353,4 @@ fwrite(data.table(
             min(st_rng[scen == SCEN]$pct), max(st_rng[scen == SCEN]$pct)),
   scenario = SCEN), out_path("model_spread_numbers.csv"))
 
-cat(sprintf("\nescritas 4 figuras en %s y model_spread_numbers.csv\n", FIG_DIR))
+cat(sprintf("\nwrote 4 figures in %s and model_spread_numbers.csv\n", FIG_DIR))

@@ -6,13 +6,13 @@ source("_common.R")
 
 La cadena completa tiene siete etapas. Cada uno de los capítulos siguientes explica una.
 
-```{r panorama-fig, fig.cap = pie("De cuatro ficheros de temperatura a un mapa de dónde cabe cada variedad. Los parámetros de cada etapa van en cursiva bajo su caja.", "39_pipeline_diagram.R", "ggplot2 4.0.2")}
+```{r panorama-fig, fig.cap = pie("De tres ficheros de temperatura a un mapa de dónde cabe cada variedad. Los parámetros de cada etapa van en cursiva bajo su caja.", "39_pipeline_diagram.R", "ggplot2 4.0.2")}
 knitr::include_graphics(figura("fig49_pipeline_overview.png"))
 ```
 
 ## Las siete etapas, en una línea cada una
 
-1. **Series diarias de temperatura.** Máxima y mínima por estación y día, de cuatro fuentes
+1. **Series diarias de temperatura.** Máxima y mínima por estación y día, de tres fuentes
    distintas. Capítulo \@ref(datos).
 2. **Reconstrucción horaria.** De dos valores al día a veinticuatro. Es el paso que más
    frío espurio puede añadir. Capítulo \@ref(horario).
@@ -38,10 +38,11 @@ fuera (las proyecciones del PNACC, el observado de AEMET, el mapa de usos del su
 de lo que se calcula aquí. Casi toda la cadena de arriba viene de terceros; lo propio empieza en la
 etapa 2.
 
-**Dónde se ejecuta cada etapa.** Las dos primeras mueven quince gigabytes y tardan alrededor de un
-día, así que ocurren en el HPC donde están los datos. Lo que baja de allí son
-`r n_es(metrica("pipeline_diagram_numbers", "table_MB"))` MB de tabla. Todo lo demás se hace en un
-portátil.
+**Dónde se ejecuta cada etapa.** Las cuatro primeras ocurren en el HPC, donde están los datos:
+mover los quince gigabytes de NetCDF y llegar desde ahí hasta el percentil 10 tarda alrededor de
+un día. Lo que baja de allí es una tabla que ya trae el Safe Winter Chill calculado,
+`r n_es(metrica("pipeline_diagram_numbers", "table_MB"))` MB. La descarga del observado por API
+corre también allí; de la mediana entre modelos en adelante, todo se hace en un portátil.
 
 ## La misma cadena, con los ficheros
 

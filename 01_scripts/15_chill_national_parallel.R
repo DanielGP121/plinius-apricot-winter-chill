@@ -534,7 +534,7 @@ main <- function() {
     # scenarios have not separated by 2020, so computing it three times would triple the cost for
     # differences far below the model spread.
     win <- apply_years(WIN_PRESENT)
-    cat(sprintf("ventana presente %d-%d, empalme historical + %s, %d modelos\n",
+    cat(sprintf("present window %d-%d, spliced historical + %s, %d models\n",
                 win[[1]][1], win[[1]][2], SPLICE_SCEN, length(MODELS)))
     yy <- span(win)
     for (mo in MODELS) run_combo_spliced(DATA, mo, SPLICE_SCEN, win, yy[1], yy[2], t0)
@@ -543,7 +543,7 @@ main <- function() {
     # Same splice as the present baseline, carried to 2025: the most recent 31 years the models
     # cover. Used to open the talk, not to difference the futures against (see WIN_CURRENT).
     win <- apply_years(WIN_CURRENT)
-    cat(sprintf("clima actual %d-%d, empalme historical + %s, %d modelos\n",
+    cat(sprintf("current climate %d-%d, spliced historical + %s, %d models\n",
                 win[[1]][1], win[[1]][2], SPLICE_SCEN, length(MODELS)))
     yy <- span(win)
     for (mo in MODELS) run_combo_spliced(DATA, mo, SPLICE_SCEN, win, yy[1], yy[2], t0)
@@ -555,14 +555,14 @@ main <- function() {
     if (is.na(OBS)) stop("--windows obs needs --obs <dir>")
     win <- apply_years(WIN_PRESENT)
     yy <- span(win)
-    cat(sprintf("observado sobre %d-%d%s\n", win[[1]][1], win[[1]][2],
-                if (is.na(YEARS)) ", la ventana del presente simulado" else ", ventana pedida con --years"))
+    cat(sprintf("observed over %d-%d%s\n", win[[1]][1], win[[1]][2],
+                if (is.na(YEARS)) ", the simulated present window" else ", window requested with --years"))
     run_combo(OBS, "tasmax_obs.nc", "tasmin_obs.nc", "observaciones", "obs", win, yy[1], yy[2], t0)
 
   } else if (WINDOWS == "near") {
     # 2021-2040, the stretch the default set left unanalysed. Entirely inside the SSP files.
     win <- apply_years(WIN_NEAR)
-    cat(sprintf("ventana %d-%d, %d escenarios x %d modelos\n", win[[1]][1], win[[1]][2],
+    cat(sprintf("window %d-%d, %d scenarios x %d models\n", win[[1]][1], win[[1]][2],
                 length(setdiff(SCEN, "historical")), length(MODELS)))
     yy <- span(win)
     for (scen in setdiff(SCEN, "historical")) for (mo in MODELS) {

@@ -55,7 +55,7 @@ AGREE_DIR <- out_path("model_agreement"); dir.create(AGREE_DIR, showWarnings = F
 CACHE <- out_path("surface_cache")
 
 # § 1 — Geography, cropland and the station table.
-cat("1. geografia y suelo cultivable\n")
+cat("1. geography and cropland\n")
 d <- fread(out_path("chill_all_windows.csv"))
 d <- d[model != "obs"]                  # observational situations carry no ensemble
 models <- sort(unique(d$model))
@@ -63,7 +63,7 @@ sits <- intersect(c(BASE_SIT, "historical_ref",
                     paste0(rep(c("ssp126", "ssp245", "ssp370"), each = 3), "_",
                            c("nearterm", "near", "far"))),
                   unique(d$situation))
-cat(sprintf("   %d modelos x %d situaciones = %d superficies\n",
+cat(sprintf("   %d models x %d situations = %d surfaces\n",
             length(models), length(sits), length(models) * length(sits)))
 
 ccaa  <- esp_get_ccaa(epsg = 4326)
@@ -82,7 +82,7 @@ if (file.exists(cropfrac_file)) {
 }
 cell_km2 <- cell_area_km2(cropfrac)   # not (RES_M/1000)^2; see 00_corine.R
 total_crop_km2 <- global(cropfrac, "sum", na.rm = TRUE)[1, 1] * cell_km2
-cat(sprintf("   superficie cultivable: %.0f km2\n", total_crop_km2))
+cat(sprintf("   cropland area: %.0f km2\n", total_crop_km2))
 
 surface_of <- function(sit, mdl) {
   p <- d[situation == sit & model == mdl, .(lon, lat, SWC = safe_winter_chill_P10)]
@@ -97,12 +97,12 @@ surface_of <- function(sit, mdl) {
 # Every sign-of-change counter compares a model against ITSELF in the baseline, never against the
 # ensemble. Comparing a model's future to the ensemble's present would count the model's own bias
 # as if it were climate change.
-cat("2. lineas base por modelo\n")
+cat("2. baselines per model\n")
 base_stack <- rast(lapply(models, function(m) surface_of(BASE_SIT, m)))
 names(base_stack) <- models
 
 # § 3 — One pass per situation, accumulating areas and agreement counters.
-cat("3. superficies por modelo\n")
+cat("3. surfaces per model\n")
 rows <- list(); agg <- list()
 for (s in sits) {
   n_below_B <- n_below_P <- n_decr <- rast(tmpl, vals = 0)
@@ -141,7 +141,7 @@ for (s in sits) {
     pct_class_unanimous = 100 * mean(v$n_below_bulida == 0 | v$n_below_bulida == n_have),
     pct_sign_agree = 100 * mean(pmax(v$n_decreasing, n_have - v$n_decreasing) >= need),
     pct_sign_unanimous = 100 * mean(v$n_decreasing == 0 | v$n_decreasing == n_have))
-  cat(sprintf("   %-18s %2d modelos · acuerdo clase %5.1f %% · acuerdo signo %5.1f %%\n",
+  cat(sprintf("   %-18s %2d models · class agreement %5.1f %% · sign agreement %5.1f %%\n",
               s, n_have, agg[[s]]$pct_class_agree, agg[[s]]$pct_sign_agree))
 }
 
@@ -151,13 +151,13 @@ fwrite(PM, out_path("per_model_cropland_km2.csv"))
 fwrite(AG, out_path("model_agreement_summary.csv"))
 
 # § 4 — The range the canonical document quotes, now with a table behind it.
-cat("\n4. rango entre modelos de la fraccion rescatada\n")
+cat("\n4. between-model range of the rescued fraction\n")
 for (s in grep("_far$", sits, value = TRUE)) {
   r <- PM[situation == s]
-  cat(sprintf("   %-14s %.1f %% a %.1f %%  (mediana del ensemble en talk_numbers: ver esa tabla)\n",
+  cat(sprintf("   %-14s %.1f %% to %.1f %%  (ensemble median in talk_numbers: see that table)\n",
               s, min(r$pct_rescued_of_lost), max(r$pct_rescued_of_lost)))
-  cat(sprintf("                  mas bajo: %-14s  mas alto: %s\n",
+  cat(sprintf("                  lowest: %-14s  highest: %s\n",
               r[which.min(pct_rescued_of_lost)]$model, r[which.max(pct_rescued_of_lost)]$model))
 }
-cat(sprintf("\nescritas %d filas en per_model_cropland_km2.csv y %d rasters en %s\n",
+cat(sprintf("\nwrote %d rows to per_model_cropland_km2.csv and %d rasters in %s\n",
             nrow(PM), length(sits), AGREE_DIR))

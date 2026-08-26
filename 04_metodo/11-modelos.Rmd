@@ -14,8 +14,10 @@ mediana.
 
 Las cuentas se presentan juntas porque se parecen y no son lo mismo. De las quince situaciones
 del capítulo \@ref(resultados), `r i_es(data.table::uniqueN(tabla("per_model_cropland_km2")$situation))`
-son simuladas y por tanto se pueden repetir modelo a modelo; las otras cuatro son observadas o
-agregadas y no tienen once versiones. De ahí salen
+se reparten modelo a modelo en `per_model_cropland_km2.csv`; de las otras cuatro, dos son
+observadas y una agrega los tres escenarios de corto plazo, mientras que la del clima actual
+1995-2025 sí tiene once versiones en la tabla canónica y queda fuera sólo porque
+`36_per_model_stats.R` no la lista entre sus situaciones. De ahí salen
 `r i_es(data.table::uniqueN(tabla("per_model_cropland_km2")$situation))` × `r i_es(metrica("pipeline_diagram_numbers", "n_models"))` =
 **`r i_es(nrow(tabla("per_model_cropland_km2")))` combinaciones** de modelo y situación en
 `per_model_cropland_km2.csv`.
@@ -59,8 +61,11 @@ del cambio.** No es un defecto del análisis, es el estado del conocimiento a es
 knitr::include_graphics(figura("fig39_model_agreement_far.png"))
 ```
 
-Todos los mapas de proyección del trabajo llevan ese rayado. Un mapa de mediana sin su medida de
-acuerdo no informa de la dispersión entre modelos.
+Ese rayado lo llevan los mapas de acuerdo (`fig39` y `fig42`, de `37_model_figures.R`) y los
+fotogramas de viabilidad de las animaciones, de `31_scenario_frames.R`. Los quince mapas de la
+familia `fig20` no lo llevan, porque los dibuja `19_cropland_viability_national.R`, que no carga
+`00_hatch.R`: ahí la dispersión se reporta aparte y no sobre el mapa. Un mapa de mediana sin su
+medida de acuerdo no informa de la dispersión entre modelos.
 
 ## Por qué SSP3-7.0 pierde menos que SSP2-4.5 a corto plazo
 
@@ -124,7 +129,8 @@ independiente.
 
 **Movería menos que la parametrización.** Un rango de
 `r cp(metrica("method_chain_numbers", "bias_range_CP"), 1)` es menos de lo que separa a las dos
-parametrizaciones del modelo dinámico (6,94 CP, capítulo \@ref(dinamico)).
+parametrizaciones del modelo dinámico
+(`r cp(abs(metrica("cieza_numbers", "param_gap_mean_CP")), 2)`, capítulo \@ref(dinamico)).
 
 Y aunque se corrigiera, la **dirección** del resultado no dependería de ello: comparando cada modelo
 consigo mismo, o sea el futuro contra su propia línea base, cualquier sesgo constante se cancela en
@@ -154,3 +160,10 @@ knitr::include_graphics(figura("fig45_delta_vs_absolute.png"))
 
 **La parametrización de los requerimientos**, pendiente de confirmar. Es la incertidumbre mayor del
 trabajo y no está resuelta.
+
+**La independencia del ensemble.** Los once se eligieron con un modelo por familia institucional,
+pero `r i_es(metrica("model_sensitivity_numbers", "sens_n_shared_atmos"))` de ellos (UKESM1-0-LL,
+KACE-1-0-G y ACCESS-CM2) declaran el mismo componente atmosférico en el vocabulario controlado de
+CMIP6 viniendo de instituciones distintas, así que un filtro institucional los deja pasar como
+independientes aunque compartan código. Las cifras de acuerdo de este capítulo cuentan once votos;
+cuánto los infla eso no se ha medido. Marcado en `46_model_sensitivity.R`.

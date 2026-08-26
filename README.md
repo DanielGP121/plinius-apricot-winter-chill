@@ -274,7 +274,15 @@ carries a header stating what it does, what it needs and what it writes.
 | | `33`, `34`, `37`, `38`, `39`, `40`, `42`, `43` | local | Talk and method figures, the pipeline diagram, the attrition funnel, the data timeline, the model ranking |
 | **Reporting** | `29_build_deck.R`, `30_build_pptx.py` | local | Working document, HTML and PowerPoint |
 | | `talk_content.py`, `35_build_talk_pptx.py` | local | The talk's content, and the builder that lays it out |
+| | `45_v3_numbers.py`, `46_model_sensitivity.R`, `47_band_and_record_numbers.R` | local | Metrics and the sensitivity figure the review deck quotes |
 | | `44_workflow_sheet.py` | local | The whole pipeline on one A3 page, HTML and PDF |
+
+`35_build_talk_pptx.py` builds every deck from the one narrative file, so none of them can quote a
+different number from another: the conference talk (no flag), the 15-minute cut of it (`--short`),
+the backup slides (`--annex`), and the review deck a co-author reads (`--v4`, one claim a slide,
+figures at slide size, with a build-time check on how much text each slide carries). `--v3` builds
+the earlier and much wordier form of that review deck, kept so the file already circulated stays
+reproducible. Every figure on every slide is read from a table at build time.
 
 `01_scripts/legacy/` holds one script from an approach the project abandoned; its README explains
 why.

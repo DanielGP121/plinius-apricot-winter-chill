@@ -93,11 +93,11 @@ ser <- all_s[, .(n_stations = uniqueN(station_id), mean_CP = GRAND + mean(CP - m
 base <- ser[y <= SPLIT_YEAR]; rec <- ser[y > SPLIT_YEAR]
 mu <- mean(base$mean_CP); sdev <- sd(base$mean_CP)
 
-cat(sprintf("estaciones: %d (de las %d del archivo)\n", length(ids), uniqueN(L$station_id)))
-cat(sprintf("serie: %d-%d, %d temporadas (%d del archivo, %d de la API)\n",
+cat(sprintf("stations: %d (of the %d in the archive)\n", length(ids), uniqueN(L$station_id)))
+cat(sprintf("series: %d-%d, %d seasons (%d from the archive, %d from the API)\n",
             min(ser$y), max(ser$y), nrow(ser), nrow(base), nrow(rec)))
-cat(sprintf("linea base %d-%d: media %.2f CP, sd %.2f\n", min(base$y), SPLIT_YEAR, mu, sdev))
-cat(sprintf("bloque %d-%d   : media %.2f CP  -> %+.2f CP = %.2f sd\n\n",
+cat(sprintf("baseline %d-%d: mean %.2f CP, sd %.2f\n", min(base$y), SPLIT_YEAR, mu, sdev))
+cat(sprintf("block %d-%d   : mean %.2f CP  -> %+.2f CP = %.2f sd\n\n",
             SPLIT_YEAR + 1L, LAST_YEAR, mean(rec$mean_CP), mean(rec$mean_CP) - mu,
             (mean(rec$mean_CP) - mu) / sdev))
 
@@ -113,7 +113,7 @@ sens <- function(d, lab) {
   data.table(method = lab, anomaly_CP = round(mean(r) - mean(b), 3),
              anomaly_sd = round((mean(r) - mean(b)) / sd(b), 3), n_stations = uniqueN(d))
 }
-cat("\n=== sensibilidad a la composicion del panel ===\n")
+cat("\n=== sensitivity to panel composition ===\n")
 sens_tab <- rbindlist(list(
   sens(raw, "media simple (composicion variable)"),
   sens(bal, sprintf("panel equilibrado (%d est.)", length(full_ids))),
@@ -122,7 +122,7 @@ sens_tab <- rbindlist(list(
 # representativeness of the restricted set against every archive station
 full <- L[, .(mean_CP = mean(CP)), by = .(y = season_end_year)][order(y)]
 cmp <- merge(full, base[, .(y, mean_sub = mean_CP)], by = "y")
-cat(sprintf("representatividad: r = %.4f con las %d estaciones del archivo, desfase %+.2f CP\n\n",
+cat(sprintf("representativeness: r = %.4f against the %d archive stations, offset %+.2f CP\n\n",
             cor(cmp$mean_CP, cmp$mean_sub), uniqueN(L$station_id), mean(cmp$mean_sub - cmp$mean_CP)))
 
 # --- § 2 - trend --------------------------------------------------------------------------------
@@ -131,12 +131,12 @@ cat(sprintf("representatividad: r = %.4f con las %d estaciones del archivo, desf
 trend <- function(d, label) {
   f <- lm(mean_CP ~ y, data = d)
   s <- summary(f)$coefficients[2, ]
-  cat(sprintf("  %-22s %+.4f CP/ano  (p = %.4f, R2 = %.3f, n = %d)\n",
+  cat(sprintf("  %-22s %+.4f CP/yr  (p = %.4f, R2 = %.3f, n = %d)\n",
               label, s[1], s[4], summary(f)$r.squared, nrow(d)))
   data.table(period = label, slope = round(s[1], 4), p = round(s[4], 4),
              r2 = round(summary(f)$r.squared, 4), n = nrow(d))
 }
-cat("=== tendencia ===\n")
+cat("=== trend ===\n")
 trends <- rbindlist(list(
   trend(base, sprintf("%d-%d", min(base$y), SPLIT_YEAR)),
   trend(base[y >= 1995], sprintf("1995-%d", SPLIT_YEAR)),
@@ -144,11 +144,11 @@ trends <- rbindlist(list(
 
 # --- § 3 - ranking, blocks and structure --------------------------------------------------------
 ser[, rank_mild := frank(mean_CP)]           # 1 = least chill in the record
-cat(sprintf("\n=== los %d inviernos con menos frio de %d ===\n", 10, nrow(ser)))
+cat(sprintf("\n=== the %d mildest winters of %d ===\n", 10, nrow(ser)))
 print(ser[order(mean_CP)][1:10, .(y, mean_CP = round(mean_CP, 2), rank = rank_mild, src)])
 n_top10 <- sum(ser[order(mean_CP)][1:10]$y > SPLIT_YEAR)
 p_hyper <- sum(dhyper(n_top10:BLOCK, BLOCK, nrow(ser) - BLOCK, 10))
-cat(sprintf("\nde los 10 mas suaves, %d son de %d-%d; bajo intercambiabilidad p = %.5f\n",
+cat(sprintf("\nof the 10 mildest, %d are from %d-%d; under exchangeability p = %.5f\n",
             n_top10, SPLIT_YEAR + 1L, LAST_YEAR, p_hyper))
 
 # Picking the last five years is not a random draw, so the fair comparison is against every
@@ -157,15 +157,15 @@ roll <- frollmean(base$mean_CP, BLOCK)
 blocks <- data.table(end_y = base$y, mean5 = roll)[!is.na(mean5)]
 rec_mean <- mean(rec$mean_CP)
 n_below <- sum(blocks$mean5 <= rec_mean)
-cat(sprintf("\n=== bloques de %d temporadas consecutivas en la linea base ===\n", BLOCK))
-cat(sprintf("bloques posibles %d; el mas suave %.2f CP (termina en %d)\n",
+cat(sprintf("\n=== blocks of %d consecutive seasons in the baseline ===\n", BLOCK))
+cat(sprintf("possible blocks %d; mildest %.2f CP (ends in %d)\n",
             nrow(blocks), min(blocks$mean5), blocks$end_y[which.min(blocks$mean5)]))
-cat(sprintf("bloque %d-%d: %.2f CP -> %d bloques historicos igual o mas suaves (%.1f%%)\n",
+cat(sprintf("block %d-%d: %.2f CP -> %d historical blocks as mild or milder (%.1f%%)\n",
             SPLIT_YEAR + 1L, LAST_YEAR, rec_mean, n_below, 100 * n_below / nrow(blocks)))
 
 ac <- acf(base$mean_CP, plot = FALSE, lag.max = 3)$acf[2:4]
-cat(sprintf("\nautocorrelacion de la linea base, lags 1-3: %s\n", paste(round(ac, 3), collapse = ", ")))
-cat("  (cercana a cero, asi que tratar los inviernos como intercambiables es defendible)\n")
+cat(sprintf("\nbaseline autocorrelation, lags 1-3: %s\n", paste(round(ac, 3), collapse = ", ")))
+cat("  (close to zero, so treating the winters as exchangeable is defensible)\n")
 
 # --- § 4 - is the Safe Winter Chill baseline sensitive to the window? ---------------------------
 # The project builds every map on a 1995-2020 baseline. If the SWC moved much between plausible
@@ -181,13 +181,13 @@ swc_tab <- rbindlist(list(
   spliced_all[, .(swc = quantile(CP, .10, names = FALSE), n = .N), by = station_id][
     , .(window = sprintf("%d-%d empalmado", min(base$y), LAST_YEAR), seasons = as.integer(median(n)),
         swc_median = round(median(swc), 3), n_stations = .N)]))
-cat("\n=== SWC mediano segun la ventana (mismas estaciones) ===\n")
+cat("\n=== median SWC by window (same stations) ===\n")
 print(swc_tab)
 
 # --- § 5 - figures ------------------------------------------------------------------------------
 dir.create(FIGDIR, showWarnings = FALSE, recursive = TRUE)
 old <- list.files(FIGDIR, pattern = "^fig25_", full.names = TRUE)
-if (length(old)) { file.remove(old); cat(sprintf("\nborradas %d figuras fig25_ previas\n", length(old))) }
+if (length(old)) { file.remove(old); cat(sprintf("\ndeleted %d previous fig25_ figures\n", length(old))) }
 
 th <- theme_minimal(base_size = 12) +
       theme(panel.grid.minor = element_blank(), legend.position = "top",
@@ -261,4 +261,4 @@ fwrite(rbind(summary_out,
        file.path(OUTDIR, "observed_long_record_summary.csv"))
 fwrite(swc_tab, file.path(OUTDIR, "observed_swc_by_window.csv"))
 
-cat(sprintf("\nescritas 2 figuras en %s y 3 tablas en %s\n", FIGDIR, OUTDIR))
+cat(sprintf("\nwrote 2 figures to %s and 3 tables to %s\n", FIGDIR, OUTDIR))

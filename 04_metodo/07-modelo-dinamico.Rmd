@@ -57,7 +57,9 @@ unos umbrales medidos con la de 1987, la comparación no significaría nada.
 > supuesto.
 
 El efecto de esa elección se midió sobre los mismos datos de Cieza y con las dos
-parametrizaciones: la diferencia es de **6,94 CP**, la mitad de los `r cp(CR_HUECO)` que separan a
+parametrizaciones: la diferencia es de
+**`r cp(abs(metrica("cieza_numbers", "param_gap_mean_CP")), 2)`**, la mitad de los
+`r cp(CR_HUECO)` que separan a
 las dos variedades.
 
 ```{r dinamico-param, fig.cap = pie("Las dos parametrizaciones del modelo dinámico sobre exactamente los mismos datos.", "27_cieza_independent_check.R", "ggplot2 4.0.2")}

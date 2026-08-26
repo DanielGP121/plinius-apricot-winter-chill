@@ -12,7 +12,7 @@ estaciones con un número cada una. Los resultados, en cambio, se dan en kilóme
 Podría reportarse "el X % de las estaciones deja de cumplir".
 
 Las estaciones meteorológicas no están repartidas al azar: se agolpan en valles, poblaciones y
-aeropuertos, y hay `r i_es(nrow(tabla("idw_colocated")))` coordenadas de esta red con **dos
+aeropuertos, y hay `r i_es(nrow(tabla("idw_colocated")))` coordenadas de esta red con **dos o más
 estaciones distintas en el mismo punto**. Contar puntos no estima territorio; estima la distribución
 de la red de AEMET.
 
@@ -60,7 +60,7 @@ knitr::include_graphics(figura("fig52_idw_crossval.png"))
 
 Sobre la línea base, el error cuadrático medio es de
 `r cp(cifra("idw_crossval_summary", "presente_present", "rmse_CP"), 2)`, con un error absoluto
-mediano de `r cp(cifra("idw_crossval_summary", "presente_present", "mae_CP"), 2)` y un sesgo de
+medio de `r cp(cifra("idw_crossval_summary", "presente_present", "mae_CP"), 2)` y un sesgo de
 `r cp(cifra("idw_crossval_summary", "presente_present", "bias_CP"), 3)`, prácticamente nulo.
 
 Comparado con los `r cp(CR_HUECO)` que separan a las dos variedades, el error de
@@ -105,7 +105,8 @@ Por escenario, el error va de `r cp(min(tabla("idw_crossval_summary")$rmse_CP), 
 de interpolación es mayor.
 
 **Hay un suelo por debajo del cual no se puede bajar.** En `r i_es(nrow(tabla("idw_colocated")))`
-coordenadas de esta red hay dos códigos de estación distintos. Donde los dos tienen registro medido
+coordenadas de esta red hay dos o más códigos de estación distintos. Donde todos tienen registro
+medido
 (`r i_es(tabla("idw_colocated")[todos_obs == TRUE & !is.na(spread_obs), .N])` casos, sobre las mismas
 26 temporadas), **sus observaciones discrepan entre sí
 `r cp(median(tabla("idw_colocated")[todos_obs == TRUE]$spread_obs, na.rm = TRUE), 2)` de mediana**.

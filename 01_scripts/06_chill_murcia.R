@@ -91,7 +91,7 @@ compute_chill_table <- function(slice_dir, max_stations = Inf,
     combos <- unique(dt[, .(scenario, model)])
     stations_all <- unique(dt$station_id)
     stations <- if (is.finite(max_stations)) head(stations_all, max_stations) else stations_all
-    if (verbose) cat(sprintf("[%s] %d estaciones (%d en este run) x %d combos scenario-modelo\n",
+    if (verbose) cat(sprintf("[%s] %d stations (%d in this run) x %d scenario-model combos\n",
                              basename(f), length(stations_all), length(stations), nrow(combos)))
     for (i in seq_len(nrow(combos))) {
       sc <- combos$scenario[i]; mo <- combos$model[i]
@@ -110,7 +110,7 @@ compute_chill_table <- function(slice_dir, max_stations = Inf,
       }
     }
   }
-  if (length(out_rows) == 0) stop("no se calculo ninguna estacion (revisa el formato del slice)")
+  if (length(out_rows) == 0) stop("no station was computed (check the format of the slice)")
   rbindlist(out_rows)
 }
 
@@ -124,7 +124,7 @@ print_case_study <- function(res, start_jday, end_jday) {
     pct_ok_precoz = round(100 * mean(safe_winter_chill_P10 >= CR_BULIDA_PRECOZ), 0),
     pct_ok_bulida = round(100 * mean(safe_winter_chill_P10 >= CR_BULIDA), 0)
   ), by = .(scenario, model)][order(scenario, model)]
-  cat("\n=== resumen por escenario x modelo (Safe Winter Chill, chill portions) ===\n")
+  cat("\n=== summary per scenario x model (Safe Winter Chill, chill portions) ===\n")
   print(summ)
   cat(sprintf("\n(CR: Bulida Precoz %.1f CP, Bulida %.1f CP; season JDay %d..%d)\n",
               CR_BULIDA_PRECOZ, CR_BULIDA, start_jday, end_jday))
@@ -144,7 +144,7 @@ main <- function() {
   res <- compute_chill_table(slice_dir, max_stations, start_jday, end_jday)
   dir.create(dirname(out_csv), recursive = TRUE, showWarnings = FALSE)
   fwrite(res, out_csv)
-  cat(sprintf("\nescrito %s (%d filas)\n", out_csv, nrow(res)))
+  cat(sprintf("\nwritten %s (%d rows)\n", out_csv, nrow(res)))
   print_case_study(res, start_jday, end_jday)
 }
 

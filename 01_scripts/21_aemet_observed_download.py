@@ -260,9 +260,9 @@ def cmd_probe(args, key):
 
     print(f"\n5. sizing, at 6 months per request and {RATE_PER_MIN:.0f} keyed calls/min")
     n_st = len(hits)
-    for y0, y1, label in ((1995, 2025, "completo 1995-2025"), (2016, 2025, "2016-2025"), (2021, 2025, "solo 2021-2025")):
+    for y0, y1, label in ((1995, 2025, "full 1995-2025"), (2016, 2025, "2016-2025"), (2021, 2025, "2021-2025 only")):
         reqs = sum(1 for _ in chunk_ranges(y0, y1, 6))
-        print(f"   {label:20s}: {reqs:3d} peticiones x {n_st} estaciones = {n_st*reqs:6d} llamadas -> "
+        print(f"   {label:20s}: {reqs:3d} requests x {n_st} stations = {n_st*reqs:6d} calls -> "
               f"~{n_st * reqs / RATE_PER_MIN / 60:.1f} h")
 
 
@@ -284,7 +284,7 @@ def cmd_census(args, key):
     ids = {str(s.get("indicativo", "")).strip() for s in inv} if inv else set()
     cand = [s for s in stations if s in ids] if ids else stations
     y = args.census_year
-    print(f"censo: {len(cand)} estaciones, una peticion cada una para el primer semestre de {y}")
+    print(f"census: {len(cand)} stations, one request each for the first half of {y}")
     print(f"       ~{len(cand)/RATE_PER_MIN:.0f} min\n", flush=True)
     alive, t0 = [], time.time()
     for i, sid in enumerate(cand, 1):
@@ -302,8 +302,8 @@ def cmd_census(args, key):
     with open(args.census_out, "w", encoding="utf-8") as f:
         f.write("\n".join(alive) + "\n")
     pct = 100 * len(alive) / len(cand) if cand else 0
-    print(f"\n{len(alive)} de {len(cand)} estaciones tienen datos en {y} ({pct:.1f}%)")
-    print(f"lista escrita en {args.census_out}")
+    print(f"\n{len(alive)} of {len(cand)} stations have data in {y} ({pct:.1f}%)")
+    print(f"list written to {args.census_out}")
     if alive:
         reqs = sum(1 for _ in chunk_ranges(1995, 2025, 6))
         print(f"descarga completa 1995-2025 sobre esas {len(alive)}: "

@@ -79,13 +79,23 @@ nueva.
 De ahí sale la regla declarada en el resumen: ninguna cifra se escribe a mano, todas se leen de las
 tablas al generar el texto. Así ninguna cifra puede quedarse desactualizada sin que se note.
 
+### El acuerdo sobre la franja que no reproducía
+
+El trabajo venía diciendo que el acuerdo entre modelos sobre que una celda cae **entre los dos
+umbrales** iba del 0,2 % al 4,3 % del suelo agrícola. Al recalcularlo con
+`47_band_and_record_numbers.R`, que cuenta modelo a modelo cuántos sitúan la celda en la franja y
+aplica el mismo criterio del 80 %, sale de
+`r pct(metrica("v3_gap_numbers", "band_agree_min_pct"), 2)` a
+`r pct(metrica("v3_gap_numbers", "band_agree_max_pct"), 2)`.
+
+La cifra vieja no estaba en ninguna tabla: vivía sólo en la prosa, que es la misma condición que
+tenía el `229604` de más arriba.
+
 ## Lo que sigue abierto
 
 - **La parametrización de los requerimientos**, que la fuente no declara explícitamente. Es la
   incertidumbre mayor del trabajo (capítulo \@ref(dinamico)).
 - **Una referencia** que justifique excluir SSP5-8.5.
-- **Las sumas de verificación** de los 88 NetCDF, para congelar la versión de los datos
-  (capítulo \@ref(descarga)).
 - **La selección de clases de CORINE en el script 28**, que sigue teniendo su propia regla en línea
   en vez de usar el módulo compartido. El conjunto de códigos coincide, pero llega a él por un
   camino frágil.

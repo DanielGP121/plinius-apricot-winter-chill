@@ -35,7 +35,8 @@ Tres condicionantes acompañan a esa cifra y se desarrollan más adelante:
 
 - **Depende de un supuesto sin confirmar.** Que los requerimientos de las dos variedades se midieran
   con la misma parametrización del modelo dinámico que se usa aquí está pendiente de comprobar
-  (capítulo \@ref(dinamico)). La diferencia entre las dos parametrizaciones candidatas es de 6,94 CP,
+  (capítulo \@ref(dinamico)). La diferencia entre las dos parametrizaciones candidatas es de
+  `r cp(abs(metrica("cieza_numbers", "param_gap_mean_CP")), 2)`,
   la mitad de los `r cp(CR_HUECO)` sobre los que se sostiene todo el trabajo.
 - **Depende del modelo climático.** Entre los once modelos, la proporción rescatada va del
   `r pct(metrica("model_spread_numbers", "km2_rescued_min_pct"))` al
@@ -82,8 +83,8 @@ cada paso.
 Los capítulos \@ref(referencia) y \@ref(entorno) responden a la consulta puntual: qué hace un
 script, con qué parámetros corre una etapa, qué versión de qué paquete se usó.
 
-El capítulo \@ref(glosario) ocupa media página y fija los cuatro sentidos que la palabra "modelo"
-tiene en este trabajo.
+El capítulo \@ref(glosario) fija los cuatro sentidos que la palabra "modelo" tiene en este
+trabajo y reúne las constantes del estudio.
 
 ## Lo que este documento no es {-}
 
