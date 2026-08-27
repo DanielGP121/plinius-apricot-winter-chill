@@ -2,13 +2,12 @@
 
 Nothing in this folder is versioned except this file and `stations_obs.txt`. The inputs weigh
 several gigabytes and belong to third parties, so the repository holds the code that consumes them
-and this page explains how to get each one. Ownership and attribution are in
-[`THIRD_PARTY.md`](../THIRD_PARTY.md).
+and this page explains how to get each one, including who owns it.
 
 Point `PLINIUS_DATA` at wherever you put them:
 
 ```bash
-export PLINIUS_DATA=/path/to/plinius_data     # or set it in .env, see .env.example
+export PLINIUS_DATA=/path/to/plinius_data
 ```
 
 Every R script resolves paths through `01_scripts/00_paths.R`, which aborts on the first line with
