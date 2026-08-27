@@ -53,7 +53,7 @@ funnel_theme <- theme_void(base_size = 14) +
 
 # § 1 — The station side, counted from the canonical table.
 cat("1. stations and seasons\n")
-d  <- fread(out_path("chill_all_windows.csv"))
+d  <- fread(tab_path("chill_all_windows.csv"))
 dm <- d[model != "obs"]
 
 N_THREDDS <- uniqueN(dm$station_id)
@@ -72,14 +72,14 @@ seas[, `:=`(lost = nominal - kept, pct = 100 * (nominal - kept) / nominal)]
 setorder(seas, -lost)
 SEAS_NOMINAL <- sum(seas$nominal); SEAS_LOST <- sum(seas$lost)
 
-api <- if (file.exists(out_path("chill_api_seasons.csv"))) fread(out_path("chill_api_seasons.csv")) else NULL
+api <- if (file.exists(tab_path("chill_api_seasons.csv"))) fread(tab_path("chill_api_seasons.csv")) else NULL
 API_ALL  <- if (is.null(api)) NA_integer_ else nrow(api)
 API_KEPT <- if (is.null(api)) NA_integer_ else sum(api$perc_complete >= 85)
 API_ST   <- if (is.null(api)) NA_integer_ else uniqueN(api$station_id)
 
-colo <- if (file.exists(out_path("idw_colocated.csv"))) fread(out_path("idw_colocated.csv")) else NULL
-cv   <- if (file.exists(out_path("idw_crossval_summary.csv")))
-          fread(out_path("idw_crossval_summary.csv"))[situation == "presente_present"] else NULL
+colo <- if (file.exists(tab_path("idw_colocated.csv"))) fread(tab_path("idw_colocated.csv")) else NULL
+cv   <- if (file.exists(tab_path("idw_crossval_summary.csv")))
+          fread(tab_path("idw_crossval_summary.csv"))[situation == "presente_present"] else NULL
 
 cat(sprintf("   THREDDS %s · archive %s · seasons dropped %s of %s (%.2f%%)\n",
             i_en(N_THREDDS), i_en(N_FORM), i_en(SEAS_LOST), i_en(SEAS_NOMINAL),
@@ -112,7 +112,7 @@ surf <- mask(terra::interpIDW(tmpl, pv, field = "SWC", radius = 50000, power = 2
                               maxPoints = 12, near = TRUE), vect(spain))
 AREA_REACHED <- global(mask(cropfrac, surf), "sum", na.rm = TRUE)[1, 1] * CELL
 
-crop_tab   <- fread(out_path("talk_numbers_cropland.csv"))
+crop_tab   <- fread(tab_path("talk_numbers_cropland.csv"))
 AREA_TABLE <- crop_tab[1, crop_km2_both + crop_km2_only_precoz + crop_km2_none]
 
 cat(sprintf("   Spain %s · cropland %s · reached %s · in the table %s km2\n",
@@ -211,7 +211,7 @@ fwrite(rbind(
   data.table(side = "stations", step = est$label, value = est$value),
   data.table(side = "area", step = sup$label, value = sup$value),
   data.table(side = "area", step = "cell area km2", value = CELL)),
-  out_path("attrition_funnel_numbers.csv"))
-fwrite(seas, out_path("season_attrition_by_window.csv"))
+  tab_path("attrition_funnel_numbers.csv"))
+fwrite(seas, tab_path("season_attrition_by_window.csv"))
 
 cat(sprintf("\nwritten fig51, attrition_funnel_numbers.csv and season_attrition_by_window.csv\n"))

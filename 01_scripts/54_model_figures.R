@@ -73,10 +73,10 @@ MAP_AR <- diff(YLIM) / diff(XLIM)
 tmpl  <- rast(ext(vect(spain)), resolution = RES_M, crs = paste0("EPSG:", EPSG))
 cropfrac <- rast(file.path(CACHE, sprintf("cropfrac_%d.tif", RES_M)))
 
-d <- fread(out_path("chill_all_windows.csv"))[model != "obs"]
+d <- fread(tab_path("chill_all_windows.csv"))[model != "obs"]
 models <- sort(unique(d$model))
-PM <- fread(out_path("per_model_cropland_km2.csv"))
-AG <- fread(out_path("model_agreement_summary.csv"))
+PM <- fread(tab_path("per_model_cropland_km2.csv"))
+AG <- fread(tab_path("model_agreement_summary.csv"))
 
 ens_surface <- function(sit) {
   f <- file.path(CACHE, sprintf("swc_%s_%d.tif", sit, RES_M))
@@ -227,7 +227,7 @@ for (sc in names(SSP_LAB))
 cat("4. observed map\n")
 # `d` is filtered to the model runs, so the observed situation has to be read separately: its only
 # "model" is the label obs, which that filter removes.
-obs_pts <- fread(out_path("chill_all_windows.csv"))[situation == "observaciones_present",
+obs_pts <- fread(tab_path("chill_all_windows.csv"))[situation == "observaciones_present",
                                                     .(station_id, lon, lat, SWC = safe_winter_chill_P10)]
 n_obs_st <- uniqueN(obs_pts$station_id)
 obs_surf <- mask(interpIDW(tmpl, project(vect(as.data.frame(obs_pts[, .(lon, lat, SWC)]),
@@ -378,6 +378,6 @@ fwrite(data.table(
             far[scen == SCEN][which.min(pct_rescued_of_lost)]$model,
             far[scen == SCEN][which.max(pct_rescued_of_lost)]$model,
             min(st_rng[scen == SCEN]$pct), max(st_rng[scen == SCEN]$pct)),
-  scenario = SCEN), out_path("model_spread_numbers.csv"))
+  scenario = SCEN), tab_path("model_spread_numbers.csv"))
 
 cat(sprintf("\nwrote 4 figures in %s and model_spread_numbers.csv\n", FIG_DIR))

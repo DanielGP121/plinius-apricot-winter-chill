@@ -51,7 +51,7 @@ IDW_NMAX   <- 12                            # neighbours per cell; beyond this I
 source(file.path(.dir, "00_paths.R"))
 source(file.path(.dir, "00_corine.R"))
 
-CHILL <- out_path("chill_all_windows.csv")   # built by 21_merge_chill_tables.R
+CHILL <- tab_path("chill_all_windows.csv")   # built by 21_merge_chill_tables.R
 CLC   <- plinius_clc()
 FIGS  <- FIG_DIR
 dir.create(FIGS, showWarnings = FALSE, recursive = TRUE)
@@ -198,14 +198,14 @@ for (i in seq_along(ord)) {
          subtitle = sprintf("Both %.1f%%  ·  only 'Búlida Precoz' %.1f%%  ·  neither %.1f%%  (of %s km² of cropland)",
                             r$pct_both, r$pct_only_precoz, r$pct_none,
                             formatC(round(total_crop_km2), format = "d", big.mark = ",")))
-  ggsave(file.path(FIGS, sprintf("fig20_%02d_viability_%s.png", idx, s)), g, width = 8, height = 7, dpi = 200)
+  ggsave(fig_in(FIGS, sprintf("fig20_%02d_viability_%s.png", idx, s)), g, width = 8, height = 7, dpi = 200)
 
   sdf <- as.data.frame(surfaces[[s]], xy = TRUE, na.rm = TRUE); names(sdf)[3] <- "SWC"
   gs <- ggplot() + geom_raster(data = sdf, aes(x, y, fill = SWC)) + base_map() +
     scale_fill_viridis_c(name = "Chill portions (P10)", option = "viridis") +
     labs(title = sprintf("Safe Winter Chill — %s", r$label),
          subtitle = "IDW interpolation from 3,460 AEMET stations, 50 km radius (method of Egea et al. 2022)")
-  ggsave(file.path(FIGS, sprintf("fig21_%02d_swc_surface_%s.png", idx, s)), gs, width = 8, height = 7, dpi = 200)
+  ggsave(fig_in(FIGS, sprintf("fig21_%02d_swc_surface_%s.png", idx, s)), gs, width = 8, height = 7, dpi = 200)
 }
 
 bars <- melt(tab[, .(label = factor(label, levels = tab[match(ord, situation)]$label),
@@ -222,7 +222,7 @@ gb <- ggplot(bars, aes(label, pct, fill = clase)) +
                           formatC(round(total_crop_km2), format = "d", big.mark = ",")),
        x = NULL, y = "% of cropland area") +
   theme_minimal(base_size = 11) + theme(legend.position = "bottom", plot.title = element_text(face = "bold"))
-ggsave(file.path(FIGS, "fig22_viability_bars.png"), gb, width = 9, height = 5.5, dpi = 200)
+ggsave(fig_in(FIGS, "fig22_viability_bars.png"), gb, width = 9, height = 5.5, dpi = 200)
 
 fwrite(tab, file.path(ROOT, "02_outputs", "talk_numbers_cropland.csv"))
 cat("\n=== SUMMARY (% of cropland area) ===\n")

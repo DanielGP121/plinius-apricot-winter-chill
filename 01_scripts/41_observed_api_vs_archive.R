@@ -49,8 +49,8 @@ getarg <- function(flag, default = NULL) {
 .f <- grep("^--file=", commandArgs(FALSE), value = TRUE)
 source(file.path(if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]))) else getwd(), "00_paths.R"))
 
-ARCH    <- getarg("--archive", out_path("chill_obs_seasons.csv"))
-APIF    <- getarg("--api",     out_path("chill_api_seasons.csv"))
+ARCH    <- getarg("--archive", tab_path("chill_obs_seasons.csv"))
+APIF    <- getarg("--api",     tab_path("chill_api_seasons.csv"))
 OUTDIR  <- getarg("--outdir",  OUT_DIR)
 FIGDIR  <- getarg("--figdir",  FIG_DIR)
 MIN_PERC    <- as.numeric(getarg("--min-perc", 85))     # same filter on both sources
@@ -195,7 +195,7 @@ p1 <- ggplot(j, aes(CP_arch, CP_api)) +
                           format(nrow(j), big.mark = ","), uniqueN(j$station_id), MIN_PERC,
                           pooled$bias_mean, pooled$bias_median, pooled$r_pooled),
        x = "Chill portions, archive", y = "Chill portions, API") + th
-ggsave(file.path(FIGDIR, "fig23_01_api_vs_archive_seasons.png"), p1, width = 7, height = 7, dpi = 200)
+ggsave(fig_in(FIGDIR, "fig23_01_api_vs_archive_seasons.png"), p1, width = 7, height = 7, dpi = 200)
 
 slims <- range(c(swc_ok$swc_arch, swc_ok$swc_api))
 p2 <- ggplot(swc_ok, aes(swc_arch, swc_api)) +
@@ -207,7 +207,7 @@ p2 <- ggplot(swc_ok, aes(swc_arch, swc_api)) +
                           nrow(swc_ok), MIN_SWC_SEASONS, mean(swc_ok$d), median(swc_ok$d),
                           cor(swc_ok$swc_api, swc_ok$swc_arch)),
        x = "Safe Winter Chill, archive (P10)", y = "Safe Winter Chill, API (P10)") + th
-ggsave(file.path(FIGDIR, "fig23_02_api_vs_archive_swc.png"), p2, width = 7, height = 7 / 1.28,
+ggsave(fig_in(FIGDIR, "fig23_02_api_vs_archive_swc.png"), p2, width = 7, height = 7 / 1.28,
        dpi = 200)
 
 p3 <- ggplot(j[!is.na(pc_bin)], aes(pc_bin, d)) +
@@ -216,7 +216,7 @@ p3 <- ggplot(j[!is.na(pc_bin)], aes(pc_bin, d)) +
   labs(title = "Disagreement against how complete the API season is",
        subtitle = "If the tail sat in barely-complete seasons, a stricter threshold would fix it",
        x = "API season completeness (%)", y = "API minus archive (chill portions)") + th
-ggsave(file.path(FIGDIR, "fig23_03_bias_vs_completeness.png"), p3, width = 7, height = 5, dpi = 200)
+ggsave(fig_in(FIGDIR, "fig23_03_bias_vs_completeness.png"), p3, width = 7, height = 5, dpi = 200)
 
 # --- § 6 - tables ------------------------------------------------------------------------------
 # Every number that can end up on a slide has to exist in one of these, so nothing is ever

@@ -56,7 +56,7 @@ CACHE <- out_path("surface_cache")
 
 # § 1 — Geography, cropland and the station table.
 cat("1. geography and cropland\n")
-d <- fread(out_path("chill_all_windows.csv"))
+d <- fread(tab_path("chill_all_windows.csv"))
 d <- d[model != "obs"]                  # observational situations carry no ensemble
 models <- sort(unique(d$model))
 sits <- intersect(c(BASE_SIT, "historical_ref",
@@ -147,8 +147,8 @@ for (s in sits) {
 
 PM <- rbindlist(rows)
 AG <- rbindlist(agg)
-fwrite(PM, out_path("per_model_cropland_km2.csv"))
-fwrite(AG, out_path("model_agreement_summary.csv"))
+fwrite(PM, tab_path("per_model_cropland_km2.csv"))
+fwrite(AG, tab_path("model_agreement_summary.csv"))
 
 # § 4 — The range the canonical document quotes, now with a table behind it.
 cat("\n4. between-model range of the rescued fraction\n")

@@ -43,7 +43,7 @@ density_df  <- function(isc) { d <- aggregate(isc, FACT, "mean", na.rm = TRUE) *
                                bd <- as.data.frame(d, xy = TRUE); names(bd)[3] <- "pct"; bd[!is.na(bd$pct), ] }
 binary_df   <- function(isc) { b <- round(aggregate(isc, FACT, "modal", na.rm = TRUE))
                                bd <- as.data.frame(b, xy = TRUE); names(bd)[3] <- "v"; bd <- bd[!is.na(bd$v), ]
-                               bd$clase <- factor(bd$v, levels = c(0, 1), labels = c("no cultivo", "cultivo")); bd }
+                               bd$clase <- factor(bd$v, levels = c(0, 1), labels = c("non-cropland", "cropland")); bd }
 stations_sf <- function(path) st_transform(st_as_sf(fread(path), coords = c("lon", "lat"), crs = 4326), EPSG)
 
 # base is a list of boundary layers; stations NULL or an sf of points; kind "density"/"binary"
@@ -54,7 +54,7 @@ make_map <- function(bd, kind, base, stations, size, title, sub, out, w, h) {
       scale_fill_viridis_c(option = "D", name = "% cropland\nper cell", limits = c(0, 100))
   } else {
     g <- g + geom_raster(data = bd, aes(x, y, fill = clase)) +
-      scale_fill_manual(values = c("no cultivo" = "grey88", "cultivo" = "#1a9850"), name = NULL, drop = FALSE)
+      scale_fill_manual(values = c("non-cropland" = "grey88", "cropland" = "#1a9850"), name = NULL, drop = FALSE)
   }
   for (l in base) if (!is.null(l)) g <- g + l
   if (!is.null(stations))
@@ -87,16 +87,16 @@ T_NAT <- "Cropland in Spain (CORINE Land Cover 2018)"
 T_NAT_S <- "Cropland and AEMET stations in Spain (CORINE 2018)"
 make_map(bd_nat_d, "density", base_nat, NULL, NA, T_NAT,
          "cropland density (211-244) per 500 m cell; Peninsular Spain and the Balearics",
-         file.path(FIG_DIR, "fig10_spain_cropland_density_500m.png"), 11, 9)
+         fig_path("fig10_spain_cropland_density_500m.png"), 11, 9)
 make_map(bd_nat_d, "density", base_nat, st_nat, 1.0, T_NAT_S,
          sprintf("cropland density (211-244) per 500 m cell; %d AEMET stations in red (Peninsular Spain and the Balearics)", n_nat),
-         file.path(FIG_DIR, "fig8_spain_cropland_density_stations.png"), 11, 9)
+         fig_path("fig8_spain_cropland_density_stations.png"), 11, 9)
 make_map(bd_nat_b, "binary", base_nat, NULL, NA, T_NAT,
          "cropland / non-cropland per 500 m cell; Peninsular Spain and the Balearics",
-         file.path(FIG_DIR, "fig12_spain_cropland_binary_500m.png"), 11, 9)
+         fig_path("fig12_spain_cropland_binary_500m.png"), 11, 9)
 make_map(bd_nat_b, "binary", base_nat, st_nat, 1.0, T_NAT_S,
          sprintf("cropland / non-cropland per 500 m cell; %d AEMET stations in red (Peninsular Spain and the Balearics)", n_nat),
-         file.path(FIG_DIR, "fig13_spain_cropland_binary_500m_stations.png"), 11, 9)
+         fig_path("fig13_spain_cropland_binary_500m_stations.png"), 11, 9)
 
 # --- Murcia -------------------------------------------------------------------------------
 cat("Murcia: CORINE -> density and binary 500 m...\n")
@@ -108,14 +108,14 @@ T_MUR <- "Cropland in the Region of Murcia (CORINE Land Cover 2018)"
 T_MUR_S <- "Cropland and AEMET stations in the Region of Murcia (CORINE 2018)"
 make_map(bd_mur_d, "density", base_mur, NULL, NA, T_MUR,
          "cropland density (211-244) per 500 m cell",
-         file.path(FIG_DIR, "fig11_murcia_cropland_density_500m.png"), 9, 7.5)
+         fig_path("fig11_murcia_cropland_density_500m.png"), 9, 7.5)
 make_map(bd_mur_d, "density", base_mur, st_mur, 2.6, T_MUR_S,
          sprintf("cropland density (211-244) per 500 m cell; %d AEMET stations in red", n_mur),
-         file.path(FIG_DIR, "fig9_murcia_cropland_density_stations.png"), 9, 7.5)
+         fig_path("fig9_murcia_cropland_density_stations.png"), 9, 7.5)
 make_map(bd_mur_b, "binary", base_mur, NULL, NA, T_MUR,
          "cropland / non-cropland per 500 m cell",
-         file.path(FIG_DIR, "fig14_murcia_cropland_binary_500m.png"), 9, 7.5)
+         fig_path("fig14_murcia_cropland_binary_500m.png"), 9, 7.5)
 make_map(bd_mur_b, "binary", base_mur, st_mur, 2.6, T_MUR_S,
          sprintf("cropland / non-cropland per 500 m cell; %d AEMET stations in red", n_mur),
-         file.path(FIG_DIR, "fig15_murcia_cropland_binary_500m_stations.png"), 9, 7.5)
+         fig_path("fig15_murcia_cropland_binary_500m_stations.png"), 9, 7.5)
 cat("done: 8 figures (density + binary, national + Murcia, with and without stations)\n")

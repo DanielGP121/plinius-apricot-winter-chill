@@ -48,9 +48,9 @@ getarg <- function(flag, default = NULL) {
 .f <- grep("^--file=", commandArgs(FALSE), value = TRUE)
 source(file.path(if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]))) else getwd(), "00_paths.R"))
 
-ARCH   <- getarg("--archive",  out_path("chill_obs_seasons.csv"))
-APIF   <- getarg("--api",      out_path("chill_api_seasons.csv"))
-AGREE  <- getarg("--agreement",out_path("api_vs_archive_by_station.csv"))
+ARCH   <- getarg("--archive",  tab_path("chill_obs_seasons.csv"))
+APIF   <- getarg("--api",      tab_path("chill_api_seasons.csv"))
+AGREE  <- getarg("--agreement",tab_path("api_vs_archive_by_station.csv"))
 OUTDIR <- getarg("--outdir",   OUT_DIR)
 FIGDIR <- getarg("--figdir",   FIG_DIR)
 
@@ -165,7 +165,7 @@ p <- ggplot(core, aes(d_swc)) +
        y = "Stations") +
   theme_minimal(base_size = 11) +
   theme(panel.grid.minor = element_blank(), plot.title = element_text(face = "bold", size = 12))
-ggsave(file.path(FIGDIR, "fig24_01_swc_shift_1995_2025.png"), p, width = 8, height = 5, dpi = 200)
+ggsave(fig_in(FIGDIR, "fig24_01_swc_shift_1995_2025.png"), p, width = 8, height = 5, dpi = 200)
 
 setcolorder(swc, c("station_id", "lon", "lat", "n_past", "n_recent", "n_all",
                    "swc_1995_2020", "swc_1995_2025", "d_swc", "mean_past", "mean_recent", "d_mean", "mae"))

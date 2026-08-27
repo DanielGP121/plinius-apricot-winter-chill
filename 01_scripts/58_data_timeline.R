@@ -50,7 +50,7 @@ talk_theme <- theme_minimal(base_size = 14) +
 # there rather than written out again here. The historical experiment in particular is consumed
 # from 1985, not from the start of the baseline: historical_ref is a situation the deck projects in
 # its contact sheet, and drawing the bar from 1995 understated the record by ten years.
-d <- fread(out_path("chill_all_windows.csv"),
+d <- fread(tab_path("chill_all_windows.csv"),
            select = c("situation", "scenario", "periodo", "model", "station_id", "n_seasons"))
 
 periodo_of <- function(sit) {
@@ -70,9 +70,9 @@ n_proj <- d[situation == "presente_present", uniqueN(station_id)]
 n_models <- d[model != "obs", uniqueN(model)]
 n_scen <- d[grepl("^ssp", scenario), uniqueN(scenario)]
 
-obs_long <- fread(out_path("chill_obs_seasons_1975.csv"),
+obs_long <- fread(tab_path("chill_obs_seasons_1975.csv"),
                   select = c("station_id", "season_end_year"))
-api <- fread(out_path("chill_api_seasons.csv"), select = "season_end_year")
+api <- fread(tab_path("chill_api_seasons.csv"), select = "season_end_year")
 
 ARCHIVE_FIRST <- 1975L
 ARCHIVE_LAST <- 2020L
@@ -247,7 +247,7 @@ fwrite(data.table(
             n_proj, n_obs,
             seasons_of("presente_present"), seasons_of("ssp370_nearterm"),
             seasons_of("ssp370_near"), seasons_of("ssp370_far"), 4L)
-), out_path("timeline_numbers.csv"))
+), tab_path("timeline_numbers.csv"))
 
 # Self-check: the four windows must tile without gaps or overlaps, which is the claim the slide
 # caption makes. A silent failure here would put a wrong assertion on a slide.

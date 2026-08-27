@@ -30,7 +30,7 @@ ST_MUR  <- plinius_data("tables", "murcia", "stations.csv")
 RCL     <- rbind(c(11.5, 17.5, 1), c(18.5, 22.5, 1))
 CAP_CLEAN <- "Source: CORINE Land Cover 2018 (Copernicus/EEA), 100 m. Boundaries: mapSpain (IGN)."
 CAP_ST    <- "Source: CORINE Land Cover 2018 (Copernicus/EEA), 100 m. Boundaries and stations: mapSpain (IGN) / AEMET."
-FILL <- c("no cultivo" = "grey88", "cultivo" = "#1a9850")
+FILL <- c("non-cropland" = "grey88", "cropland" = "#1a9850")
 
 clc <- rast(CLC)
 theme_map <- theme_minimal(base_size = 12) +
@@ -40,8 +40,8 @@ theme_map <- theme_minimal(base_size = 12) +
 binary_100m <- function(mask_sf) {
   isc <- classify(mask(crop(clc, ext(vect(mask_sf))), vect(mask_sf)), RCL, others = 0)
   isc <- as.int(isc)
-  levels(isc) <- data.frame(id = c(0, 1), clase = c("no cultivo", "cultivo"))
-  names(isc) <- "clase"
+  levels(isc) <- data.frame(id = c(0, 1), cover = c("non-cropland", "cropland"))
+  names(isc) <- "cover"
   isc
 }
 stations_sf <- function(path) st_transform(st_as_sf(fread(path), coords = c("lon", "lat"), crs = 4326), EPSG)
@@ -77,11 +77,11 @@ st_nat <- stations_sf(ST_NAT); n_nat <- nrow(st_nat)
 make_binary_map(rn, base_nat, NULL, NA, 5e6,
                 "Cropland in Spain (CORINE Land Cover 2018, 100 m)",
                 "cropland / non-cropland at 100 m; Peninsular Spain and the Balearics",
-                file.path(FIG_DIR, "fig16_spain_cropland_binary_100m.png"), 12, 10)
+                fig_path("fig16_spain_cropland_binary_100m.png"), 12, 10)
 make_binary_map(rn, base_nat, st_nat, 1.0, 5e6,
                 "Cropland and AEMET stations in Spain (CORINE 2018, 100 m)",
                 sprintf("cropland / non-cropland at 100 m; %d AEMET stations in red (Peninsular Spain and the Balearics)", n_nat),
-                file.path(FIG_DIR, "fig17_spain_cropland_binary_100m_stations.png"), 12, 10)
+                fig_path("fig17_spain_cropland_binary_100m_stations.png"), 12, 10)
 
 # --- Murcia (100 m, real detail) ----------------------------------------------------------
 cat("Murcia binary 100 m...\n")
@@ -90,9 +90,9 @@ st_mur <- stations_sf(ST_MUR); n_mur <- nrow(st_mur)
 make_binary_map(rm, base_mur, NULL, NA, 2e6,
                 "Cropland in the Region of Murcia (CORINE Land Cover 2018, 100 m)",
                 "cropland / non-cropland at 100 m",
-                file.path(FIG_DIR, "fig18_murcia_cropland_binary_100m.png"), 9, 7.5)
+                fig_path("fig18_murcia_cropland_binary_100m.png"), 9, 7.5)
 make_binary_map(rm, base_mur, st_mur, 2.6, 2e6,
                 "Cropland and AEMET stations in the Region of Murcia (CORINE 2018, 100 m)",
                 sprintf("cropland / non-cropland at 100 m; %d AEMET stations in red", n_mur),
-                file.path(FIG_DIR, "fig19_murcia_cropland_binary_100m_stations.png"), 9, 7.5)
+                fig_path("fig19_murcia_cropland_binary_100m_stations.png"), 9, 7.5)
 cat("done: 4 binary figures at 100 m\n")

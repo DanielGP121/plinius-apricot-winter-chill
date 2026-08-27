@@ -50,14 +50,14 @@ getarg <- function(flag, default = NULL) {
 source(file.path(if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]))) else getwd(), "00_paths.R"))
 
 API    <- getarg("--api",    out_path("observed_1995_2025.csv.gz"))
-COORDS <- getarg("--coords", out_path("chill_obs_seasons.csv"))
+COORDS <- getarg("--coords", tab_path("chill_obs_seasons.csv"))
 NCORES <- as.integer(getarg("--cores", max(1, detectCores() - 2)))
 MAXST  <- as.numeric(getarg("--maxst", Inf))
 
 # A smoke test writes its own file for the same reason as in script 20: a 12-station table is
 # indistinguishable from a complete one once it is on disk, and script 41 would happily join it.
 OUT <- if (is.finite(MAXST)) out_path(sprintf("chill_api_seasons_maxst%g.csv", MAXST)) else
-       getarg("--out", out_path("chill_api_seasons.csv"))
+       getarg("--out", tab_path("chill_api_seasons.csv"))
 
 options(warn = 1)
 setDTthreads(1)   # the parallelism here is across stations; nested threading only adds contention

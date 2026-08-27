@@ -47,10 +47,57 @@ if (!dir.exists(ROOT)) stop(sprintf("PLINIUS_ROOT points at a folder that does n
 
 OUT_DIR  <- file.path(ROOT, "02_outputs")
 FIG_DIR  <- file.path(OUT_DIR, "figures_chill")
+TAB_DIR  <- file.path(OUT_DIR, "tables")
 PRES_DIR <- file.path(ROOT, "03_presentacion")
 
+# out_path() still addresses 02_outputs itself, which is where the subdirectories live
+# (surface_cache, model_agreement, gif_frames) and the few files that are not tables.
+# Tables and logs go through tab_path(), so that a reader opening 02_outputs sees the
+# shape of the output rather than sixty loose files.
 out_path <- function(...) file.path(OUT_DIR, ...)
-fig_path <- function(...) file.path(FIG_DIR, ...)
+# figures_chill/ is filed by role: ninety-seven PNGs in one folder is a pile rather than a
+# set. The number-to-folder map lives here and not in each script, so a script keeps calling
+# fig_path("figNN_name.png") and its output lands where it belongs on the next render. A
+# number with no entry falls back to the root, which is where a new figure sits until it is
+# filed. Readers resolve either way: the book and the deck builder search recursively.
+FIG_GROUPS <- list(
+  "01_inputs" = c(8, 16, 17, 18, 19),
+  "02_method" = c(34, 35, 36, 44, 46, 49, 50, 51, 53),
+  "03_chill_surfaces" = c(21),
+  "04_results" = c(20, 22, 30, 31, 33, 37, 47),
+  "05_model_spread" = c(38, 39, 40, 41, 42, 48, 54, 55),
+  "06_checks" = c(6, 23, 24, 26, 43, 45, 52),
+  "07_observed_record" = c(25, 32),
+  "_superseded" = c(1, 2, 3, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15)
+)
+
+.fig_group <- function(name) {
+  n <- suppressWarnings(as.integer(sub("^fig([0-9]+).*$", "\\1", name)))
+  if (is.na(n)) return("")
+  for (g in names(FIG_GROUPS)) if (n %in% FIG_GROUPS[[g]]) return(g)
+  ""
+}
+
+# Several scripts address the figure directory through an alias or through a --figdir argument a
+# caller can override, so the filing has to work against any base, not only FIG_DIR.
+fig_in <- function(dir, name) {
+  g <- .fig_group(basename(name))
+  if (nzchar(g)) {
+    dir.create(file.path(dir, g), showWarnings = FALSE, recursive = TRUE)
+    return(file.path(dir, g, name))
+  }
+  file.path(dir, name)
+}
+
+fig_path <- function(...) {
+  parts <- c(...)
+  if (length(parts) == 1L) return(fig_in(FIG_DIR, parts))
+  file.path(FIG_DIR, ...)
+}
+tab_path <- function(...) {
+  dir.create(TAB_DIR, showWarnings = FALSE, recursive = TRUE)
+  file.path(TAB_DIR, ...)
+}
 
 # --- external data ---------------------------------------------------------------------------
 # The message is long on purpose. Whoever hits it is a stranger to the project, and the cost of

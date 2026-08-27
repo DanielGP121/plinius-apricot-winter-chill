@@ -48,9 +48,9 @@ getarg <- function(flag, default = NULL) {
 .f <- grep("^--file=", commandArgs(FALSE), value = TRUE)
 source(file.path(if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]))) else getwd(), "00_paths.R"))
 
-LONG   <- getarg("--long",    out_path("chill_obs_seasons_1975.csv"))
-APIF   <- getarg("--api",     out_path("chill_api_seasons.csv"))
-SPLICE <- getarg("--splice",  out_path("observed_spliced_swc.csv"))
+LONG   <- getarg("--long",    tab_path("chill_obs_seasons_1975.csv"))
+APIF   <- getarg("--api",     tab_path("chill_api_seasons.csv"))
+SPLICE <- getarg("--splice",  tab_path("observed_spliced_swc.csv"))
 OUTDIR <- getarg("--outdir",  OUT_DIR)
 FIGDIR <- getarg("--figdir",  FIG_DIR)
 
@@ -215,7 +215,7 @@ p1 <- ggplot(ser, aes(y, anom, fill = period)) +
        x = NULL, y = "Chill portions, anomaly", fill = NULL,
        caption = sprintf("Grey band: +/- 1 sd of the baseline. Seasons to %d from the PNACC archive, %d-%d from the AEMET API,\nwhich reads %+.2f CP high on the seasons the two sources share, so the source change works against the anomaly shown.",
                          SPLIT_YEAR, SPLIT_YEAR + 1L, LAST_YEAR, API_OFFSET)) + th
-ggsave(file.path(FIGDIR, "fig25_01_observed_chill_series_1976_2025.png"), p1, width = 10, height = 5.5, dpi = 200)
+ggsave(fig_in(FIGDIR, "fig25_01_observed_chill_series_1976_2025.png"), p1, width = 10, height = 5.5, dpi = 200)
 
 allroll <- rbind(blocks[, .(end_y, mean5, grp = "baseline blocks")],
                  data.table(end_y = LAST_YEAR, mean5 = rec_mean, grp = "2021-2025"))
@@ -229,7 +229,7 @@ p2 <- ggplot(allroll, aes(end_y, mean5, colour = grp)) +
                           nrow(blocks), min(base$y), SPLIT_YEAR, n_below, SPLIT_YEAR + 1L, LAST_YEAR),
        x = "Final winter of the block", y = sprintf("Mean chill portions over %d winters", BLOCK),
        colour = NULL) + th
-ggsave(file.path(FIGDIR, "fig25_02_running5_blocks.png"), p2, width = 9, height = 5, dpi = 200)
+ggsave(fig_in(FIGDIR, "fig25_02_running5_blocks.png"), p2, width = 9, height = 5, dpi = 200)
 
 # --- § 6 - tables -------------------------------------------------------------------------------
 fwrite(ser[, .(season_end_year = y, n_stations, mean_CP = round(mean_CP, 3),

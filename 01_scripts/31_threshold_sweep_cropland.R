@@ -75,7 +75,7 @@ source(file.path(SCRIPTS_DIR, "00_corine.R"))   # for cell_area_km2(); this scri
 # since it needs out_path().
 GAP_DEFAULT <- 6.94
 GAP <- local({
-  f <- out_path("cieza_parametrisation_gap.csv")
+  f <- tab_path("cieza_parametrisation_gap.csv")
   if (!file.exists(f)) { message(sprintf("cieza_parametrisation_gap.csv missing, using %.2f", GAP_DEFAULT)); return(GAP_DEFAULT) }
   g <- abs(mean(fread(f)$gap))
   if (abs(g - GAP_DEFAULT) > 0.5)
@@ -89,7 +89,7 @@ GAP <- local({
 THR <- sort(unique(c(THR, CR_B, CR_P, CR_B + SE, CR_B - SE, CR_P + SE, CR_P - SE,
                      CR_B + GAP, CR_P + GAP)))
 
-CHILL <- out_path("chill_all_windows.csv")
+CHILL <- tab_path("chill_all_windows.csv")
 CLC   <- plinius_clc()
 OUT   <- OUT_DIR
 REF   <- file.path(OUT, "talk_numbers_cropland.csv")

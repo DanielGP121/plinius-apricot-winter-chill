@@ -76,7 +76,7 @@ talk_theme <- theme_minimal(base_size = 14) +
 
 # § 1 — Station chill and the geography every map is drawn on.
 cat("1. data and geography\n")
-d   <- fread(out_path("chill_all_windows.csv"))
+d   <- fread(tab_path("chill_all_windows.csv"))
 ens <- d[, .(SWC = median(safe_winter_chill_P10)),
          by = .(situation, scenario, window, station_id, lon, lat)]
 
@@ -267,14 +267,14 @@ cat("   fig31 written\n")
 # not a trend (there is none) but a block: the last five winters are the coldest-deficient of the
 # record. A line invites the eye to look for a slope that the data do not support.
 cat("4. observed record 1976-2025\n")
-obs <- fread(out_path("observed_annual_series.csv"))
+obs <- fread(tab_path("observed_annual_series.csv"))
 
 # The anomaly and its size in standard deviations are NOT recomputed here. They are read from the
 # summary written by 43_observed_long_record.R, which measures both against the 1976-2020 baseline
 # and uses the per-station anomaly composition. Recomputing them over the whole record instead
 # folds the recent block into its own reference and shrinks the anomaly from -3.65 to -3.29 CP, a
 # discrepancy that would then sit on a slide next to the correct figure in the wiki.
-lr    <- fread(out_path("observed_long_record_summary.csv"))
+lr    <- fread(tab_path("observed_long_record_summary.csv"))
 lrval <- function(b, m) lr[block == b & metric == m]$value
 mu    <- lrval("baseline", "mean_CP")        # 1976-2020
 sdv   <- lrval("baseline", "sd_CP")
@@ -311,7 +311,7 @@ cat("   fig32 written\n")
 # the century, and how much of that loss the mutant takes back. A bar chart of percentages hides
 # the fact that the second number is a subset of the first.
 cat("5. headline\n")
-tn  <- fread(out_path("talk_numbers_cropland.csv"))
+tn  <- fread(tab_path("talk_numbers_cropland.csv"))
 far <- tn[situation == paste0(SCEN, "_far")]
 tot <- far$crop_km2_both + far$crop_km2_only_precoz + far$crop_km2_none
 lost     <- far$crop_km2_only_precoz + far$crop_km2_none
@@ -497,6 +497,6 @@ fwrite(data.table(
              length(marg), spread_scen, spread_mod, n_pos, sign_p, ord_A, ord_B, within_model,
              coldest[coldest == "ssp126", N][1], coldest[coldest == "ssp245", N][1],
              coldest[coldest == "ssp370", N][1]),
-  scenario = SCEN), out_path("talk_key_numbers.csv"))
+  scenario = SCEN), tab_path("talk_key_numbers.csv"))
 
 cat(sprintf("\n4 figures written in %s\nand talk_key_numbers.csv\n", FIGS))

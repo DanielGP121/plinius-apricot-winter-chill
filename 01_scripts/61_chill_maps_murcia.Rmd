@@ -130,7 +130,7 @@ f1 <- ggplot() +
        subtitle = "reference criterion: ≥50% cropland within 2 km (44 strict, 73 broad, of 123)") +
   theme_minimal(base_size = 12) +
   theme(axis.title = element_blank())
-ggsave(file.path(FIG_DIR, "fig1_contexto_suelo.png"), f1, width = 9, height = 7.5, dpi = 150)
+ggsave(fig_path("fig1_contexto_suelo.png"), f1, width = 9, height = 7.5, dpi = 150)
 f1
 ```
 
@@ -155,7 +155,7 @@ f2 <- ggplot() +
        subtitle = "accumulated chill portions (P10 across winters); 3 models, 2041-2070 future") +
   theme_minimal(base_size = 11) +
   theme(axis.title = element_blank(), axis.text = element_blank())
-ggsave(file.path(FIG_DIR, "fig2_swc_ensemble.png"), f2, width = 13, height = 5, dpi = 150)
+ggsave(fig_path("fig2_swc_ensemble.png"), f2, width = 13, height = 5, dpi = 150)
 f2
 ```
 
@@ -180,7 +180,7 @@ f3 <- ggplot() +
        subtitle = "ensemble median; 'Búlida' 47.5 CP, 'Búlida Precoz' 33.7 CP") +
   theme_minimal(base_size = 11) +
   theme(axis.title = element_blank(), axis.text = element_blank())
-ggsave(file.path(FIG_DIR, "fig3_case_study.png"), f3, width = 13, height = 5, dpi = 150)
+ggsave(fig_path("fig3_case_study.png"), f3, width = 13, height = 5, dpi = 150)
 f3
 ```
 
@@ -210,7 +210,7 @@ f4 <- ggplot(chill, aes(scenario, safe_winter_chill_P10, fill = model)) +
        y = "SWC (P10, chill portions)", x = NULL) +
   theme_minimal(base_size = 12) +
   theme(axis.text.x = element_text(angle = 20, hjust = 1))
-ggsave(file.path(FIG_DIR, "fig4_distribucion_swc.png"), f4, width = 10, height = 6, dpi = 150)
+ggsave(fig_path("fig4_distribucion_swc.png"), f4, width = 10, height = 6, dpi = 150)
 f4
 ```
 

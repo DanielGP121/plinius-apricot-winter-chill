@@ -34,8 +34,9 @@ EPSG <- 3035; CR_B <- 47.5; CR_P <- 33.7
 CACHE <- out_path("surface_cache")
 # A figure that goes on a slide carries no title of its own: the slide states the assertion, and
 # two titles stacked read as a mistake, the more so because ggplot's renders smaller than the
-# slide's. The subtitles stay, because they carry the quantities. Export self-contained figures,
-# for sending on their own, with PLINIUS_FIG_TITLE=TRUE.
+# slide's. Per-panel subtitles stay, because they carry the quantities; a subtitle over the whole
+# figure goes with the title, because the slide's kicker already says what it says. Export
+# self-contained figures, for sending on their own, with PLINIUS_FIG_TITLE=TRUE.
 FIG_TITLE <- toupper(Sys.getenv("PLINIUS_FIG_TITLE", "FALSE")) %in% c("TRUE", "1", "YES")
 ttl <- function(x) if (FIG_TITLE) x else NULL
 
@@ -98,7 +99,7 @@ ggsave(fig_path("fig34_dynamic_model_response.png"), g34, width = 11.5, height =
 # schematic. The point is that a grower is not ruined by the average winter but by the poor one,
 # which is why the statistic that matters is a low percentile.
 cat("2. Safe Winter Chill concept\n")
-os <- fread(out_path("chill_obs_seasons_1975.csv"))
+os <- fread(tab_path("chill_obs_seasons_1975.csv"))
 cand <- os[perc_complete >= 85, .(n = .N, sdv = sd(CP), mu = mean(CP)), by = station_id]
 # A station with a full record and enough spread for the gap between mean and P10 to be visible.
 pick <- cand[n >= 44][which.max(sdv)]$station_id[1]
@@ -140,7 +141,7 @@ if (!file.exists(surf_f) || !file.exists(crop_f))
   stop("surfaces missing from cache; run first: Rscript 52_talk_figures.R")
 surf <- rast(surf_f); cropfrac <- rast(crop_f)
 
-d   <- fread(out_path("chill_all_windows.csv"))
+d   <- fread(tab_path("chill_all_windows.csv"))
 pts <- d[situation == "presente_present",
          .(SWC = median(safe_winter_chill_P10)), by = .(station_id, lon, lat)]
 pts_p <- as.data.frame(project(vect(as.data.frame(pts), geom = c("lon", "lat"), crs = "EPSG:4326"),
@@ -189,7 +190,7 @@ p3 <- ggplot() +
 g36 <- (p1 | p2 | p3) +
   plot_annotation(
     title = ttl("A network of stations is not a map, and a count of stations is not an area"),
-    subtitle = "Interpolation and mask replicating Egea et al. 2022 (Front. Plant Sci. 13:842628), with 3,460 stations against the 270 of that reference",
+    subtitle = ttl("Interpolation and mask replicating Egea et al. 2022 (Front. Plant Sci. 13:842628), with 3,460 stations against the 270 of that reference"),
     theme = theme(plot.title = element_text(face = "bold", size = 17),
                   plot.subtitle = element_text(size = 12, colour = "grey30")))
 ggsave(fig_path("fig36_method_chain.png"), g36, width = 15, height = slot_height(15), dpi = 190,
@@ -220,5 +221,5 @@ ggsave(fig_path("fig37_baseline_today.png"), g37, width = 9.5, height = 9.5 / 1.
 fwrite(data.table(metric = c("dm_optimum_cp_day", "dm_optimum_temp_C", "dm_pct_at_0C",
                              "swc_example_station", "swc_example_mean", "swc_example_p10"),
                   value = c(opt$cp_day, opt$temp, pct(0), pick, mn, p10)),
-       out_path("method_figure_numbers.csv"))
+       tab_path("method_figure_numbers.csv"))
 cat(sprintf("\nwrote 3 figures in %s\n", FIG_DIR))

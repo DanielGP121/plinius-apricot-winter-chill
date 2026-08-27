@@ -115,7 +115,7 @@ idw_predict <- function(nb, z, power, self = FALSE, z_self = NULL) {
 }
 
 cat("1. data\n")
-d <- fread(out_path("chill_all_windows.csv"))
+d <- fread(tab_path("chill_all_windows.csv"))
 ens <- d[, .(SWC = median(safe_winter_chill_P10)), by = .(situation, station_id, lon, lat)]
 sits <- if (SITS == "base") BASE_SIT else unique(ens$situation)
 cat(sprintf("   %d situations, %s stations in the largest\n", length(sits),
@@ -191,7 +191,7 @@ cat(sprintf("   %d groups, %d stations · in the model, median %s CP, maximum %s
 cat(sprintf("   noise floor over the %d groups measured in both: median %s CP\n",
             N_FLOOR, n_en(NOISE_FLOOR, 2)))
 fwrite(colo[, .(stations, n, lon, lat, swc_min, swc_max, spread, todos_obs, spread_obs)],
-       out_path("idw_colocated.csv"))
+       tab_path("idw_colocated.csv"))
 
 # § 3 — Self-checks. They run before anything is written, because a silently wrong interpolator
 # would produce a plausible error figure and there would be no way to tell from the output.
@@ -261,8 +261,8 @@ summ <- merge(summ, res[, .(n_no_neigh = sum(is.na(pred)), n_twin = sum(has_twin
               by = "situation")
 setorder(summ, rmse_CP)
 
-fwrite(res, out_path("idw_crossval.csv"))
-fwrite(summ, out_path("idw_crossval_summary.csv"))
+fwrite(res, tab_path("idw_crossval.csv"))
+fwrite(summ, tab_path("idw_crossval_summary.csv"))
 print(summ[, .(situation, n_stations, mae_CP = round(mae_CP, 2), rmse_CP = round(rmse_CP, 2),
                rmse_all = round(rmse_all_CP, 2), bias_CP = round(bias_CP, 3),
                pct_of_gap = round(pct_of_gap, 1))])
@@ -301,7 +301,7 @@ if (file.exists(crop_f)) {
   if (!is.null(band) && nrow(band)) {
     band[is.na(band)] <- 0
     band[, pct_near_any := 100 * km2_near_any / km2_total]
-    fwrite(band, out_path("idw_threshold_band.csv"))
+    fwrite(band, tab_path("idw_threshold_band.csv"))
     for (i in seq_len(nrow(band)))
       cat(sprintf("   %-22s %s km2 within %.2f CP of a threshold (%.1f%%)\n",
                   band$situation[i], i_en(band$km2_near_any[i]),
@@ -369,7 +369,7 @@ p2 <- ggplot(db, aes(d_bin, med)) +
 # Elevation is only available for the stations in the public AEMET inventory, a fifth of the
 # network. The panel says so on its face rather than in a footnote, because a subset presented as if
 # it were the whole is the kind of thing this project has already had to correct once.
-inv <- fread(out_path("aemet_station_inventory_public.csv"))
+inv <- fread(tab_path("aemet_station_inventory_public.csv"))
 re  <- merge(rb, unique(inv[, .(station_id = INDCLIM, alt)]), by = "station_id")
 p3 <- if (nrow(re) > 50) {
   fit <- lm(resid ~ alt, data = re)

@@ -79,7 +79,7 @@ dir.create(FRAME_DIR, showWarnings = FALSE, recursive = TRUE)
 
 # § 1 — Station chill, collapsed to the ensemble median per station and situation.
 cat("1. reading chill per station\n")
-d <- fread(out_path("chill_all_windows.csv"))
+d <- fread(tab_path("chill_all_windows.csv"))
 stopifnot(!anyNA(d$safe_winter_chill_P10), is.numeric(d$lon))
 ens <- d[, .(SWC = median(safe_winter_chill_P10)),
          by = .(situation, scenario, window, station_id, lon, lat)]
@@ -371,7 +371,7 @@ cat("7. SWC surface frames written\n")
 
 MAN <- rbindlist(manifest)[order(anim, step)]
 fwrite(MAN, file.path(FRAME_DIR, "frames_manifest.csv"))
-fwrite(ST,  out_path("gif_frame_stats.csv"))
+fwrite(ST,  tab_path("gif_frame_stats.csv"))
 
 cat(sprintf("\nwrote %d frames in %s\n", nrow(MAN), FRAME_DIR))
 cat(sprintf("%d animations: %s\n", uniqueN(MAN$anim), paste(unique(MAN$anim), collapse = ", ")))

@@ -56,9 +56,9 @@ getarg <- function(flag, default = NULL) {
 source(file.path(if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]))) else getwd(), "00_paths.R"))
 
 CIEZA  <- getarg("--cieza",  plinius_data("cieza_cebas", "Cieza11-25.xlsx"))
-ARCH   <- getarg("--archive",out_path("chill_obs_seasons_1975.csv"))
-APIF   <- getarg("--api",    out_path("chill_api_seasons.csv"))
-SERIES <- getarg("--series", out_path("observed_annual_series.csv"))
+ARCH   <- getarg("--archive",tab_path("chill_obs_seasons_1975.csv"))
+APIF   <- getarg("--api",    tab_path("chill_api_seasons.csv"))
+SERIES <- getarg("--series", tab_path("observed_annual_series.csv"))
 OUTDIR <- getarg("--outdir", OUT_DIR)
 FIGDIR <- getarg("--figdir", FIG_DIR)
 
@@ -188,7 +188,7 @@ p1 <- ggplot(zz, aes(y, z, colour = src)) +
        subtitle = "Standardised against each record's own 2012-2020 baseline, because absolute chill differs by 15 CP between sites",
        x = NULL, y = "Standard deviations from baseline", colour = NULL,
        caption = "Shaded: 2021-2025. The CEBAS orchard series is instrumentally independent of the AEMET network that supplies\nboth halves of the project's spliced record, so agreement here rules out an AEMET processing change as the cause.") + th
-ggsave(file.path(FIGDIR, "fig26_01_independent_records.png"), p1, width = 9, height = 5, dpi = 200)
+ggsave(fig_in(FIGDIR, "fig26_01_independent_records.png"), p1, width = 9, height = 5, dpi = 200)
 
 pg <- melt(czk[, .(season_end_year, CP_1987, CP_1988)], id.vars = "season_end_year",
            variable.name = "param", value.name = "CP")
@@ -202,7 +202,7 @@ p2 <- ggplot(pg, aes(season_end_year, CP, fill = param)) +
                           nrow(czk), mean(czk$gap), min(czk$gap), max(czk$gap)),
        x = NULL, y = "Chill portions", fill = NULL,
        caption = "Muñoz-Morales et al. (2025) cite Fishman et al. (1987) and call chillR's Dynamic_Model, which carries the 1988\nparameters. If the cultivar requirements were quantified on that scale, supply and demand are not on the same one.") + th
-ggsave(file.path(FIGDIR, "fig26_02_parametrisation_gap.png"), p2, width = 9, height = 5, dpi = 200)
+ggsave(fig_in(FIGDIR, "fig26_02_parametrisation_gap.png"), p2, width = 9, height = 5, dpi = 200)
 
 # --- § 5 - tables ------------------------------------------------------------------------------
 fwrite(cz, file.path(OUTDIR, "cieza_seasons.csv"))

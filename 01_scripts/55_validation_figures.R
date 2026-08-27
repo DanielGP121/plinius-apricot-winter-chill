@@ -54,13 +54,13 @@ talk_theme <- theme_minimal(base_size = 14) +
         panel.grid.minor = element_blank(), legend.position = "bottom")
 
 cat("1. data\n")
-d  <- fread(out_path("chill_all_windows.csv"))
+d  <- fread(tab_path("chill_all_windows.csv"))
 dm <- d[model != "obs"]
 models <- sort(unique(dm$model))
 # The cropland denominator is read, never typed. It used to be a literal here and went stale the
 # moment the cell area was corrected on 2026-08-14: the figure kept claiming 229,604 km2 while every
 # table said 229,676.
-CROP_KM2 <- fread(out_path("talk_numbers_cropland.csv"))[1,
+CROP_KM2 <- fread(tab_path("talk_numbers_cropland.csv"))[1,
               crop_km2_both + crop_km2_only_precoz + crop_km2_none]
 
 # § 1 — fig43, how far each model sits from the observations.
@@ -197,7 +197,7 @@ ggsave(fig_path("fig45_delta_vs_absolute.png"), g45, width = 12.5, height = 4.6,
 # Abstract chains are hard to trust. This is the same chain applied to a single named station, with
 # every number visible, so the audience can check the arithmetic of the method on one case.
 cat(sprintf("5. fig46 walkthrough of station %s\n", STN))
-os <- fread(out_path("chill_obs_seasons_1975.csv"))[station_id == STN & perc_complete >= 85]
+os <- fread(tab_path("chill_obs_seasons_1975.csv"))[station_id == STN & perc_complete >= 85]
 setorder(os, season_end_year)
 if (!nrow(os)) stop("station ", STN, " does not have enough observed seasons")
 p10_obs <- quantile(os$CP, 0.10)
@@ -320,13 +320,13 @@ fwrite(data.table(
             median(ds[scen == SSP_LAB[["ssp370"]]]$med), min(ds[scen == SSP_LAB[["ssp370"]]]$med),
             max(ds[scen == SSP_LAB[["ssp370"]]]$med),
             STN, p10_obs, med[w == "1995-2020"]$m, med[w == "2071-2100"]$m)),
-  out_path("method_chain_numbers.csv"))
+  tab_path("method_chain_numbers.csv"))
 
 # The neighbourhood areas of panel 3 are projected on a slide, so they go in a table like every
 # other figure that gets shown. One row per situation and class.
 fwrite(rbindlist(lapply(built, function(b) data.table(
   station = STN, radius_km = 50, situation = b$sit,
   km2_both = b$km[1], km2_only_precoz = b$km[2], km2_none = b$km[3]))),
-  out_path("station_walkthrough_km2.csv"))
+  tab_path("station_walkthrough_km2.csv"))
 
 cat(sprintf("\nwrote 4 figures in %s and method_chain_numbers.csv\n", FIG_DIR))

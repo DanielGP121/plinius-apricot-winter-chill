@@ -69,7 +69,7 @@ NL <- "\n"
 # because it is the denominator of that percentile: a model computed over fewer seasons has a
 # percentile that is not strictly comparable with the rest, and the first version of this script
 # could not have noticed because it never read the column.
-d <- fread(out_path("chill_all_windows.csv"),
+d <- fread(tab_path("chill_all_windows.csv"),
            select = c("situation", "model", "station_id", "n_seasons", "safe_winter_chill_P10"))
 
 summarise_sit <- function(sit) {
@@ -243,7 +243,7 @@ fwrite(data.table(
             if (any(r$short_window)) min(r$far_seasons[r$short_window]) else MODAL_SEASONS,
             MODAL_SEASONS),
   scenario = SCEN
-), out_path("model_ranking_numbers.csv"), dec = ".")
+), tab_path("model_ranking_numbers.csv"), dec = ".")
 
 cat("fig54 written · ", SCEN_LAB, " · worst ", WORST, " ", n_en(r$far[1], 1),
     " CP · best ", BEST, " ", n_en(r$far[nrow(r)], 1), " CP (margin ",

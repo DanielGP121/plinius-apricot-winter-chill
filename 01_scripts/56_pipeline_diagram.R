@@ -71,9 +71,9 @@ diagram_theme <- theme_void(base_size = 14) +
 # Anything that cannot be read is left out of the figure rather than approximated, which is why
 # there is no "~15 GB" on the NetCDF box: that number lives in prose, not in a table.
 cat("1. numbers from the tables\n")
-d    <- fread(out_path("chill_all_windows.csv"))
+d    <- fread(tab_path("chill_all_windows.csv"))
 dm   <- d[model != "obs"]
-crop <- fread(out_path("talk_numbers_cropland.csv"))
+crop <- fread(tab_path("talk_numbers_cropland.csv"))
 
 N_ST_PROJ <- uniqueN(dm$station_id)
 N_ST_OBS  <- uniqueN(d[model == "obs"]$station_id)
@@ -86,7 +86,7 @@ N_WIN     <- uniqueN(dm$window)
 N_ROWS    <- nrow(d)
 N_SEASONS <- max(dm$n_seasons)
 CROP_KM2  <- crop[1, crop_km2_both + crop_km2_only_precoz + crop_km2_none]
-TBL_MB    <- file.info(out_path("chill_all_windows.csv"))$size / 1024^2
+TBL_MB    <- file.info(tab_path("chill_all_windows.csv"))$size / 1024^2
 
 surf_file <- file.path(out_path("surface_cache"), sprintf("swc_presente_present_%d.tif", RES_M))
 if (!file.exists(surf_file))
@@ -97,7 +97,7 @@ N_CELLS <- global(!is.na(rast(surf_file)), "sum")[1, 1]
 
 # The interpolation error is quoted on the diagram only if it has actually been measured. Script 40
 # writes it; before that run there is nothing honest to put in that box.
-cv_file <- out_path("idw_crossval_summary.csv")
+cv_file <- tab_path("idw_crossval_summary.csv")
 CV <- if (file.exists(cv_file)) fread(cv_file)[situation == "presente_present"] else NULL
 cat(sprintf("   %s stations · %d models · %s km2 · %s cells%s\n",
             i_en(N_ST_PROJ), N_MODELS, i_en(CROP_KM2), i_en(N_CELLS),
@@ -314,7 +314,7 @@ ggsave(fig_path("fig50_pipeline_files.png"), g50, width = 16.5, height = 7.6, dp
 cat("4. pipeline_runs.csv\n")
 runs <- dm[, .(n_stations = uniqueN(station_id), n_seasons = max(n_seasons)),
            by = .(scenario, window, periodo, model)][order(scenario, window, model)]
-fwrite(runs, out_path("pipeline_runs.csv"))
+fwrite(runs, tab_path("pipeline_runs.csv"))
 cat(sprintf("   %d model × scenario × window combinations\n", nrow(runs)))
 
 fwrite(data.table(
@@ -322,6 +322,6 @@ fwrite(data.table(
              "n_rows_canonical", "n_cells_1km", "cropland_km2", "n_runs", "table_MB"),
   value = c(N_ST_PROJ, N_ST_OBS, N_MODELS, N_SCEN, N_WIN, N_ROWS, N_CELLS, CROP_KM2,
             nrow(runs), round(TBL_MB, 2))),
-  out_path("pipeline_diagram_numbers.csv"))
+  tab_path("pipeline_diagram_numbers.csv"))
 
 cat(sprintf("\nfig49, fig50, pipeline_runs.csv and pipeline_diagram_numbers.csv written to %s\n", FIG_DIR))
