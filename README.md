@@ -40,7 +40,7 @@ than the areas themselves.
 ```bash
 git clone <this repo> && cd <this repo>
 Rscript install_deps.R                       # 18 R packages; see the file for the chillR recipe
-conda env create -f environment.yml          # Python side, only for scripts 02, 05, 07, 21, 30
+conda env create -f environment.yml          # Python side, only for scripts 02, 05, 07, 21, 32
 export PLINIUS_DATA=/path/to/plinius_data    # where the input data lives
 ```
 
@@ -85,7 +85,7 @@ flowchart TD
         D5["27 cieza independent check"]
         C4["36 per_model_stats<br/>the same chain, once per model"]
         C5["41 idw_crossval<br/>leave-one-out over the interpolation"]
-        E1["29 / 30 working document<br/>35 the talk, 44 the one-page sheet"]
+        E1["31 / 32 frames and animations<br/>33-43 figures and diagrams"]
     end
 
     A1 --> B1 --> B2 --> C1 --> C2 --> C3
@@ -193,14 +193,8 @@ carries a header stating what it does, what it needs and what it writes.
 | | `41_idw_crossval.R` | local | Leave-one-out error of the interpolation |
 | **Shared** | `00_corine.R`, `00_hatch.R`, `00_map_layout.R` | local | Cropland mask and cell area, AR6 agreement hatching, figure geometry |
 | **Figures** | `31_scenario_frames.R`, `32_make_gifs.py` | local | Animation frames and the GIFs built from them |
-| | `33`, `34`, `37`, `38`, `39`, `40`, `42`, `43` | local | Talk figures, the pipeline diagram, the attrition funnel, the data timeline, the model ranking |
-| **Reporting** | `29_build_deck.R`, `30_build_pptx.py` | local | Working document, HTML and PowerPoint |
-| | `talk_content.py`, `35_build_talk_pptx.py` | local | The talk's content, and the builder that lays it out |
-| | `45_v3_numbers.py`, `46_model_sensitivity.R`, `47_band_and_record_numbers.R` | local | Metrics the review decks quote |
-| | `44_workflow_sheet.py` | local | The whole pipeline on one A3 page |
-
-`35_build_talk_pptx.py` builds every deck from one narrative file, so none of them can quote a
-different number from another, and every figure on every slide is read from a table at build time.
+| | `33`, `34`, `37`, `38`, `39`, `40`, `42`, `43` | local | Figures, the pipeline diagram, the attrition funnel, the data timeline, the model ranking |
+| **Data version** | `48_ladon_checksums.sh` | HPC | md5 manifest of the 88 NetCDF, so a later download can be compared against this one |
 
 Script 15 carries several protections that exist because of failures that actually happened: a
 checkpoint per model-scenario combination written atomically, a sentinel that refuses to save a
@@ -216,24 +210,3 @@ how to obtain each source.
 
 **The chill model.** `DM_JOSE.R` is not mine, so it is not uploaded here. Request it from
 J. A. Egea, jaegea@cebas.csic.es.
-
----
-
-## Limitations
-
-- **The cultivar thresholds are the dominant uncertainty.** 47.5 and 33.7 chill portions each carry
-  a standard error of 3.3. `28_threshold_sweep_cropland.R` sweeps the whole range so the
-  sensitivity is visible rather than asserted. The gap between them, being a paired difference, is
-  far better determined than either threshold.
-- **Which parametrisation the requirements were measured under needs confirming.** The methods of
-  the source paper cite Fishman 1987, but code published by the same group in 2025 calls chillR's
-  1988 default. On the 1988 scale the requirements would need raising by about 7 chill portions to
-  be comparable with the supply computed here, and every area would change.
-- **The model validation is not independent.** Bias against observations is −0.45 chill portions
-  with r = 0.984, which is why no bias correction is applied, but the downscaling was calibrated
-  against these same stations.
-- **The ensemble median hides real disagreement.** The land where neither cultivar works ranges
-  from 4,983 to 75,951 km² depending on which of the eleven models is believed, a factor of
-  fifteen. The order of aggregation is not the problem: mapping the ensemble median and classifying
-  each model separately before aggregating give a headline within four tenths of a point of each
-  other.
