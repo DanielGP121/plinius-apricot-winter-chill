@@ -15,7 +15,7 @@
 # Sourced by the figure scripts after 00_paths.R.
 
 # --- the slide's own geometry ------------------------------------------------------------------
-# Kept in step with 35_build_talk_pptx.py: W 13.333 in, MARGIN 0.62, a one-line title block of
+# Kept in step with 72_build_talk_pptx.py: W 13.333 in, MARGIN 0.62, a one-line title block of
 # 0.52 in plus a 0.12 rule and 0.22 of air, a caption band of 0.62 and a footer of 0.72.
 SLOT_W <- 12.093
 SLOT_H <- 4.68

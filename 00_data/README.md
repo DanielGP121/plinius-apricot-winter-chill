@@ -17,11 +17,11 @@ instructions if that variable is missing, rather than failing later inside a ras
 
 ```
 $PLINIUS_DATA/
-├── proyecciones_peninsula/       88 NetCDF, ~15 GB   PNACC AR6 projections (script 14 downloads them)
+├── proyecciones_peninsula/       88 NetCDF, ~15 GB   PNACC AR6 projections (script 10 downloads them)
 ├── observado/                    2 NetCDF            PNACC observational archive 1975-2020
 ├── corine/                       ~1 GB unzipped      CORINE Land Cover 2018, 100 m raster
 ├── cieza_cebas/                  19 MB               Cieza11-25.xlsx, CEBAS orchard series
-└── tables/                                          only for the Murcia test-run (scripts 05-13)
+└── tables/                                          only for the Murcia test-run (scripts 62-68)
     ├── murcia/stations.csv
     └── peninsula/stations.csv
 ```
@@ -30,11 +30,11 @@ $PLINIUS_DATA/
 
 ### PNACC AR6 projections (required for the national analysis)
 
-Public, no credentials. `01_scripts/14_ladon_download_thredds.sh` fetches all 88 files from the
+Public, no credentials. `01_scripts/10_ladon_download_thredds.sh` fetches all 88 files from the
 AdapteCCa THREDDS server. It takes hours and 15 GB, so run it where the computation will happen:
 
 ```bash
-bash 14_ladon_download_thredds.sh /path/to/proyecciones_peninsula
+bash 10_ladon_download_thredds.sh /path/to/proyecciones_peninsula
 ```
 
 **Use this route, not the portal's download form.** They serve the same product over different
@@ -54,9 +54,9 @@ Free personal key from `opendata.aemet.es`, valid three months. Then:
 
 ```bash
 export AEMET_API_KEY='your-key'
-python3 01_scripts/21_aemet_observed_download.py --stations 00_data/stations_obs.txt \
+python3 01_scripts/11_aemet_observed_download.py --stations 00_data/stations_obs.txt \
         --out obs_api --from 1995 --to 2025 --chunk-months 6 --workers 4
-python3 01_scripts/21_aemet_observed_download.py --merge --out obs_api --csv observed_1995_2025.csv
+python3 01_scripts/11_aemet_observed_download.py --merge --out obs_api --csv observed_1995_2025.csv
 ```
 
 Expect roughly a day and a half: the API caps requests at six months each, so 31 years is 62 calls
@@ -73,7 +73,7 @@ Free after registration at the Copernicus Land Monitoring Service. Download the 
 unzip it under `corine/`. `00_paths.R` finds the GeoTIFF by pattern, preferring the European raster
 over the French overseas ones that ship in the same archive; `PLINIUS_CLC` overrides it.
 
-### Cieza orchard series (required only for script 27)
+### Cieza orchard series (required only for script 44)
 
 Public, from the repository accompanying Muñoz-Morales et al. (2025), MethodsX 15:103686:
 
@@ -88,7 +88,7 @@ Cite that paper if you use it.
 
 The chill model itself is missing from the repository. It implements the Dynamic Model under the
 Fishman et al. (1987) parametrisation, it was written by J. A. Egea, and this project has no
-licence to redistribute it. Scripts 06, 15, 23, 27 and 29 need it and fail with instructions when
+licence to redistribute it. Scripts 60, 20, 22, 44 and 70 need it and fail with instructions when
 it is absent.
 
 Two ways forward. Request the file from the authors and drop it in `01_scripts/`, or point
