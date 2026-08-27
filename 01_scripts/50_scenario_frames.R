@@ -369,6 +369,73 @@ for (scen in scen_list) {
 }
 cat("7. SWC surface frames written\n")
 
+# § 8 — The chill surface, three scenarios side by side.
+# § 6 does this with the classified map and § 7 does the surface one scenario at a time; neither
+# lets a viewer see the gradient of all three futures at once, which is the only way the middle
+# scenario reads as a middle rather than as a separate result. The panels carry no number: the
+# single-scenario frames do not either, and a figure quoted here would be an area-weighted median
+# of the surface, which is not the station-weighted median the slides quote.
+#
+# The colour scale is SWC_LIM, the same range § 7 uses, so the two animations are comparable and a
+# colour means the same amount of chill in every frame of both.
+swc_panel <- function(sit, title) {
+  ggplot() +
+    geom_raster(data = surfaces[[sit]], aes(x, y, fill = SWC)) +
+    geom_sf(data = disp, fill = NA, colour = "grey55", linewidth = 0.15) +
+    coord_sf(crs = EPSG, datum = NA, expand = FALSE, xlim = XLIM, ylim = YLIM) +
+    scale_fill_viridis_c(limits = SWC_LIM, option = "viridis", guide = "none") +
+    labs(title = title) + map_theme
+}
+
+# Drawn by hand for the reason legend_strip() is: ggplot places a guide relative to its panel, and
+# a few pixels of drift between frames reads as flicker on a loop.
+swc_bar <- function(n = 240) {
+  d <- diff(SWC_LIM)
+  ramp <- data.table(x = seq(SWC_LIM[1], SWC_LIM[2], length.out = n))
+  tk <- pretty(SWC_LIM, n = 5)
+  tk <- tk[tk >= SWC_LIM[1] & tk <= SWC_LIM[2]]
+  ggplot() +
+    geom_tile(data = ramp, aes(x = x, y = 1, fill = x), height = 0.42, width = d / n * 1.05) +
+    scale_fill_viridis_c(limits = SWC_LIM, option = "viridis", guide = "none") +
+    geom_text(data = data.table(x = tk), aes(x = x, y = 0.58, label = x),
+              size = 3.5, colour = "grey25") +
+    annotate("text", x = SWC_LIM[1] - 0.04 * d, y = 1, hjust = 1, size = 3.7, colour = "grey20",
+             label = "Chill portions (P10)") +
+    # The strip spans three panels, and these are data coordinates, so a bar drawn edge to edge
+    # would come out over a thousand pixels long. Padding the axis by one range on each side puts
+    # it at about the width of one panel, centred, with room for the label in the left third.
+    coord_cartesian(xlim = c(SWC_LIM[1] - d, SWC_LIM[2] + d),
+                    ylim = c(0.42, 1.30), expand = FALSE) +
+    theme_void() + theme(plot.margin = margin(2, 4, 2, 4))
+}
+
+for (i in 1:4) {
+  maps <- lapply(scen_list, function(scen) swc_panel(sit_of(scen, i), SSP_LAB[[scen]]))
+  # Same caveat as § 6, and it matters more here: at 2021-2040 three continuous surfaces look
+  # almost identical, and a viewer hunting for a difference will find one in the noise.
+  note <- if (i == 2)
+    paste("Differences between panels at this horizon are not a scenario effect:",
+          "the models disagree with each other far more than the scenarios do") else ""
+  head <- ggplot() +
+    annotate("text", x = 0, y = 1.06, hjust = 0, size = 6.2, fontface = "bold", colour = "grey15",
+             label = sprintf("Safe Winter Chill · %s", STEPS$period[i])) +
+    annotate("text", x = 0, y = 0.94, hjust = 0, size = 3.9, colour = "#b2182b", label = note) +
+    coord_cartesian(xlim = c(0, 10), ylim = c(0.88, 1.12), expand = FALSE) +
+    theme_void() + theme(plot.margin = margin(6, 4, 0, 4))
+  HEAD_IN <- 0.62
+  BAR_IN  <- 0.40
+  g <- head / wrap_plots(maps, nrow = 1) / swc_bar() / timeline(i) +
+       plot_layout(heights = unit(c(HEAD_IN, 1, BAR_IN, STRIP_IN[["timeline"]]),
+                                  c("in", "null", "in", "in")))
+  ggsave(frame_file("swc_sidebyside", i), g, width = PANEL_W * length(scen_list) + 0.3,
+         height = PANEL_W * MAP_AR + HEAD_IN + BAR_IN + STRIP_IN[["timeline"]] + TITLE_IN,
+         dpi = 132, bg = "white")
+  manifest[[length(manifest) + 1]] <- data.table(
+    anim = "swc_sidebyside", step = i, file = basename(frame_file("swc_sidebyside", i)),
+    duration_ms = c(2000, 1500, 1500, 2800)[i])
+}
+cat("8. SWC side-by-side frames written\n")
+
 MAN <- rbindlist(manifest)[order(anim, step)]
 fwrite(MAN, file.path(FRAME_DIR, "frames_manifest.csv"))
 fwrite(ST,  tab_path("gif_frame_stats.csv"))

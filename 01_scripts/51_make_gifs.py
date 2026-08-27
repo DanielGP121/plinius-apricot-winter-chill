@@ -48,12 +48,27 @@ SHEET_DURATIONS_MS = (1800, 1400, 1400, 2500)
 SHEET_MAX_W = 1600
 
 
+def fig(name):
+    """Locate a figure by name.
+
+    figures_chill/ is filed by role, so the flat path this file writes no longer resolves on its
+    own. The direct path is tried first and costs nothing when it works; the search is the
+    fallback. A name that is nowhere is returned unchanged, so load_frames reports it as missing
+    rather than this function failing with something less legible.
+    """
+    p = FIG_DIR / name
+    if p.exists():
+        return p
+    hits = sorted(FIG_DIR.rglob(name))
+    return hits[0] if hits else p
+
+
 def model_sheet_tracks():
     """Name the four frames of each scenario's model-sheet animation, in window order."""
     tracks = OrderedDict()
     for scen in SHEET_SCENARIOS:
         tracks[f"models_{scen}"] = [
-            (i + 1, FIG_DIR / f"fig40_small_multiples_{w.format(scen=scen)}.png", ms)
+            (i + 1, fig(f"fig40_small_multiples_{w.format(scen=scen)}.png"), ms)
             for i, (w, ms) in enumerate(zip(SHEET_WINDOWS, SHEET_DURATIONS_MS))
         ]
     return tracks
