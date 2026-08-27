@@ -2,23 +2,26 @@
 
 Ninety-seven PNGs came out of the chill pipeline. Eighty-three of them are here, filed by the job
 they do rather than by the script that drew them, and fourteen sit in `_superseded/` and stay out
-of the repository. Nothing in this folder is edited by hand. Every file is a render, and the script
-named beside it will overwrite it on the next run.
+of the repository. No PNG in this folder is edited by hand. Every one is a render, and the script
+named beside it will overwrite it on the next run. The one exception is
+`fig55_model_sensitivity.png`: `75_model_sensitivity.R` belongs to the reporting layer and is not
+published, so that figure cannot be regenerated from a clone.
 
 If you want the result, it is `04_results/fig20_15_viability_ssp370_far.png` for the map and
 `04_results/fig33_headline_flow.png` for the arithmetic behind it. Everything else either builds up
 to those two or tests them.
 
-In the tables below, **talk** is `01_scripts/talk_content.py`, which builds the English talk;
-**deck** is `01_scripts/deck_content.R`, the Spanish deck, which keeps a much fuller appendix
-gallery; **book** is the method book in `04_metodo/`. Line numbers appear where a figure is pinned
-to one slide rather than dropped into a gallery.
+Three documents read these figures and are named in the prose below: the **talk**
+(`talk_content.py`), which builds the English talk; the **deck** (`deck_content.R`), the Spanish
+deck, which keeps a much fuller appendix gallery; and the **book**, the method book in `04_metodo/`.
+None of the three is published with this repository, so the references to them cannot be followed
+from a clone.
 
 ---
 
 ## Folders
 
-| | What belongs in it | Figures |
+| Folder | What belongs in it | Figures |
 |---|---|---:|
 | `01_inputs` | The cropland mask, and where the weather stations fall inside it | 5 |
 | `02_method` | What a chill portion is, and what each stage of the chain does to the numbers | 9 |
@@ -74,7 +77,7 @@ line offering one more level of detail.
 One interpolated Safe Winter Chill surface per situation, the layer underneath the `fig20` viability
 maps. All fifteen come from `30_cropland_viability_national.R` and all fifteen sit in the deck's
 gallery; the book names the family in prose without embedding it. What the set is worth lies in the
-grid being complete, so several panels are unremarkable read on their own.
+grid being complete, so several panels are unremarkable when read on their own.
 
 | Figure | What it shows | Produced by |
 |---|---|---|
@@ -101,7 +104,7 @@ grid being complete, so several panels are unremarkable read on their own.
 The `fig20` series classifies every cropland cell as viable for both cultivars, for 'Búlida Precoz'
 only, or for neither. Its fifteen panels cover the same situations as `fig21`, one layer further on.
 All of them are in the talk's annex contact sheet and in the deck gallery; four are shown full-size
-on talk slides, and those are marked.
+on talk slides.
 
 | Figure | What it shows | Produced by |
 |---|---|---|
@@ -118,7 +121,7 @@ on talk slides, and those are marked.
 | `fig20_11_viability_ssp245_near.png` | SSP2-4.5, 2041-2070, the only panel covering that cell of the matrix | `30_cropland_viability_national.R` |
 | `fig20_12_viability_ssp370_near.png` | SSP3-7.0, 2041-2070, 90.6% both | `30_cropland_viability_national.R` |
 | `fig20_13_viability_ssp126_far.png` | SSP1-2.6, 2071-2100, the optimistic end of the end-of-century row | `30_cropland_viability_national.R` |
-| `fig20_14_viability_ssp245_far.png` | SSP2-4.5, 2071-2100, 87.9% both, the bridge across which the "neither" class jumps to 9.5% | `30_cropland_viability_national.R` |
+| `fig20_14_viability_ssp245_far.png` | SSP2-4.5, 2071-2100, 87.9% both with 2.4% neither, the last step before the "neither" class jumps to 9.5% | `30_cropland_viability_national.R` |
 | `fig20_15_viability_ssp370_far.png` | SSP3-7.0, 2071-2100. The headline: 80.4% both, 10.1% only-Precoz, 9.5% neither, the point where the mutant stops compensating | `30_cropland_viability_national.R` |
 | `fig22_viability_bars.png` | The same three classes as bars, so the windows can be read against each other without counting pixels | `30_cropland_viability_national.R` |
 | `fig30_time_of_emergence_ssp370.png` | The first window in which each cell drops below the requirement, against "already below" and "does not happen this century" | `52_talk_figures.R` |
@@ -155,7 +158,7 @@ on talk slides, and those are marked.
 | `fig42_sign_agreement_ssp370.png` | Viability fill plus hatching, against a six-level agreement scale | `54_model_figures.R` |
 | `fig48_agreement_scale_ssp370.png` | Agreement alone, with no viability fill competing for the colour channel, so all six levels show | `54_model_figures.R` |
 | `fig54_model_ranking_ssp370.png` | The eleven models ranked by how much land each one loses | `59_model_ranking.R` |
-| `fig55_model_sensitivity.png` | Whether that ranking follows published model sensitivity, to which the script header records the answer as only half yes | `75_model_sensitivity.R` |
+| `fig55_model_sensitivity.png` | Whether that ranking follows published model sensitivity, to which the script header records the answer as only half yes | `75_model_sensitivity.R` (not published) |
 
 `fig39` and `fig48` look like the same map and are not. `fig39` keeps the viability fill and hatches
 the cells below 80% agreement; `fig48` drops the fill to free the colour channel for the full
@@ -201,11 +204,13 @@ grounds:
   better;
 - **no_value**, where there is nothing to read. None of the fourteen fell into this last one.
 
-All fourteen carry Spanish titles and legends. That is a translation that did not reach the rendered
-output, not a scientific defect. The scripts were translated in late August; these files were
-written before that pass, in July or from a working tree that had not caught up. Where the values
-were checked they hold. `fig4_distribucion_swc.png`, for one, has an observed median near 62 CP,
-which matches the DM_JOSE 1987 re-run.
+Seven of the fourteen carry Spanish titles and legends. That is a translation that did not reach the
+rendered output, not a scientific defect. Those seven (`fig1` to `fig5`, `fig7`) were written in
+July, before the scripts were translated in late August. The other seven (`fig9` to `fig15`) were
+re-rendered in English on 27 August and landed back here, because their numbers are still mapped to
+`_superseded` in `FIG_GROUPS`. Where the values were checked they hold.
+`fig4_distribucion_swc.png`, for one, has an observed median near 62 CP, which matches the DM_JOSE
+1987 re-run.
 
 | Figure | Ground | Replaced by |
 |---|---|---|
@@ -225,20 +230,21 @@ which matches the DM_JOSE 1987 re-run.
 | `fig15_murcia_cropland_binary_500m_stations.png` | outdated | `fig19_murcia_cropland_binary_100m_stations.png` |
 
 Re-running the scripts would not repair all of them. `61_chill_maps_murcia.Rmd`, which draws `fig1`
-to `fig4`, now sets English titles, but Spanish literals survive in its code: the scenario facet
-labels at line 64 (`Observado 1991-2020`, `Histórico 1985-2014`) and the cropland legend at line 91
-(`cultivo (211-223)`, `heterogéneo (241-244)`), so a re-knit would leave `fig2` half translated.
-`67_cropland_density_stations.R`, which draws `fig12` to `fig15`, is no longer in that position: it
+to `fig4`, now sets English titles, but Spanish literals survive in its code: the scenario labels at
+line 64 (`Observado 1991-2020`, `Histórico 1985-2014`), which feed the facets of `fig2` and `fig3`
+and the x axis of `fig4`, and the cropland legend at line 91 (`cultivo (211-223)`,
+`heterogéneo (241-244)`), which feeds `fig1`. A re-knit would leave all four half translated.
+`67_cropland_density_stations.R`, which draws `fig8` to `fig15`, is no longer in that position: it
 was translated and re-run on 27 August, and its binary legend now reads `non-cropland` / `cropland`.
 
 `fig8_spain_cropland_density_stations.png` was on this list too, on the same ground, and is the one
 that came back. That script was translated on 27 August and re-run the same day, which was enough.
 It now lives in `01_inputs/` and is published with the rest of that folder.
 
-Nine of the fourteen are still named in the deck's appendix gallery (`deck_content.R:278-282`), and
-two more sit on body slides instead: `fig3_case_study` at `deck_content.R:44` and
-`fig1_contexto_suelo` at `:83`. All eleven references need editing before this folder can be treated
-as gone.
+Nine of the fourteen are still named in the deck's appendix gallery, and two more sit on body slides
+instead: `fig3_case_study` and `fig1_contexto_suelo`. All eleven references need editing before this
+folder can be treated as gone, and they live in the deck builder, which is not published with this
+repository.
 
 ---
 

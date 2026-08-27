@@ -25,12 +25,12 @@ PKGS <- c(
   # spatial
   "terra", "sf", "mapSpain", "tidyterra",
   # figures
-  "ggplot2", "viridis", "patchwork",
+  "ggplot2", "viridis", "patchwork", "ggrepel",
   # readers and encoders used by the deck builders
   "readxl", "png", "jpeg", "base64enc",
-  # only for 10_soil_criterion_compare.R, which downloads a DEM
+  # only for 64_soil_criterion_compare.R, which downloads a DEM
   "elevatr",
-  # only to knit 08_chill_maps_murcia.Rmd
+  # only to knit 61_chill_maps_murcia.Rmd
   "knitr", "rmarkdown"
 )
 
@@ -73,6 +73,6 @@ if (length(bad)) {
 #                                r-fields r-pls r-kendall r-httr r-jsonlite r-ncdf4 r-data.table
 #   Rscript -e "install.packages('chillR', repos='https://cloud.r-project.org')"
 #
-# Only scripts 14 and 15 run there, and they are uploaded as loose files rather than as a clone,
-# so 15 deliberately does not depend on 00_paths.R.
+# Only scripts 10 and 20 run there, and they are uploaded as loose files rather than as a clone,
+# so 20 deliberately does not depend on 00_paths.R.
 # ---------------------------------------------------------------------------------------

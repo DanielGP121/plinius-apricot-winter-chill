@@ -10,8 +10,10 @@ Point `PLINIUS_DATA` at wherever you put them:
 export PLINIUS_DATA=/path/to/plinius_data
 ```
 
-Every R script resolves paths through `01_scripts/00_paths.R`, which aborts on the first line with
-instructions if that variable is missing, rather than failing later inside a raster call.
+Every R script resolves paths through `01_scripts/00_paths.R`, which aborts with instructions the
+first time a script asks for external data, rather than failing later inside a raster call. The one
+exception is `20_chill_national_parallel.R`, the national chain, which takes `--data` and `--obs`
+on the command line instead.
 
 ## Expected layout
 
@@ -19,12 +21,16 @@ instructions if that variable is missing, rather than failing later inside a ras
 $PLINIUS_DATA/
 ├── proyecciones_peninsula/       88 NetCDF, ~15 GB   PNACC AR6 projections (script 10 downloads them)
 ├── observado/                    2 NetCDF            PNACC observational archive 1975-2020
-├── corine/                       ~1 GB unzipped      CORINE Land Cover 2018, 100 m raster
+├── corine/                       ~370 MB unzipped    CORINE Land Cover 2018, 100 m raster
 ├── cieza_cebas/                  19 MB               Cieza11-25.xlsx, CEBAS orchard series
-└── tables/                                          only for the Murcia test-run (scripts 62-68)
-    ├── murcia/stations.csv
-    └── peninsula/stations.csv
+└── tables/                                           only for scripts 61, 64, 67 and 68
+    ├── murcia/     stations.csv, chill_slice/, stations_cultivable_{strict,broad}.csv
+    └── peninsula/  stations.csv
 ```
+
+Nothing under `tables/` is downloaded. `01_scripts/12_pnacc_to_tables.py` writes the station lists
+and the daily slices from the NetCDFs above, and `01_scripts/62_cropland_filter.py` writes the two
+cultivable lists from `stations.csv` and the CORINE raster.
 
 ## How to obtain each one
 
@@ -34,12 +40,13 @@ Public, no credentials. `01_scripts/10_ladon_download_thredds.sh` fetches all 88
 AdapteCCa THREDDS server. It takes hours and 15 GB, so run it where the computation will happen:
 
 ```bash
-bash 10_ladon_download_thredds.sh /path/to/proyecciones_peninsula
+bash 01_scripts/10_ladon_download_thredds.sh /path/to/proyecciones_peninsula
 ```
 
-**Use this route, not the portal's download form.** They serve the same product over different
-station sets, 3460 through THREDDS and 3044 through the form, so results from the two do not
-reconcile. This is measured and explained in `info/`.
+**Use this route, not the portal's download form.** The two routes serve the same product over
+different station sets, 3460 through THREDDS and 3044 through the form, so results from the two do
+not reconcile. This is measured in `01_scripts/57_attrition_funnel.R` and tabulated in
+`02_outputs/tables/attrition_funnel_numbers.csv`.
 
 ### PNACC observational archive 1975-2020 (required for the observed record)
 
@@ -54,18 +61,23 @@ Free personal key from `opendata.aemet.es`, valid three months. Then:
 
 ```bash
 export AEMET_API_KEY='your-key'
-python3 01_scripts/11_aemet_observed_download.py --stations 00_data/stations_obs.txt \
+python3 01_scripts/11_aemet_observed_download.py --census --stations 00_data/stations_obs.txt \
+        --census-out stations_recent.txt
+python3 01_scripts/11_aemet_observed_download.py --stations stations_recent.txt \
         --out obs_api --from 1995 --to 2025 --chunk-months 6 --workers 4
 python3 01_scripts/11_aemet_observed_download.py --merge --out obs_api --csv observed_1995_2025.csv
 ```
 
-Expect roughly a day and a half: the API caps requests at six months each, so 31 years is 62 calls
-per station across 666 stations, under a rate limit of about 50 calls a minute. The download
-resumes, so an interrupted run can simply be relaunched.
+The census costs one request per candidate station and writes the list of those that still report,
+which is what the download should run on. Expect roughly a day and a half for the download: the API
+caps requests at six months each, so 31 years is 62 calls per station across 666 stations, under a
+rate limit of about 50 calls a minute. It resumes, so an interrupted run can simply be relaunched.
 
 Two things worth knowing before relying on it. Only 703 of the 3044 archive stations exist in
-AEMET's climatological inventory and 666 still report, so this covers 22% of the network. And it is
-thin going backwards: only 131 stations reach 1995, with 293 starting in 2008-2009.
+AEMET's climatological inventory as the API serves it (the `--probe` pass measures this), and 666
+still report, so this covers 22% of the network. The public mirror published as
+`02_outputs/tables/aemet_station_inventory_public.csv` is a shorter list and matches 646 of them.
+And it is thin going backwards: only 131 stations reach 1995, with 293 starting in 2008-2009.
 
 ### CORINE Land Cover 2018 (required for every surface figure)
 
@@ -88,14 +100,15 @@ Cite that paper if you use it.
 
 The chill model itself is missing from the repository. It implements the Dynamic Model under the
 Fishman et al. (1987) parametrisation, it was written by J. A. Egea, and this project has no
-licence to redistribute it. Scripts 60, 20, 22, 44 and 70 need it and fail with instructions when
-it is absent.
+licence to redistribute it. Scripts 22, 44, 53 and 60 need it and fail with instructions when it is
+absent; `20_chill_national_parallel.R` looks for it beside itself and dies with a plain R error
+instead.
 
-Two ways forward. Request the file from the authors and drop it in `01_scripts/`, or point
-`PLINIUS_DM` at it. Or write the equivalent: it is chillR's `Dynamic_Model` with the constants from
-the 1987 paper,
+Two ways forward. Either request the file from the authors, dropping it in `01_scripts/` (the only
+route script 20 understands) or pointing `PLINIUS_DM` at it, or write the equivalent: it is
+chillR's `Dynamic_Model` with the constants from the 1987 paper:
 
-    E0 = 4457.8, E1 = 10161.9, A0 = 419700, A1 = 1.797e14, slope = 1.6, Tf = 277
+    E0 = 4457.8, E1 = 10161.9, A0 = 419700, A1 = 1.797e14, slope = 1.6, Tf = 277.
 
 **chillR's own defaults will not do.** Those are the 1988 parametrisation, and on the Cieza series
 the two differ by 6.94 chill portions on average, which is half the gap between the two cultivars

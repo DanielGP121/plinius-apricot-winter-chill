@@ -15,7 +15,7 @@ Murcia, 8 October 2026). It computes winter chill from Spanish station data, obs
 cultivable land** rather than as a count of weather stations.
 
 > Work in progress towards the talk. The numbers below are current as of August 2026 and reconcile
-> with the tables in `02_outputs/`.
+> with the tables in `02_outputs/tables/`.
 
 ---
 
@@ -39,8 +39,8 @@ than the areas themselves.
 
 ```bash
 git clone <this repo> && cd <this repo>
-Rscript install_deps.R                       # 18 R packages; see the file for the chillR recipe
-conda env create -f environment.yml          # Python side, only for scripts 11, 12, 51, 62, 63
+Rscript install_deps.R                       # 19 R packages; see the file for the chillR recipe
+conda env create -f environment.yml          # Python side, only for scripts 12, 51, 62, 63 (11 uses the standard library)
 export PLINIUS_DATA=/path/to/plinius_data    # where the input data lives
 ```
 
@@ -52,8 +52,9 @@ rather than halfway through with something cryptic.
 Rscript 01_scripts/30_cropland_viability_national.R   # interpolate, cross with CORINE, classify
 ```
 
-That one runs from `02_outputs/chill_all_windows.csv`, which is in this repository, so the maps and
-the areas above reproduce without access to the cluster.
+That one runs from `02_outputs/tables/chill_all_windows.csv`, which is in this repository, so the maps and
+the areas above reproduce without access to the cluster. It does still need the CORINE raster under
+`PLINIUS_DATA`, a free download, and [`00_data/README.md`](00_data/README.md) says where to get it.
 
 ---
 
@@ -102,9 +103,9 @@ flowchart TD
     D4 --> E1
 ```
 
-Reading 15 GB of NetCDF and computing chill for 3460 stations across 45 model-scenario combinations
-takes about a day, so it happens where the data lives; what comes back are chill tables of a few
-megabytes.
+Reading 15 GB of NetCDF and computing chill across 45 combinations, the 11 models by 4 experiments
+over 3460 stations plus the observed archive over 3044, takes about a day, so it happens where the
+data lives; what comes back are chill tables of a few megabytes.
 
 ```mermaid
 flowchart LR
@@ -123,24 +124,25 @@ flowchart LR
 ## Parameters
 
 Each value is read from the line named beside it, so any of them can be checked against the code in
-one step.
+one step. The two rows naming `DM_JOSE.R` are the exception: that file is not in this repository
+(see Not included).
 
 | | Value | Set at |
 |---|---|---|
 | Chill model | Dynamic Model, Fishman et al. (1987) parametrisation | `DM_JOSE.R:4-5` |
 | Model constants | E0 4457.8, E1 10161.9, A0 419700, A1 1.797e14, slope 1.6, Tf 277 | `DM_JOSE.R:4-5` |
 | Chill season | Julian day 305 to 59, 1 November to 28 February | `20_chill_national_parallel.R:116` |
-| Safe Winter Chill | 10th percentile of seasonal chill portions, across seasons within a station | `15_...:346` |
-| Season kept if | at least 85% of days present | `15_...:116, :339` |
-| Station kept if | no more than 40% missing in either variable, and 3 or more valid seasons | `15_...:117, :344` |
-| Fill-value guard | values outside -90 to 70 C masked; four models ship -999 undeclared | `15_...:118, :271` |
-| Baseline splice | historical to 2014, then SSP2-4.5 from 2015 | `15_...:159, :295-302` |
-| Analysis windows | 1995-2020, then 2021-2040, 2041-2070, 2071-2100 | `15_...:126-132` |
+| Safe Winter Chill | 10th percentile of seasonal chill portions, across seasons within a station | `20_chill_national_parallel.R:346` |
+| Season kept if | at least 85% of days present | `20_chill_national_parallel.R:116, :339` |
+| Station kept if | no more than 40% missing in either variable, and 3 or more valid seasons | `20_chill_national_parallel.R:117, :344` |
+| Fill-value guard | values outside -90 to 70 C masked; four models ship -999 undeclared | `20_chill_national_parallel.R:118, :271` |
+| Baseline splice | historical to 2014, then SSP2-4.5 from 2015 | `20_chill_national_parallel.R:159, :295-302` |
+| Analysis windows | 1995-2020, then 2021-2040, 2041-2070, 2071-2100 | `20_chill_national_parallel.R:126-127, :121` |
 | Ensemble statistic | median across the 11 models, at the station, before interpolation | `30_cropland_viability_national.R:66` |
-| Interpolation | IDW, power 2, 50 km radius, at most 12 neighbours; the radius *is* the mask | `19_...:43-45, :151` |
-| Grid | 1 km, EPSG:3035; cell area from the realised resolution, not the nominal one | `19_...:37-40`, `00_corine.R:43` |
-| Cropland | CORINE 2018 classes 211-244 excluding 231; each cell weighted by its cropland fraction | `00_corine.R:24-28` |
-| Cultivar thresholds | 47.5 and 33.7 chill portions, both with a standard error of 3.3 | `19_...:41-42` |
+| Interpolation | IDW, power 2, 50 km radius, at most 12 neighbours; the radius *is* the mask | `30_cropland_viability_national.R:43-45, :151` |
+| Grid | 1 km, EPSG:3035; cell area from the realised resolution, not the nominal one | `30_cropland_viability_national.R:37-40`, `00_corine.R:43` |
+| Cropland | CORINE 2018 classes 211-244 excluding 231; each cell weighted by its cropland fraction | `00_corine.R:24-28`, `30_cropland_viability_national.R:124` |
+| Cultivar thresholds | 47.5 and 33.7 chill portions, both with a standard error of 3.3 | `30_cropland_viability_national.R:41-42`, `31_threshold_sweep_cropland.R:61` |
 | Model agreement | hatched where fewer than 9 of 11 models agree on the class, the AR6 80% convention | `00_hatch.R:28, :107-113` |
 
 ---
@@ -150,17 +152,21 @@ one step.
 | | What it holds |
 |---|---|
 | `chill_all_windows.csv` | The table everything else comes from. 462,808 rows, one per station, model and situation: station id and coordinates, the scenario and the time window with its period, how many seasons passed the completeness filter, and for each combination the mean chill portions, the Safe Winter Chill (the 10th percentile across those seasons), and the same two in Utah chill units. 3,460 stations x 11 models x 12 situations, plus the observed rows |
-| `chill_obs_seasons.csv`, `chill_obs_seasons_1975.csv` | The observed record season by season, from the PNACC archive. The 1975 file is the long version behind the fifty-winter series |
+| `chill_obs_seasons.csv`, `chill_obs_seasons_1975.csv` | The observed record season by season, from the PNACC archive. The 1975 file is the long version, 1976 to 2020, and the fifty-winter series comes from splicing the OpenData seasons onto it |
 | `chill_api_seasons.csv` | The same shape, computed from the AEMET OpenData download that extends the record to 2025 |
 | `idw_crossval.csv` | Leave-one-out error of the interpolation, station by station |
 | `pipeline_runs.csv`, `station_walkthrough_km2.csv` | The model x experiment x window combinatorics, and one station followed through the whole chain |
-| 38 metric tables | One or two kilobytes each, `(metric, value)` pairs. Every figure in the talk reads its numbers from one of these at build time rather than having them typed in |
+| 12 metric tables | One or two kilobytes each, `(metric, value)` pairs. Every figure in the talk reads its numbers from one of these at build time rather than having them typed in |
+| 26 further tables | Areas, checks, the observed record and counts of the run, catalogued one by one in `02_outputs/tables/README.md` |
+
+The figures are here too, in `02_outputs/figures_chill/`, filed in seven folders by what they show
+and inventoried in a README of their own.
 
 Not here: the per-window chill runs, which `21_merge_chill_tables.R` merges into
 `chill_all_windows.csv`; the raw AEMET API download, superseded by the seasonal tables above; the
-figures and the animations, rebuilt by scripts 30 and 50 to 59; and the station coordinates
-compiled by the regional agrometeorological services, which arrived through a third party with no
-terms of transfer.
+animations, rebuilt by scripts 50 and 51; the fourteen figures that later work retired; and the
+coordinates of the 270 stations run by the regional agrometeorological services, which arrived
+through a third party with no terms of transfer.
 
 ---
 
@@ -168,11 +174,13 @@ terms of transfer.
 
 All in [`01_scripts/`](01_scripts/). The number says which stage a script belongs to, and there is
 room inside each block for the next one. Every file carries a header stating what it does, what it
-needs and what it writes.
+needs and what it writes. One script sits outside the numbering: `legacy/build_aemet_matching.py`,
+the abandoned first stage of the project, which still writes the station inventory that script 40
+reads. It has a README of its own in [`01_scripts/legacy/`](01_scripts/legacy/).
 
 | | Script | Runs on | What it does |
 |---|---|---|---|
-| **00 shared** | `00_paths.R` | — | Resolves every path; sourced by the rest |
+| **00 shared** | `00_paths.R` | — | Resolves every path; sourced by every R script that runs locally. Script 20 goes to the HPC as a loose file and deliberately does not depend on it |
 | | `00_corine.R`, `00_hatch.R`, `00_map_layout.R` | — | Cropland mask and cell area, AR6 agreement hatching, figure geometry |
 | | `DM_JOSE.R` | — | The chill model. Not in this repository, see below |
 | **10 acquisition** | `10_ladon_download_thredds.sh` | HPC | 88 NetCDF from THREDDS |
@@ -191,7 +199,7 @@ needs and what it writes.
 | | `43_observed_long_record.R` | local | 1976-2025: trend, ranking, blocks |
 | | `44_cieza_independent_check.R` | local | Check against a series outside the AEMET network |
 | **50 figures** | `50_scenario_frames.R`, `51_make_gifs.py` | local | Animation frames and the GIFs built from them |
-| | `52` to `59` | local | Talk and didactic figures, the model figures, the pipeline diagram, the attrition funnel, the data timeline, the model ranking |
+| | `52` to `59` | local | Talk and didactic figures, the model figures, the validation figures, the pipeline diagram, the attrition funnel, the data timeline, the model ranking |
 | **60 Murcia test-run** | `60_chill_murcia.R`, `61_chill_maps_murcia.Rmd` | local | Regional chill and its report |
 | | `62_cropland_filter.py`, `63_soil_decision_map.py`, `64_soil_criterion_compare.R` | local | Soil criterion by CORINE buffer, and the comparison that settled it |
 | | `65` to `68` | local | Cropland maps at 500 m and 100 m, national and regional |

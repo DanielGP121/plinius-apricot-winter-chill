@@ -6,7 +6,7 @@ repository README is the exception: it is written by hand and its result table t
 numbers in it come from these same files. Any figure asserted anywhere in the project can therefore
 be traced back to a row here, and checked from a clone without access to the cluster. Fifty tables
 and nine run logs, moved out of `02_outputs/` in August 2026 so that opening that folder shows the
-shape of the output instead of sixty loose files.
+shape of the output instead of fifty-nine loose files.
 
 Read a file's header before using it. Several tables share a column layout and differ only in which
 window they cover, and the `situation` column, not `scenario`, is what identifies a period.
@@ -16,7 +16,7 @@ window they cover, and the `situation` column, not `scenario`, is what identifie
 **`chill_all_windows.csv`** is the table everything else comes from. One row per station, model and
 situation, carrying mean chill portions, Safe Winter Chill (the 10th percentile across seasons) and
 both again in Utah units. Fourteen situations: twelve model ones at 3,460 stations x 11 models,
-38,060 rows each, plus two observed ones at 3,044 stations. Fourteen scripts read it, and every map,
+38,060 rows each, plus two observed ones at 3,044 stations. Thirteen scripts read it, and every map,
 every area and every per-model figure descends from it. Script 21 assembles it from the five
 per-window runs, and the arithmetic is checkable: 269,464 + 114,180 + 38,060 + 38,060 + 3,044 =
 462,808 rows.
@@ -35,8 +35,9 @@ is the number that decides whether the method is good enough for the question be
 
 ## What is published
 
-45 of the 59 files are versioned. `.gitignore` names each one on its own line rather than opening
-the folder wholesale, so a new output has to be added deliberately instead of being swept in.
+Forty-five of the 59 files are versioned. `.gitignore` names each one on its own line rather than
+opening the folder wholesale, so a new output has to be added deliberately instead of being swept
+in.
 
 Out on purpose: the five per-window chill runs (`chill_national`, `chill_present`, `chill_near`,
 `chill_current`, `chill_obs1995`). Script 21 merges them into `chill_all_windows.csv`, so shipping
@@ -50,17 +51,19 @@ between publishing a result and publishing a claim.
 
 ## Contents
 
-Scripts are given by their number prefix; full names are in `01_scripts/`. A dash in the last column
-means nothing in the pipeline reads that file: it is terminal, and exists to back a claim.
+Scripts are given by their number prefix; full names are in `01_scripts/`, except 70 to 76, which
+are not in the repository. A dash in the last column means nothing in the pipeline reads that file:
+it is terminal, and exists to back a claim.
 
 ### The chill tables
 
-The master table and the five cluster runs it is assembled from. All six share the same columns,
-apart from the four situation keys the merge adds.
+The master table and the five cluster runs it is assembled from. Only the master table is
+published; the five runs are listed here for completeness. All six share the same columns, apart
+from the four situation keys the merge adds.
 
 | | What it is | Written by | Read by |
 |---|---|---|---|
-| `chill_all_windows.csv` | 462,808 rows, 49 MB. The canonical chill table: situation, scenario, window, period, its class (observed, historical, model baseline, current, future), whether the window tiles the century, model, station, coordinates, seasons kept, mean CP, Safe Winter Chill, and the two Utah equivalents | 21 | 30, 31, 32, 40, 50, 52 to 59, 70 |
+| `chill_all_windows.csv` | 462,808 rows, 49 MB. The canonical chill table: situation, scenario, window, period, its class (observed, historical, model baseline, current, future), whether the window tiles the century, model, station, coordinates, seasons kept, mean CP, Safe Winter Chill, and the two Utah equivalents | 21 | 30, 31, 32, 40, 50, 52 to 59 |
 | `chill_national.csv` | 269,464 rows. The default window set as it came off the cluster: historical 1985-2014, the three SSPs at 2041-2070 and at 2071-2100, and the observed 1991-2020 reference | 20 `--windows default` | 21 |
 | `chill_near.csv` | 114,180 rows. The three SSPs at 2021-2040, the AR6 near term, which the default set leaves unanalysed | 20 `--windows near` | 21 |
 | `chill_present.csv` | 38,060 rows. Model baseline 1995-2020, historical spliced to an SSP across 2014/2015, so model bias reads against the observed period without a mismatch of years | 20 `--windows present` | 21 |
@@ -77,21 +80,22 @@ as climate.
 
 | | What it is | Written by | Read by |
 |---|---|---|---|
-| `chill_obs_seasons.csv` | 79,144 rows. The PNACC observed archive season by season, 1995-2020 | 20 `--per-season` | 22, 41, 42 |
-| `chill_obs_seasons_1975.csv` | 136,980 rows. The long version, 1976-2020, behind the fifty-winter series | 20 `--per-season --years 1975,2020` | 43, 44, 53, 55, 58 |
-| `chill_api_seasons.csv` | 13,613 rows. The same shape, from the AEMET OpenData download that carries the record to 2025 | 22 | 41, 42, 43, 44, 57, 58 |
+| `chill_obs_seasons.csv` | 79,144 rows. The PNACC observed archive season by season, 1995-2020 | 20 `--windows obs --per-season` | 22, 41, 42 |
+| `chill_obs_seasons_1975.csv` | 136,980 rows. The long version, 1976-2020, behind the fifty-winter series | 20 `--windows obs --per-season --years 1975,2020` | 43, 44, 53, 55, 58 |
+| `chill_api_seasons.csv` | 13,613 rows. The same shape, from the AEMET OpenData download that carries the record to 2025. It also holds the incomplete 2025/26 winter, which the 85% completeness rule drops | 22 | 41, 42, 43, 44, 57, 58 |
 | `observed_annual_series.csv` | 50 rows. One winter per row, 1976-2025: stations contributing, mean chill, and where that winter ranks among the mild ones | 43 | 44, 52 |
 | `observed_long_record_summary.csv` | 31 rows, `block/metric/value`. The 1976-2020 baseline, the 2021-2025 anomaly and its ranking, autocorrelation at three lags, how well the 665-station panel stands in for the 3,044, and three trend fits with their p-values | 43 | 52 |
 | `observed_spliced_swc.csv` | 665 rows. Per station, Safe Winter Chill over 1995-2020 against 1995-2025, so the effect of splicing five more winters on is visible station by station | 42 | 43 |
 | `observed_spliced_summary.csv` | 3 rows. The same for three subsets of the network | 42 | — |
 | `observed_swc_by_window.csv` | 4 rows. Median Safe Winter Chill under four definitions of the observed period. This is how the choice of window is defended | 43 | — |
 | `observed_panel_sensitivity.csv` | 3 rows. The recent anomaly recomputed three ways (simple mean, balanced panel, per-station anomaly) to show the answer does not turn on which | 43 | — |
-| `aemet_station_inventory_public.csv` | 784 rows. AEMET's public station list: name, province, coordinates, altitude. The only source of elevation in the project, and joined on the station identifier it matches 708 of the 3,460 stations, 76 of its entries not being network stations at all, which is why script 40's elevation panel states its subset on the figure rather than in a footnote | `legacy/build_aemet_matching.py` | 40 |
+| `aemet_station_inventory_public.csv` | 784 rows. AEMET's public station list: name, province, coordinates, altitude. The only source of elevation for the national station network, and joined on the station identifier it matches 708 of the 3,460 stations, 76 of its entries not being network stations at all, which is why script 40's elevation panel states its subset on the figure rather than in a footnote | `legacy/build_aemet_matching.py` | 40 |
 
 ### The check tables
 
-Error, agreement between sources, and one independent series. Nothing here feeds a headline number.
-These are what a reviewer goes to when the headline looks too clean.
+Error, agreement between sources, and one independent series. Nothing here feeds the headline km²
+figures; the paired-source comparison does reach the observed anomaly through 42 and 43. These are
+what a reviewer goes to when the headline looks too clean.
 
 | | What it is | Written by | Read by |
 |---|---|---|---|
@@ -113,12 +117,12 @@ are km² of cropland, each cell weighted by its cropland fraction.
 
 | | What it is | Written by | Read by |
 |---|---|---|---|
-| `talk_numbers_cropland.csv` | 15 rows. Area and percentage in each of the three classes, per situation, with the median Safe Winter Chill. Every projected km² comes from here | 30 | 31, 52, 55, 56, 57, 70, 73, 74 |
+| `talk_numbers_cropland.csv` | 15 rows. Area and percentage in each of the three classes, per situation, with the median Safe Winter Chill. Every projected km² comes from here | 30 | 31, 52, 55, 56, 57, 70, 72, 73, 74 |
 | `per_model_cropland_km2.csv` | 121 rows. The same broken out model by model, including the rescued fraction that runs from 39.1% (UKESM1-0-LL) to 82.1% (IITM-ESM) at SSP3-7.0 far | 32 | 54, 73, 74 |
 | `model_agreement_summary.csv` | 11 rows. Per situation, the percentage of cells the models agree on by class and by sign of change, and how often they are unanimous | 32 | 54 |
 | `band_agreement_by_situation.csv` | 11 rows. Cropland where at least 9 of 11 models place the cell in the mutant's band, the AR6 80% convention, as km² and as a percentage of cropland | 76 | — |
 | `model_ranking_ssp370.csv` | 11 rows. The models ordered by how much chill they lose, by mean and by median, with baseline and far-window values | 59 | 75 |
-| `cropland_threshold_sweep.csv` | 1,404 rows. Viable km² at any chill requirement from 20 CP upwards, per situation. Answers the question for a cultivar other than these two | 31 | 70 |
+| `cropland_threshold_sweep.csv` | 1,404 rows. Viable km² at every chill requirement from 20 to 75 CP in half-portion steps, per situation. Answers the question for a cultivar other than these two | 31 | 70 |
 | `cropland_threshold_check.csv` | 12 rows. The sweep reconciled against the published areas. Largest discrepancy 0.01 km² | 31 | — |
 | `cropland_threshold_meta.csv` | 4 rows. Total cropland, realised cell area, IDW radius, thresholds swept | 31 | 70 |
 | `gif_frame_stats.csv` | 10 rows. Area by class for each animation frame, so an animation cannot contradict the slide next to it | 50 | — |
@@ -169,13 +173,18 @@ Not results. What was computed, and what was discarded on the way.
 These are console output captured from a run, not data. Nothing reads them and nothing should. They
 were kept because they record which run produced the files sitting beside them, and what it cost in
 wall-clock time. Most are in Spanish and name script numbers from before the August 2026
-renumbering, so `19_`, `31_` and `32_` in a log are today's 30, 50 and 51. They are not versioned.
+renumbering: `19_`, `28_`, `31_`, `32_`, `33_`, `34_`, `36_`, `37_`, `38_`, `39_` and `40_` in a log
+are today's 30, 31, 50, 51, 52, 53, 32, 54, 55, 56 and 57. Watch `40_`, which is today's 57 and not
+today's `40_idw_crossval.R`. They are not versioned.
 
 ## Re-running
 
-The move into `tables/` is not finished on the writing side. `tab_path()` in `00_paths.R` resolves
-here, and scripts 22, 32, 40, 50 and 52 to 59 go through it, but several still address `02_outputs/`
-directly and will drop their output one level up: 21 (`OUT <- OUT_DIR`), 30 (line 227), 31, 41 to 44,
-59 for `model_ranking_ssp370.csv`, 74, 75 and 76. Their readers match, so each chain is
-self-consistent on its own; it is the mixture that will catch you out. After re-running any of
-those, move the file down into `tables/`, or the scripts that do use `tab_path()` will not find it.
+Every table is written here through `tab_path()` in `00_paths.R`, and read back the same way, so
+re-running any script drops its output where the next one looks for it. Scripts 21 and 31 resolve
+`TAB_DIR` once at the top instead, which is the same folder.
+
+Two files stay one level up on purpose. `observed_1995_2025.csv.gz` is the raw AEMET download
+rather than a table, so it keeps the plain `out_path()`. And `22_chill_from_api.R` run with
+`--maxst` writes its truncated test output as `chill_api_seasons_maxst<n>.csv` outside `tables/`,
+because a short run is indistinguishable from a complete one once it is on disk and script 41 would
+otherwise join it without complaint.
