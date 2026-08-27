@@ -153,7 +153,7 @@ ggsave(fig_path("fig39_model_agreement_far.png"), g39, width = 15,
 # scenarios, because the baseline sheet is what lets an audience check that the models reproduce
 # the observed map before being asked to believe their futures.
 cat("3. fig40 small multiples\n")
-per_model_sheet <- function(sit, label) {
+per_model_sheet <- function(sit, label, order_sit = sit, out_sit = sit) {
   mm <- rbindlist(lapply(models, function(m) {
     p  <- d[situation == sit & model == m, .(lon, lat, SWC = safe_winter_chill_P10)]
     pv <- project(vect(as.data.frame(p), geom = c("lon", "lat"), crs = "EPSG:4326"),
@@ -165,7 +165,9 @@ per_model_sheet <- function(sit, label) {
   mm[, clase := factor(LAB[cls], levels = LAB)]
   # Ordered by how much the mutant rescues, so the sheet reads from the mildest model to the
   # harshest instead of alphabetically, which would be an arbitrary order over a real gradient.
-  ordm <- PM[situation == sit][order(-pct_rescued_of_lost)]$model
+  # Which situation supplies that order is a separate question once these sheets are animated;
+  # see order_anchor() below.
+  ordm <- PM[situation == order_sit][order(-pct_rescued_of_lost)]$model
   if (!length(ordm)) ordm <- models
   mm[, model := factor(model, levels = ordm)]
   g <- ggplot(mm) +
@@ -185,15 +187,40 @@ per_model_sheet <- function(sit, label) {
     # shortage of.
     theme(legend.position = "bottom", legend.text = element_text(size = 11),
           strip.text = element_text(face = "bold", size = 9.5))
-  ggsave(fig_path(sprintf("fig40_small_multiples_%s.png", sit)), g, width = 15,
+  ggsave(fig_path(sprintf("fig40_small_multiples_%s.png", out_sit)), g, width = 15,
          height = slot_height(15), dpi = 190, bg = "white")
-  cat(sprintf("   %s\n", sit))
+  cat(sprintf("   %s\n", out_sit))
 }
+# § 3a — Which situation supplies the panel order, now that these sheets are animation frames.
+# The rescue fraction reorders the eleven models from one window to the next, so a scenario played
+# as an animation over its four windows would shuffle its panels on every frame and the eye would
+# follow the models changing seats instead of the land changing colour. Every window of a scenario
+# therefore borrows the order of its own end-of-century sheet, which leaves the three far-term
+# sheets already in the deck exactly as they were.
+order_anchor <- function(sit) if (grepl("^ssp", sit)) paste0(sub("_.*$", "", sit), "_far") else sit
+ORDER_NOTE <- "panels in the end-of-century order of this scenario, so the four windows read as one sequence"
+
 SHEETS <- c(presente_present = "Baseline 1995-2020 · the starting point every future comes from",
+            ssp126_nearterm = paste("SSP1-2.6 · 2021-2040 ·", ORDER_NOTE),
+            ssp126_near     = paste("SSP1-2.6 · 2041-2070 ·", ORDER_NOTE),
             ssp126_far = "SSP1-2.6 · 2071-2100 · ordered from the largest to the smallest fraction of cropland the mutant still covers",
+            ssp245_nearterm = paste("SSP2-4.5 · 2021-2040 ·", ORDER_NOTE),
+            ssp245_near     = paste("SSP2-4.5 · 2041-2070 ·", ORDER_NOTE),
             ssp245_far = "SSP2-4.5 · 2071-2100 · ordered from the largest to the smallest fraction of cropland the mutant still covers",
+            ssp370_nearterm = paste("SSP3-7.0 · 2021-2040 ·", ORDER_NOTE),
+            ssp370_near     = paste("SSP3-7.0 · 2041-2070 ·", ORDER_NOTE),
             ssp370_far = "SSP3-7.0 · 2071-2100 · ordered from the largest to the smallest fraction of cropland the mutant still covers")
-for (s in names(SHEETS)) per_model_sheet(s, SHEETS[[s]])
+for (s in names(SHEETS)) per_model_sheet(s, SHEETS[[s]], order_anchor(s))
+
+# The baseline is one map, but the animations need it three times. An animation holds the eleven
+# panels still and lets the land change, so its opening frame has to carry the same arrangement as
+# the three future frames behind it, and each scenario orders them differently. These copies hold
+# the same baseline data in the end-of-century order of one scenario each and exist only to open an
+# animation. The sheet without a scenario suffix is the one the deck uses, ordered by its own
+# rescue fraction, and is left alone.
+for (sc in names(SSP_LAB))
+  per_model_sheet("presente_present", paste(SHEETS[["presente_present"]], "·", ORDER_NOTE),
+                  paste0(sc, "_far"), paste0("presente_present_", sc))
 
 # § 3b — the observed map, which is the only one of these that is measured rather than simulated.
 # It opens the results section: before any model is shown, this is what the instruments say.

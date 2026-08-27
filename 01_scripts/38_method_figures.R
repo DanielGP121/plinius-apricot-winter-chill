@@ -19,12 +19,12 @@
 # it carries, and the loss signal survives.
 #
 # Usage: Rscript 38_method_figures.R [--res 1000] [--station 7121A]
-# Requires: terra, sf, mapSpain, ggplot2, data.table, patchwork.
+# Requires: terra, sf, mapSpain, ggplot2, data.table, patchwork, ggrepel.
 # ---------------------------------------------------------------------------------------
 
 suppressWarnings(suppressMessages({
   library(terra); library(sf); library(mapSpain); library(ggplot2); library(data.table)
-  library(patchwork)
+  library(patchwork); library(ggrepel)
 }))
 
 args   <- commandArgs(trailingOnly = TRUE)
@@ -139,12 +139,12 @@ g44 <- ggplot(steps) +
             lineheight = 0.95) +
   geom_segment(data = steps[i < 6], aes(x = 1.7, xend = 1.7, y = y - 0.38, yend = y - 0.62),
                arrow = arrow(length = unit(0.16, "cm"), type = "closed"), colour = "grey45") +
-  annotate("text", x = 3.55, y = steps[i == 4]$y, hjust = 0, size = 3.9, colour = "#d7191c",
-           lineheight = 0.95,
-           label = "this is where the\nmodel spread is\nlost: it is brought\nback separately") +
-  coord_cartesian(xlim = c(0, 4.6), ylim = c(0.3, 6.8), expand = FALSE) +
-  labs(title = ttl("The map is the last of five collapses, not the first"),
-       subtitle = "Each stage cuts down the number of values. Knowing where each reduction happens is what lets you judge the result.") +
+  # The slide that shows this carries its own explanation beside the chain, so the chain no longer
+  # carries one of its own: the note against the fourth stage and the line of prose above the boxes
+  # said what the slide already says, and at projected size the repetition was what made it
+  # unreadable. The right-hand margin that note occupied goes back to the boxes.
+  coord_cartesian(xlim = c(0, 3.4), ylim = c(0.3, 6.8), expand = FALSE) +
+  labs(title = ttl("The map is the last of five collapses, not the first")) +
   theme_void(base_size = 14) +
   theme(plot.title = element_text(face = "bold", size = 17, hjust = 0),
         plot.subtitle = element_text(size = 12.5, colour = "grey30", hjust = 0),
@@ -165,9 +165,23 @@ delt <- rbindlist(lapply(c("ssp126_far", "ssp245_far", "ssp370_far"), function(s
 ds <- delt[, .(med = median(delta)), by = .(scen, model)]
 ds[, scen := factor(SSP_LAB[scen], levels = SSP_LAB)]
 
+# Unlabelled points say that the models disagree without saying which model is which, and the
+# argument of this figure is about the ends of the spread. Both ends of every row are named, and so
+# is any model standing clear of the rest; the middle stays anonymous, because eleven labels to a
+# row bury the points they are meant to identify. What counts as standing clear is measured against
+# each scenario's own spread, since SSP3-7.0 is more than twice as wide as SSP1-2.6 and a fixed
+# distance in chill portions would label everything on one row and nothing on another.
+setorder(ds, scen, med)
+ds[, gap := pmin(c(Inf, diff(med)), c(diff(med), Inf)), by = scen]
+ds[, lab := fifelse(med == min(med) | med == max(med) | gap > 0.15 * diff(range(med)),
+                    as.character(model), NA_character_), by = scen]
+
 g45 <- ggplot(ds, aes(med, scen, colour = scen)) +
   geom_vline(xintercept = 0, colour = "grey40") +
   geom_point(size = 3.4, alpha = 0.9) +
+  geom_text_repel(aes(label = lab), na.rm = TRUE, colour = "grey20", size = 3.2, seed = 42,
+                  nudge_y = 0.26, direction = "x", box.padding = 0.28, point.padding = 0.22,
+                  segment.colour = "grey70", segment.size = 0.3, min.segment.length = 0.4) +
   stat_summary(fun = median, geom = "point", shape = 124, size = 9, colour = "grey15") +
   scale_colour_manual(values = setNames(SSP_COL, SSP_LAB), guide = "none") +
   scale_x_continuous(labels = function(x) paste0(n_en(x, 0), " CP")) +

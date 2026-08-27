@@ -202,6 +202,26 @@ def footer(slide, source, page):
 
 
 # --- slide kinds -----------------------------------------------------------------------------
+def place_logos(slide, paths, y, *, h=Inches(0.42), gap=Inches(0.34), x=None):
+    """A row of institutional logos, each scaled to a common height rather than a common width.
+
+    Logos arrive at whatever aspect their owner published, so matching widths would make a square
+    mark tower over a horizontal lockup. Matching the cap height is what makes a row of them look
+    deliberate. Returns the x the row ended at.
+    """
+    x = MARGIN if x is None else x
+    for rel in paths:
+        path = ROOT / rel
+        if not path.exists():
+            sys.exit(f"missing logo: {path}\n  see assets/README.md")
+        with Image.open(path) as im:
+            iw, ih = im.size
+        w = int(h * iw / ih)
+        slide.shapes.add_picture(str(path), x, y, width=w, height=h)
+        x += w + gap
+    return x
+
+
 def s_cover(prs, d, page):
     # No accent bar and a 32 pt title: the working title is a full descriptive sentence rather
     # than a short phrase, so it needs three lines and the whole upper band of the page.
@@ -210,27 +230,63 @@ def s_cover(prs, d, page):
     write(tf, d["title"], size=32, bold=True, line=0.95)
     tf = txbox(slide, MARGIN, Inches(3.25), CONTENT_W - Inches(2.0), Inches(1.1))
     write(tf, d["subtitle"], size=17, colour=MUTED, line=1.15)
-    tf = txbox(slide, MARGIN, Inches(4.85), CONTENT_W, Inches(1.0))
+    tf = txbox(slide, MARGIN, Inches(4.85), CONTENT_W, Inches(1.3))
     write(tf, d["authors"], size=16, bold=True)
-    para(tf, d["affil"], size=11.5, colour=MUTED, space_after=0)
+    # The affiliations arrive as a list when there are more than two, because running three
+    # institutions onto one line is what made the earlier cover unreadable at the back of a room.
+    for line in (d["affil"] if isinstance(d["affil"], (list, tuple)) else [d["affil"]]):
+        para(tf, line, size=11.5, colour=MUTED, space_after=0)
     rect(slide, MARGIN, Inches(6.15), Inches(1.4), Emu(19050), BLUE)
     tf = txbox(slide, MARGIN, Inches(6.42), CONTENT_W, Inches(0.4))
     write(tf, d["venue"], size=12, colour=MUTED)
+    if d.get("logos"):
+        place_logos(slide, d["logos"], Inches(6.36), h=Inches(0.46),
+                    x=W - MARGIN - Inches(4.4))
     notes(slide, d["notes"])
 
 
 def s_section(prs, d, page):
+    """A divider carrying where the talk has got to and what the section answers.
+
+    A divider that only announces a heading spends a whole page on four words. `parts` and `at`
+    draw the run of sections with the current one filled, so a reader who put the deck down knows
+    where they are, and `asks` states the questions the section is about to answer, which is what
+    a listener actually needs before the evidence starts.
+    """
     slide = blank(prs)
     rect(slide, Emu(0), Emu(0), W, H, RGBColor(0xF4, 0xF6, 0xF8))
     rect(slide, Emu(0), Emu(0), Inches(0.22), H, BLUE)
-    tf = txbox(slide, Inches(1.1), Inches(2.5), Inches(1.2), Inches(1.4))
+    tf = txbox(slide, Inches(1.1), Inches(2.06), Inches(1.2), Inches(1.4))
     write(tf, d["n"], size=76, bold=True, colour=RGBColor(0xC9, 0xD3, 0xDC))
-    tf = txbox(slide, Inches(2.35), Inches(2.62), Inches(9.4), Inches(1.0))
+    tf = txbox(slide, Inches(2.35), Inches(2.18), Inches(9.4), Inches(1.0))
     write(tf, d["title"], size=34, bold=True)
+    y = Inches(3.28)
     lead = d.get("lead", "")
     if lead:
-        tf = txbox(slide, Inches(2.35), Inches(3.72), Inches(8.6), Inches(1.2))
+        h = est_h(lead, Inches(8.6), 16, line=1.2)
+        tf = txbox(slide, Inches(2.35), y, Inches(8.6), h)
         write(tf, lead, size=16, colour=MUTED, line=1.2)
+        y += h + Inches(0.22)
+    for ask in d.get("asks", ()):
+        rect(slide, Inches(2.35), y + Inches(0.07), Inches(0.09), Inches(0.09), BLUE)
+        h = est_h(ask, Inches(8.2), 13.5, line=1.2)
+        tf = txbox(slide, Inches(2.60), y, Inches(8.2), h)
+        write(tf, ask, size=13.5, colour=INK, line=1.2)
+        y += h + Inches(0.13)
+
+    # The run of sections along the foot: filled to here, hollow after it. Drawn from the same list
+    # on every divider, so a part that gets renamed cannot disagree with itself two slides later.
+    parts, at = d.get("parts"), d.get("at")
+    if parts and at:
+        pill_y = H - Inches(0.92)
+        gap = Inches(0.10)
+        pw = int((CONTENT_W - gap * (len(parts) - 1)) / len(parts))
+        for i, name in enumerate(parts, start=1):
+            px = MARGIN + (i - 1) * (pw + gap)
+            done = i <= at
+            rect(slide, px, pill_y, pw, Inches(0.055), BLUE if done else RULE)
+            tf = txbox(slide, px, pill_y + Inches(0.14), pw, Inches(0.3))
+            write(tf, name, size=9, bold=(i == at), colour=INK if i == at else FAINT)
     notes(slide, d.get("notes", ""))
 
 
@@ -350,6 +406,79 @@ def s_close(prs, d, page):
     p = write(tf, d["foot"], size=12.5, colour=MUTED)
     link_urls(p, size=12.5)
     notes(slide, d["notes"])
+
+
+def cover_crop(path, box_w, box_h):
+    """A copy of `path` centre-cropped to the aspect of the box, so it fills without stretching.
+
+    place_image() fits an image inside its box, which is right for a figure and wrong for a
+    photograph used as a panel: a 3:2 photo fitted into a tall panel leaves two thirds of it white.
+    Cropping to the box's aspect first means the panel is filled and nothing is distorted, at the
+    cost of losing the edges of the frame, which for a background photograph is what you want.
+    """
+    want = box_w / box_h
+    out = TRIM_DIR / f"{path.stem}_fill{round(want * 1000)}{path.suffix}"
+    if out.exists() and out.stat().st_mtime >= path.stat().st_mtime:
+        return out
+    TRIM_DIR.mkdir(parents=True, exist_ok=True)
+    with Image.open(path) as im:
+        im = im.convert("RGB")
+        w, h = im.size
+        if w / h > want:                       # too wide: trim the sides
+            new_w = int(h * want)
+            box = ((w - new_w) // 2, 0, (w - new_w) // 2 + new_w, h)
+        else:                                  # too tall: trim top and bottom
+            new_h = int(w / want)
+            box = (0, (h - new_h) // 2, w, (h - new_h) // 2 + new_h)
+        im.crop(box).save(out, quality=92)
+    return out
+
+
+def s_closing(prs, d, page):
+    """The last page of a talk: thanks and contact on the left, the crop on the right.
+
+    Deliberately the only slide in the deck with a photograph. Everything before it argues from
+    figures, and a room that has spent fifteen minutes reading maps should be looking at the tree
+    the maps are about when the questions start.
+    """
+    slide = blank(prs)
+    photo_w = Inches(5.35)
+    photo_x = W - photo_w
+    if d.get("photo"):
+        src = ROOT / d["photo"]
+        if not src.exists():
+            sys.exit(f"missing closing photo: {src}\n  see assets/README.md")
+        slide.shapes.add_picture(str(cover_crop(src, photo_w, H)), photo_x, Emu(0),
+                                 width=photo_w, height=H)
+    rect(slide, photo_x - Inches(0.06), Emu(0), Inches(0.06), H, BLUE)
+
+    left_w = photo_x - MARGIN - Inches(0.55)
+    rect(slide, MARGIN, Inches(1.30), Inches(1.4), Emu(19050), BLUE)
+    tf = txbox(slide, MARGIN, Inches(1.62), left_w, Inches(0.9))
+    write(tf, d["title"], size=40, bold=True, line=0.98)
+
+    y = Inches(2.72)
+    for pt in d.get("points", ()):
+        h = est_h(pt, left_w - Inches(0.26), 13, line=1.22)
+        rect(slide, MARGIN, y + Inches(0.06), Inches(0.09), Inches(0.09), BLUE)
+        tf = txbox(slide, MARGIN + Inches(0.26), y, left_w - Inches(0.26), h)
+        write(tf, pt, size=13, colour=INK, line=1.22)
+        y += h + Inches(0.20)
+
+    # The contact line is the one thing on this slide somebody might write down, so it sits on a
+    # tinted plate rather than loose in the margin, and the address is a live link in the PDF.
+    foot = d.get("foot")
+    if foot:
+        fh = est_h(foot, left_w - Inches(0.36), 12.5, line=1.24) + Inches(0.26)
+        rrect(slide, MARGIN, y + Inches(0.16), left_w, fh, PANEL)
+        tf = txbox(slide, MARGIN + Inches(0.18), y + Inches(0.29), left_w - Inches(0.36),
+                   fh - Inches(0.26))
+        p = write(tf, foot, size=12.5, colour=INK, line=1.24)
+        link_urls(p, size=12.5, colour=INK)
+
+    if d.get("logos"):
+        place_logos(slide, d["logos"], H - Inches(1.05), h=Inches(0.5))
+    notes(slide, d.get("notes", ""))
 
 
 def s_gallery(prs, d, page):
@@ -887,10 +1016,28 @@ def figure_of(d):
     return trimmed(ROOT / d["image"], d.get("crop"))
 
 
+def head(slide, d, *, slim=True):
+    """The slide's head: a title that names the subject, and optionally the finding under it.
+
+    Keeping the two apart is the whole point. `title` says what the slide is about, so a reader
+    scanning the deck can navigate it, and `kicker` says what to take away, so a reader who stops
+    on this slide does not have to work it out from the evidence. Written as one sentence in the
+    title, as the earlier decks did, the two jobs fight each other and the title stops being a
+    title.
+    """
+    y = title_slim(slide, d["title"]) if slim else title_block(slide, d["title"])
+    kick = d.get("kicker")
+    if kick:
+        h = est_h(kick, CONTENT_W, 13.5, line=1.18)
+        tf = txbox(slide, MARGIN, y - Inches(0.02), CONTENT_W, h)
+        write(tf, kick, size=13.5, colour=MUTED, line=1.18)
+        y += h + Inches(0.12)
+    return y
+
+
 def head_of(slide, d):
     """The title treatment a slide asks for: slim for v4, the taller block for the rest."""
-    return (title_slim(slide, d["title"]) if d.get("slim")
-            else title_block(slide, d["title"]))
+    return head(slide, d, slim=bool(d.get("slim")))
 
 
 def title_slim(slide, text, *, size=21, y=None):
@@ -956,7 +1103,7 @@ def chip(slide, x, y, w, text, *, size=9, fill=PANEL, colour=MUTED, bold=False, 
 def s_figure_max(prs, d, page):
     """One picture and its assertion. The picture takes whatever the title and caption leave."""
     slide = blank(prs)
-    y = title_slim(slide, d["title"])
+    y = head(slide, d)
     cap = d.get("caption")
     cap_h = est_h(cap, CONTENT_W, CAP_PT - 1, line=1.16, pad=0.10) if cap else Inches(0)
     box_h = H - y - Inches(0.64) - cap_h
@@ -1038,7 +1185,7 @@ def s_figure_note(prs, d, page):
     own, which four of them did not in the first build.
     """
     slide = blank(prs)
-    y = title_slim(slide, d["title"])
+    y = head(slide, d)
     path = figure_of(d)
     with Image.open(path) as im:
         aspect = im.size[0] / im.size[1]
@@ -1088,7 +1235,7 @@ def s_flow(prs, d, page):
     drawing it as one lets the parameter that governs each step sit on the step itself.
     """
     slide = blank(prs)
-    y = title_slim(slide, d["title"])
+    y = head(slide, d)
     steps = d["steps"]
     n = len(steps)
     arrow = Inches(0.20)
@@ -1139,7 +1286,7 @@ def s_flow(prs, d, page):
 def s_lanes(prs, d, page):
     """Two or three labelled lanes with chips inside. Where a step runs, not what it does."""
     slide = blank(prs)
-    y = title_slim(slide, d["title"])
+    y = head(slide, d)
     lanes = d["lanes"]
     foot = d.get("foot")
     foot_h = est_h(foot, CONTENT_W, 12, line=1.2) + Inches(0.24) if foot else Inches(0)
@@ -1194,7 +1341,7 @@ def s_cards(prs, d, page):
     what the open questions are.
     """
     slide = blank(prs)
-    y = title_slim(slide, d["title"])
+    y = head(slide, d)
     items = d["items"]
     foot = d.get("foot")
     foot_h = est_h(foot, CONTENT_W, 12, line=1.2) + Inches(0.22) if foot else Inches(0)
@@ -1236,10 +1383,12 @@ def s_cards(prs, d, page):
     col_w = int((CONTENT_W - gap * (n - 1)) / n)
     inner = col_w - Inches(0.52)
     body_pt = 12.5 if n <= 3 else 11.5
+    icon_h = Inches(1.24) if any(it.get("icon") for it in items) else Inches(0)
     card_h = min(avail,
                  Inches(0.30)
                  + max(est_h(it["head"], inner, 15, line=1.02) for it in items)
                  + Inches(0.10)
+                 + (icon_h + Inches(0.14) if icon_h else Inches(0))
                  + (Inches(0.52) if any(it.get("stat") for it in items) else Inches(0))
                  + (Inches(0.30) if any(it.get("bar") is not None for it in items) else Inches(0))
                  + max(est_h(it["body"], inner, body_pt, line=1.2) for it in items)
@@ -1253,6 +1402,16 @@ def s_cards(prs, d, page):
         tf = txbox(slide, x + Inches(0.26), y + Inches(0.30), inner, Inches(0.6))
         write(tf, it["head"], size=15, bold=True, line=1.02)
         yy = y + Inches(0.30) + est_h(it["head"], inner, 15, line=1.02) + Inches(0.10)
+        if icon_h:
+            # A card naming a dataset or a map is quicker to recognise by its picture than by its
+            # heading, so the thumbnail sits directly under the heading. The band is reserved on
+            # every card in the row, not only the ones carrying a picture: reserving it per card
+            # would leave the headline figures at two different heights across the row, which reads
+            # as a mistake rather than as a distinction. It is trimmed like any other figure, so a
+            # white border cannot eat the band.
+            if it.get("icon"):
+                place_image(slide, trimmed(ROOT / it["icon"]), x + Inches(0.26), yy, inner, icon_h)
+            yy += icon_h + Inches(0.14)
         if it.get("stat"):
             tf = txbox(slide, x + Inches(0.26), yy, inner, Inches(0.5))
             write(tf, it["stat"], size=25, bold=True, colour=accent, line=0.98)
@@ -1282,7 +1441,7 @@ def s_timeline(prs, d, page):
     they tile the century without a gap or an overlap.
     """
     slide = blank(prs)
-    y = title_slim(slide, d["title"])
+    y = head(slide, d)
     y0, y1 = d["span"]
     lab_w = Inches(2.3)
     ax_x = MARGIN + lab_w
@@ -1342,7 +1501,7 @@ def s_scale(prs, d, page):
     bands are visible at once, and a station or a scenario is a mark on it.
     """
     slide = blank(prs)
-    y = title_slim(slide, d["title"])
+    y = head(slide, d)
     lo, hi = d["span"]
     ax_x, ax_w = MARGIN + Inches(0.4), CONTENT_W - Inches(0.8)
     bar_h = Inches(0.95)
@@ -1388,12 +1547,232 @@ def s_scale(prs, d, page):
 
 FIG_DIR_NAME = "02_outputs/figures_chill"
 
+def s_problems(prs, d, page):
+    """What went wrong at each step, beside what was done about it, one row per problem.
+
+    A list of workarounds reads terribly as prose, and it is exactly what someone repeating the
+    method needs most. Pairing them on a row means nobody has to hold the problem in their head
+    while they read the fix, and the fixes stay short because the box will not take a paragraph.
+    """
+    slide = blank(prs)
+    y = head(slide, d)
+    items = d["items"]
+    foot = d.get("foot")
+    foot_h = est_h(foot, CONTENT_W, 12, line=1.2) + Inches(0.22) if foot else Inches(0)
+    avail = H - y - Inches(0.58) - foot_h
+
+    head_w = Inches(2.45)
+    arrow_w = Inches(0.34)
+    prob_w = int((CONTENT_W - head_w - arrow_w) * 0.42)
+    sol_w = CONTENT_W - head_w - arrow_w - prob_w - Inches(0.20)
+    gap = Inches(0.12)
+    row_h = min(int((avail - gap * (len(items) - 1)) / len(items)),
+                max(max(est_h(it["problem"], prob_w - Inches(0.28), 11.5, line=1.18),
+                        est_h(it["solution"], sol_w - Inches(0.28), 11.5, line=1.18))
+                    for it in items) + Inches(0.34))
+    y = centred(y, avail, row_h * len(items) + gap * (len(items) - 1))
+
+    for i, it in enumerate(items):
+        ry = y + i * (row_h + gap)
+        accent = it.get("colour") or ACCENTS[i % len(ACCENTS)]
+        rrect(slide, MARGIN, ry, CONTENT_W, row_h, PANEL)
+        rect(slide, MARGIN, ry, Inches(0.07), row_h, accent)
+        tf = txbox(slide, MARGIN + Inches(0.24), ry + Inches(0.16), head_w - Inches(0.32),
+                   row_h - Inches(0.3))
+        write(tf, it["head"], size=12.5, bold=True, colour=accent, line=1.05)
+        px = MARGIN + head_w
+        tf = txbox(slide, px, ry + Inches(0.17), prob_w - Inches(0.28), row_h - Inches(0.32))
+        write(tf, it["problem"], size=11.5, colour=MUTED, line=1.18)
+        # The chevron is what makes the row read left to right as trouble and answer rather than
+        # as two unrelated columns; it is drawn rather than typed so it cannot wrap.
+        ax = px + prob_w - Inches(0.10)
+        sh = slide.shapes.add_shape(MSO_SHAPE.CHEVRON, ax, ry + int(row_h / 2) - Inches(0.11),
+                                    arrow_w, Inches(0.22))
+        sh.fill.solid()
+        sh.fill.fore_color.rgb = RULE
+        sh.line.fill.background()
+        sh.shadow.inherit = False
+        sx = ax + arrow_w + Inches(0.14)
+        rrect(slide, sx - Inches(0.10), ry + Inches(0.09), sol_w + Inches(0.10),
+              row_h - Inches(0.18), WHITE)
+        tf = txbox(slide, sx, ry + Inches(0.17), sol_w - Inches(0.18), row_h - Inches(0.32))
+        write(tf, it["solution"], size=11.5, colour=INK, line=1.18)
+
+    if foot:
+        tf = txbox(slide, MARGIN, H - Inches(0.58) - foot_h, CONTENT_W, foot_h)
+        write(tf, foot, size=12, colour=INK, line=1.2)
+    footer(slide, d.get("source"), page)
+    notes(slide, d.get("notes", ""))
+
+
+def s_funnel(prs, d, page):
+    """Parallel attrition funnels, each on its own scale because the units cannot share one.
+
+    Stations, seasons and square kilometres put on a common axis would draw a bar for the discarded
+    seasons four times the width of the one for discarded stations and say nothing by it. Each
+    column is therefore scaled to its own first stage, and the unit is named at the top so the
+    columns are never read against each other.
+    """
+    slide = blank(prs)
+    y = head(slide, d)
+    cols = d["columns"]
+    foot = d.get("foot")
+    foot_h = est_h(foot, CONTENT_W, 12, line=1.2) + Inches(0.22) if foot else Inches(0)
+    avail = H - y - Inches(0.58) - foot_h
+
+    n = len(cols)
+    gap = Inches(0.34)
+    col_w = int((CONTENT_W - gap * (n - 1)) / n)
+    rows = max(len(c["stages"]) for c in cols)
+    head_h = Inches(0.58)
+    stage_h = min(Inches(1.02), int((avail - head_h - Inches(0.2)) / rows))
+    block_h = head_h + stage_h * rows
+    y = centred(y, avail, block_h)
+
+    for i, c in enumerate(cols):
+        x = MARGIN + i * (col_w + gap)
+        accent = c.get("colour") or ACCENTS[i % len(ACCENTS)]
+        tf = txbox(slide, x, y, col_w, Inches(0.3))
+        write(tf, c["head"], size=13, bold=True, colour=accent)
+        tf = txbox(slide, x, y + Inches(0.26), col_w, Inches(0.26))
+        write(tf, c["unit"], size=10, colour=FAINT)
+        top = float(c["stages"][0]["value"])
+        last = len(c["stages"]) - 1
+        for j, st in enumerate(c["stages"]):
+            sy = y + head_h + j * stage_h
+            frac = max(0.06, float(st["value"]) / top) if top else 0.06
+            bw = int(col_w * frac)
+            solid = j in (0, last)
+            # The bar is centred so the column narrows symmetrically: that taper is the whole point
+            # of drawing a funnel rather than printing a table of counts.
+            bx = x + int((col_w - bw) / 2)
+            rect(slide, bx, sy, bw, stage_h - Inches(0.30),
+                 accent if solid else PANEL, line=None if solid else RULE)
+            # A stage holding a fraction of a per cent draws a bar narrower than its own figure. Put
+            # the figure beside that bar in ink rather than inside it in white, where it would be
+            # clipped: the whole point of the row is the number, and the bar is only its scale.
+            need = Inches(0.0072 * 13 * len(st["value_text"])) + Inches(0.18)
+            if bw >= need:
+                tf = txbox(slide, x, sy + Inches(0.03), col_w, Inches(0.3))
+                write(tf, st["value_text"], size=13, bold=True, align=PP_ALIGN.CENTER,
+                      colour=WHITE if solid else INK)
+            else:
+                gutter = int((col_w - bw) / 2) - Inches(0.08)
+                tf = txbox(slide, bx + bw + Inches(0.08), sy + Inches(0.03),
+                           max(need, gutter), Inches(0.3))
+                write(tf, st["value_text"], size=13, bold=True, colour=accent)
+            tf = txbox(slide, x, sy + stage_h - Inches(0.27), col_w, Inches(0.26))
+            write(tf, st["label"], size=9.5, colour=MUTED, align=PP_ALIGN.CENTER, line=1.08)
+
+    if foot:
+        tf = txbox(slide, MARGIN, H - Inches(0.58) - foot_h, CONTENT_W, foot_h)
+        write(tf, foot, size=12, colour=INK, line=1.2)
+    footer(slide, d.get("source"), page)
+    notes(slide, d.get("notes", ""))
+
+
+def s_decomp(prs, d, page):
+    """One quantity broken into its parts, drawn to scale on a single bar.
+
+    Written as three separate figures, a total and two subtractions of it invite the reader to
+    treat them as three independent numbers. Drawn as segments of one bar they cannot be: the
+    reader sees at once which part of the whole each claim is about, which is exactly what the
+    difference between the two ways of quoting the recovered area turns on.
+    """
+    slide = blank(prs)
+    y = head(slide, d)
+    parts = d["parts"]
+    foot = d.get("foot")
+    foot_h = est_h(foot, CONTENT_W, 12, line=1.2) + Inches(0.22) if foot else Inches(0)
+    avail = H - y - Inches(0.58) - foot_h
+
+    lead = d.get("lead")
+    bar_h = Inches(1.05)
+    lead_h = est_h(lead, CONTENT_W, 14, line=1.2) + Inches(0.26) if lead else Inches(0)
+
+    # Lay the labels out before drawing anything. A segment worth a tenth of the bar is narrower
+    # than the words naming it, so the labels have to be allowed to overrun their segment; two of
+    # them overrunning towards each other is what made the first render unreadable. Each label
+    # takes the first row where it does not run into the one before it, and the last is pulled back
+    # onto the page. Rows are counted here so the block can be centred at its true height.
+    total = sum(float(p["value"]) for p in parts)
+    lab_w = Inches(1.86)
+    row_h = Inches(0.92)
+    widths, places, ends = [], [], []
+    x = MARGIN
+    for i, p in enumerate(parts):
+        w = int(CONTENT_W * float(p["value"]) / total) if total else Inches(0)
+        if i == len(parts) - 1:
+            w = MARGIN + CONTENT_W - x                # the last segment absorbs the rounding
+        widths.append(w)
+        lw = max(lab_w, w - Inches(0.12))
+        lx = min(x + Inches(0.06), MARGIN + CONTENT_W - lw)
+        row = 0
+        while row < len(ends) and lx < ends[row]:
+            row += 1
+        if row == len(ends):
+            ends.append(Emu(0))
+        ends[row] = lx + lw + Inches(0.18)
+        places.append((lx, lw, row))
+        x += w
+    label_h = row_h * len(ends)
+    y = centred(y, avail, lead_h + Inches(0.34) + bar_h + label_h)
+
+    if lead:
+        tf = txbox(slide, MARGIN, y, CONTENT_W, lead_h)
+        write(tf, lead, size=14, colour=INK, line=1.2)
+        y += lead_h
+
+    tf = txbox(slide, MARGIN, y, CONTENT_W, Inches(0.3))
+    write(tf, d["total_label"], size=11, colour=FAINT)
+    y += Inches(0.34)
+    # Two passes on purpose. Shapes paint in insertion order, so a leader drawn for a later
+    # segment would cross the label of an earlier one; drawing every bar and leader first puts all
+    # of them behind every label.
+    x = MARGIN
+    for i, p in enumerate(parts):
+        w = widths[i]
+        row = places[i][2]
+        accent = p.get("colour") or ACCENTS[i % len(ACCENTS)]
+        rect(slide, x, y, w, bar_h, accent)
+        ly = y + bar_h + Inches(0.14) + row * row_h
+        rect(slide, x, y + bar_h, Emu(9525), ly - (y + bar_h), accent)
+        x += w
+
+    x = MARGIN
+    for i, p in enumerate(parts):
+        w = widths[i]
+        lx, lw, row = places[i]
+        accent = p.get("colour") or ACCENTS[i % len(ACCENTS)]
+        if w >= Inches(1.0):
+            tf = txbox(slide, x + Inches(0.10), y + Inches(0.16), w - Inches(0.2), Inches(0.5))
+            write(tf, p["value_text"], size=15, bold=True, colour=WHITE, line=1.0)
+        else:
+            tf = txbox(slide, x, y + bar_h - Inches(0.44), w, Inches(0.4))
+            write(tf, p["value_text"], size=12, bold=True, colour=WHITE, align=PP_ALIGN.CENTER)
+        ly = y + bar_h + Inches(0.14) + row * row_h
+        # The label sits on a white plate so that a leader passing behind it stays hidden.
+        rect(slide, lx - Inches(0.05), ly - Inches(0.04), lw, row_h - Inches(0.06), WHITE)
+        tf = txbox(slide, lx, ly, lw, row_h - Inches(0.1))
+        write(tf, p["label"], size=11, bold=True, colour=accent, line=1.1)
+        if p.get("note"):
+            para(tf, p["note"], size=10.5, colour=MUTED, line=1.16)
+        x += w
+
+    if foot:
+        tf = txbox(slide, MARGIN, H - Inches(0.58) - foot_h, CONTENT_W, foot_h)
+        write(tf, foot, size=12, colour=INK, line=1.2)
+    footer(slide, d.get("source"), page)
+    notes(slide, d.get("notes", ""))
+
+
 KINDS = dict(cover=s_cover, section=s_section, figure=s_figure, figure_side=s_figure_side,
              compare=s_compare, ingredients=s_ingredients, close=s_close, gallery=s_gallery,
              stepper=s_stepper, params=s_params, twocol=s_twocol, table=s_table,
              datacard=s_datacard, bignum=s_bignum, annotated=s_annotated,
              figure_max=s_figure_max, map=s_map, figure_note=s_figure_note, flow=s_flow,
-             lanes=s_lanes, cards=s_cards, timeline=s_timeline, scale=s_scale)
+             lanes=s_lanes, cards=s_cards, timeline=s_timeline, scale=s_scale,
+             problems=s_problems, funnel=s_funnel, decomp=s_decomp, closing=s_closing)
 
 
 # --- the budget --------------------------------------------------------------------------------
@@ -1404,9 +1783,11 @@ KINDS = dict(cover=s_cover, section=s_section, figure=s_figure, figure_side=s_fi
 # which are scanned. The check runs at build time so the limit cannot quietly drift back.
 
 PROSE_KEYS = {"title", "subtitle", "lead", "body", "points", "foot", "caption", "note", "sub",
-              "text", "label", "head", "value", "stat", "chip", "param", "rail"}
+              "text", "label", "head", "value", "stat", "chip", "param", "rail", "asks",
+              "problem", "solution", "value_text", "total_label", "unit", "kicker"}
 NEVER = {"notes", "source", "image", "kind", "spoken", "gif", "crop", "n", "at", "notes_frac",
-         "note_frac", "authors", "affil", "venue"}
+         "note_frac", "authors", "affil", "venue", "budget", "icon", "parts", "photo",
+         "logos"}
 
 
 def text_load(obj, key=None, prose=True, in_table=False):
@@ -1449,7 +1830,12 @@ def report_budget(deck, prose_cap, data_cap):
     over = []
     total = 0
     for i, d in enumerate(deck, 1):
-        cap = prose_cap + 70 * max(0, panels(d) - 2)
+        # A slide may set its own allowance. A flat cap made sense while every slide argued one
+        # point, but a slide whose whole job is to explain a concept to someone who has never met
+        # it needs more room than a slide holding a full-page map needs, and the two cannot answer
+        # to the same number. Declaring it per slide keeps the check honest: the build still fails
+        # when a slide exceeds what it asked for, so the limit cannot drift by accident.
+        cap = d.get("budget") or (prose_cap + 70 * max(0, panels(d) - 2))
         p = text_load(d, prose=True)
         t = text_load(d, prose=False)
         total += p + t
@@ -1461,6 +1847,50 @@ def report_budget(deck, prose_cap, data_cap):
         flag = f"prose {p} over {cap}" if p > cap else f"table {t} over {data_cap}"
         print(f"  slide {i:>2} [{kind}] {flag}  {title}")
     return over
+
+
+def load_attrition(out):
+    """Fold the two attrition tables into `out` under names a slide can quote.
+
+    attrition_funnel_numbers.csv is shaped side/step/value and season_attrition_by_window.csv is
+    one row per window, so neither fits the metric/value loader. Mapping the rows onto explicit
+    names here rather than letting the content file index a table keeps the labels in the
+    narrative and the arithmetic in the outputs, which is the same split every other slide uses.
+    """
+    steps = {}
+    path = ROOT / "02_outputs" / "attrition_funnel_numbers.csv"
+    if path.exists():
+        with path.open(encoding="utf-8") as fh:
+            for row in csv.DictReader(fh):
+                steps[(row["side"], row["step"])] = float(row["value"])
+    named = {
+        "attr_st_served": ("stations", "Served by THREDDS"),
+        "attr_st_enter": ("stations", "Enter the calculation"),
+        "attr_st_archive": ("stations", "Observed archive"),
+        "attr_st_api": ("stations", "Also covered by the API"),
+        "attr_km2_country": ("area", "Peninsular Spain and the Balearics"),
+        "attr_km2_cropland": ("area", "CORINE cropland"),
+        "attr_km2_reached": ("area", "Reached by the interpolation"),
+        "attr_km2_classified": ("area", "Classified into the three classes"),
+    }
+    for key, ident in named.items():
+        if ident in steps:
+            out[key] = steps[ident]
+
+    # The seasons side is per window. The end-of-century window is the one that loses any, so it
+    # is the one worth showing: everywhere else the completeness filter discards nothing at all.
+    path = ROOT / "02_outputs" / "season_attrition_by_window.csv"
+    if path.exists():
+        with path.open(encoding="utf-8") as fh:
+            rows = list(csv.DictReader(fh))
+        far = next((r for r in rows if r["window"] == "far"), None)
+        if far:
+            out["attr_seasons_nominal"] = float(far["nominal"])
+            out["attr_seasons_kept"] = float(far["kept"])
+            out["attr_seasons_lost"] = float(far["lost"])
+            out["attr_seasons_lost_pct"] = float(far["pct"])
+        out["attr_seasons_windows_clean"] = sum(1 for r in rows if float(r["lost"]) == 0)
+    return out
 
 
 def load_numbers():
@@ -1479,7 +1909,7 @@ def load_numbers():
                     out[row["metric"]] = float(row["value"])
                 except ValueError:
                     out[row["metric"]] = row["value"]
-    return out
+    return load_attrition(out)
 
 
 def main():
@@ -1493,17 +1923,26 @@ def main():
                     help="build the methodological deck a co-author reads, not the spoken talk")
     ap.add_argument("--v4", action="store_true",
                     help="build the review deck: one idea a slide, figures at slide size")
+    ap.add_argument("--v5", action="store_true",
+                    help="build the master deck: introduction to conclusions, cut with --short")
     ap.add_argument("--strict", action="store_true",
                     help="fail rather than warn when a slide is over its text budget")
     a = ap.parse_args()
 
     if (a.v3 or a.v4) and (a.annex or a.short):
         sys.exit("--v3 and --v4 are their own decks: no annex and no spoken subset")
-    if a.v3 and a.v4:
-        sys.exit("pick one of --v3 and --v4")
+    # v5 is the exception: it is the master a reader goes through alone, and the fifteen-minute
+    # conference talk is cut out of it with --short rather than written separately, so the two
+    # cannot come to disagree the way two hand-kept lists would.
+    if a.v5 and a.annex:
+        sys.exit("--v5 has no annex: the backup slides live in the master itself")
+    if sum((bool(a.v3), bool(a.v4), bool(a.v5))) > 1:
+        sys.exit("pick one of --v3, --v4 and --v5")
 
     N = load_numbers()
-    if a.v4:
+    if a.v5:
+        deck = talk_content.v5(N)
+    elif a.v4:
         deck = talk_content.v4(N)
     elif a.v3:
         deck = talk_content.v3(N)
@@ -1526,7 +1965,9 @@ def main():
         deck = [dict(d, points=d["points_short"]) if d.get("points_short") else d for d in deck]
 
     if a.out is None:
-        stem = ("charla_plinius_v4" if a.v4 else
+        stem = ("charla_plinius_v5_15min" if (a.v5 and a.short) else
+                "charla_plinius_v5" if a.v5 else
+                "charla_plinius_v4" if a.v4 else
                 "charla_plinius_v3" if a.v3 else
                 "anexo_plinius" if a.annex else
                 "charla_plinius_15min" if a.short else "charla_plinius")
@@ -1534,8 +1975,8 @@ def main():
 
     # The budget only governs the review deck. The conference talk and its backup were finished
     # under the older layout and re-measuring them here would report a failure that is not one.
-    if a.v4:
-        over = report_budget(deck, prose_cap=300, data_cap=900)
+    if a.v4 or a.v5:
+        over = report_budget(deck, prose_cap=420 if a.v5 else 300, data_cap=900)
         if over and a.strict:
             sys.exit(f"{len(over)} slides over budget")
 
@@ -1565,7 +2006,7 @@ def main():
     # The v4 deck answers to a different limit again. Splitting the dense slides so each carries one
     # idea trades slide count for reading speed, and a reviewer turns pages faster than they parse
     # paragraphs, so the cap goes up while the text on each page goes down.
-    cap = 75 if a.v4 else 55 if a.v3 else 35
+    cap = 80 if a.v5 else 75 if a.v4 else 55 if a.v3 else 35
     if not a.annex and len(deck) > cap:
         print(f"WARNING: {len(deck)} slides, above the cap of {cap}")
 
