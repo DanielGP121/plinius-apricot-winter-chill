@@ -49,9 +49,10 @@ CP_Tdiarias.zip
 !00_data/stations_obs.txt
 
 # --- generated output ----------------------------------------------------------------------
-# Everything under 02_outputs/ is regenerable from the scripts, and the chill tables run to 153 MB.
-# Only the small summary tables that back a figure or a claim are versioned, listed one by one so
-# that a new output has to be added deliberately rather than swept in.
+# Everything under 02_outputs/ is regenerable from the scripts, given the inputs, and the full set
+# of chill tables runs to 153 MB. What is versioned is listed one by one, so a new output has to be
+# added deliberately rather than swept in: the summary tables that back a figure or a claim, and
+# the tables those summaries were computed from.
 02_outputs/*
 !02_outputs/talk_numbers_cropland.csv
 !02_outputs/cropland_threshold_sweep.csv
@@ -74,7 +75,8 @@ CP_Tdiarias.zip
 # The metric tables. Each is one or two kilobytes of (metric, value) pairs, and between them they
 # are what the README, the one-page workflow sheet and the method book quote: those three are
 # versioned and until now the numbers behind them were not, so a clone could read a claim and had
-# no way to check it. The chill tables they are derived from stay out, being 153 MB.
+# no way to check it. The chill tables they are derived from used to stay out; the ones a reviewer
+# actually needs are versioned too now, in the block further down.
 !02_outputs/talk_key_numbers.csv
 !02_outputs/method_chain_numbers.csv
 !02_outputs/method_figure_numbers.csv
@@ -96,6 +98,31 @@ CP_Tdiarias.zip
 !02_outputs/v3_gap_numbers.csv
 !02_outputs/model_sensitivity_numbers.csv
 !02_outputs/band_agreement_by_situation.csv
+
+# The tables the metrics above were computed from. Bigger than everything else here put together,
+# and versioned anyway: without them a reader can see a number and cannot arrive at it, which is
+# the difference between publishing a result and publishing a claim. 74 MB uncompressed, and git
+# packs them to a fraction of that.
+#
+# chill_all_windows.csv is the one that matters: 3,460 stations x 11 models x 12 situations, and
+# every map, every area and every per-model figure is derived from it by scripts 19, 28, 36 and 37.
+!02_outputs/chill_all_windows.csv
+# The observed record, season by season. 1975 is the long version behind the fifty-winter series;
+# the api one is the same shape from the AEMET OpenData download.
+!02_outputs/chill_obs_seasons.csv
+!02_outputs/chill_obs_seasons_1975.csv
+!02_outputs/chill_api_seasons.csv
+# Leave-one-out error of the interpolation, station by station. Only its summary was versioned, so
+# the RMSE quoted beside every map could not be recomputed.
+!02_outputs/idw_crossval.csv
+# Two small outputs that back a claim and were left out by oversight rather than by decision.
+!02_outputs/pipeline_runs.csv
+!02_outputs/station_walkthrough_km2.csv
+
+# Still out, and deliberately. The per-window chill runs (chill_national, chill_present,
+# chill_near, chill_current, chill_obs1995) are what 22_merge_chill_tables.R merges into
+# chill_all_windows.csv, so shipping both would be shipping the same numbers twice. The raw API
+# download (observed_1995_2025.csv.gz, 27 MB) is superseded by the seasonal tables above.
 
 # The deck: 26 MB of embedded figures, rebuilt in two minutes by scripts 29 and 30.
 03_presentacion/

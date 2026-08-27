@@ -15,14 +15,13 @@ answer as **area of cultivable land** rather than as a count of weather stations
 **In a hurry?** [`03_presentacion/plinius_workflow.pdf`](03_presentacion/plinius_workflow.pdf) is
 the whole pipeline on one page: the four data sources with their real dimensions, which step runs
 on the cluster and which locally, every operative parameter with the line of code that sets it,
-and a thumbnail of what each stage produces. Rebuilt by
-[`01_scripts/44_workflow_sheet.py`](01_scripts/44_workflow_sheet.py).
+and a thumbnail of what each stage produces.
 
 ---
 
-## The result
+## Cropland viable for each cultivar, 2071-2100 under SSP3-7.0
 
-Of Spain's **229,676 km²** of cropland, under SSP3-7.0 by the end of the century:
+Of Spain's **229,676 km²** of cropland:
 
 | | km² | |
 |---|---:|---|
@@ -30,24 +29,19 @@ Of Spain's **229,676 km²** of cropland, under SSP3-7.0 by the end of the centur
 | of which 'Búlida Precoz' still works on | **23,310** | **51.7% of the loss** |
 | neither cultivar viable | 21,794 | 9.5% of cropland |
 
-Across the eleven climate models the rescued fraction of cropland runs from **39.1% to 82.1%**, and
-none falls below a third. That is the most robust number here, because it rests on the *gap* between the two
-cultivars, which is well determined, rather than on either absolute threshold, which is not.
+Across the eleven climate models the rescued fraction runs from **39.1% to 82.1%**, and none falls
+below a third. That is the most robust number here, because it rests on the *gap* between the two
+cultivars rather than on either absolute threshold. Under SSP1-2.6 the mutant rescues 89.3% of a
+smaller loss. **It buys time, not immunity.**
 
-Under milder scenarios the mutant rescues almost all of the loss (89.3% under SSP1-2.6). Under the
-severe one, only half, because chill falls below even the mutant's requirement. **It buys time, not
-immunity.**
+Two secondary findings:
 
-Two secondary findings carry their own weight:
-
-- **Before 2040 the scenarios are indistinguishable.** Across the stations whose chill sits near
-  the 'Búlida' threshold, the three scenarios differ by 2.7 chill portions and the eleven models by
-  13.4, five times as much, and in 62% of stations the pessimistic scenario returns *more* chill
-  than the optimistic one. The next two decades are already committed.
-- **The last five winters are the mildest five-year stretch in the 50-year observed record.**
-  1976-2020 shows no trend at all (p = 0.90), yet 2021-2025 averages **3.65 chill portions below
-  that baseline, 1.95 standard deviations**, and none of the 41 five-year blocks in the baseline
-  reaches as low. Winter 2024 is the least-chill of the fifty.
+- **Model spread exceeds scenario spread in the near term.** On the 446 stations whose chill sits
+  near the 'Búlida' threshold at 2021-2040, the three scenarios differ by 2.7 chill portions and
+  the eleven models by 13.4, five times as much.
+- **The last five winters are the mildest five-year stretch of the observed fifty.** 1976-2020
+  shows no trend (p = 0.90); 2021-2025 sits 3.65 chill portions below it, 1.95 standard deviations,
+  and none of the 41 five-year blocks in the baseline reaches as low.
 
 ---
 
@@ -60,22 +54,21 @@ conda env create -f environment.yml          # Python side, only needed for scri
 cp .env.example .env                         # then fill in PLINIUS_DATA
 ```
 
-Then read [`00_data/README.md`](00_data/README.md), because **the repository does not contain the
-data and cannot**: the inputs weigh several gigabytes and belong to third parties. Nor does it
-contain the chill model itself, for licensing reasons explained below. Every script fails on its
-first line with instructions rather than halfway through with something cryptic.
-
-With the data in place:
+Read [`00_data/README.md`](00_data/README.md) next: the input data is not here and cannot be, and
+that file says how to obtain each source. Every script fails on its first line with instructions
+rather than halfway through with something cryptic.
 
 ```bash
 export PLINIUS_DATA=/path/to/plinius_data
-Rscript 01_scripts/22_merge_chill_tables.R          # merge the chill runs
-Rscript 01_scripts/19_cropland_viability_national.R # interpolate, cross with CORINE, classify
+Rscript 01_scripts/19_cropland_viability_national.R   # interpolate, cross with CORINE, classify
 ```
+
+That one runs from `02_outputs/chill_all_windows.csv`, which **is** in this repository, so the maps
+and the areas above can be reproduced without the cluster.
 
 ---
 
-## How it works
+## From station temperature to classified cropland
 
 ```mermaid
 flowchart TD
@@ -120,12 +113,9 @@ flowchart TD
     D4 --> E1
 ```
 
-The split is not arbitrary. Reading 15 GB of NetCDF and computing chill for 3460 stations across 45
-model-scenario combinations takes about a day, so it happens where the data lives; what comes back
-are chill tables of a few megabytes. Scripts 14 and 15 are therefore uploaded to the HPC as loose
-files, which is why 15 deliberately does not depend on the shared path resolver.
-
-### Computing chill
+Reading 15 GB of NetCDF and computing chill for 3460 stations across 45 model-scenario combinations
+takes about a day, so it happens where the data lives; what comes back are chill tables of a few
+megabytes.
 
 ```mermaid
 flowchart LR
@@ -139,27 +129,12 @@ flowchart LR
     X --> V["Classify each cell:<br/>both / mutant only / neither"]
 ```
 
-Three choices in that chain are worth knowing about.
+Why each step is the way it is, and what was checked, is in the method book sources under
+[`04_metodo/`](04_metodo/): the chill model in `07-modelo-dinamico.Rmd`, the percentile in
+`08-agregacion.Rmd`, the interpolation and its error in `09-superficie.Rmd`, and the window choices
+in `05-descarga.Rmd`.
 
-**The Dynamic Model is not a temperature index.** It has an optimum near 8 °C and accumulates
-nothing below −4 °C or above 14 °C, so an extreme cold snap contributes no physiological chill at
-all. This is the usual source of confusion when people first meet these numbers.
-
-**Safe Winter Chill is the 10th percentile across winters, not the mean.** A grower is not helped by
-knowing that an average year delivers enough chill, because the bad year ruins the crop anyway. The
-cost is that a P10 needs a decent number of seasons before it is a decile rather than a minimum,
-which is why comparisons between records of different length are made season by season and never on
-the aggregate.
-
-**Results are reported as area, not as station counts.** Stations cluster in valleys, airports and
-towns, and 151 locations hold two of them. Counting points does not estimate territory, so the chill
-surface is interpolated and crossed with land cover, and each 1 km cell contributes its own fraction
-of cropland.
-
-### Every parameter, and where it is set
-
-Nothing here is a rounded recollection. Each value is read from the line named beside it, and that
-column exists so any of them can be checked against the code in one step.
+### Parameters, and the line that sets each
 
 | | Value | Set at |
 |---|---|---|
@@ -179,66 +154,23 @@ column exists so any of them can be checked against the code in one step.
 | Cultivar thresholds | 47.5 and 33.7 chill portions, both with a standard error of 3.3 | `19_...:41-42` |
 | Model agreement | hatched where fewer than 9 of 11 models agree on the class, the AR6 80% convention | `00_hatch.R:28, :107-113` |
 
-Two of those deserve a note. The **cell area** is not one square kilometre: `terra` honours the
-extent it is given and adjusts the resolution to fit a whole number of cells, which over Spain lands
-on cells of 1000.3189 by 999.9947 m. Every area the project reported was 0.031% low until that was
-fixed. And **agreement can only take six values**: counted as the larger of the two sides, 11 models
-can agree 6, 7, 8, 9, 10 or 11 ways, so a legend promising a 50% band would be describing something
-the data cannot produce.
+---
 
-### Time windows
+## What `02_outputs/` contains, and what it does not
 
-```mermaid
-gantt
-    title Data coverage and the analysis windows
-    dateFormat YYYY
-    axisFormat %Y
-    section Sources
-    PNACC observed archive        :done, o1, 1975, 2021
-    AEMET OpenData                :active, o2, 1995, 2026
-    CMIP6 historical              :done, h1, 1975, 2015
-    CMIP6 SSP scenarios           :active, s1, 2015, 2101
-    section Analysis windows
-    Baseline 1995-2020            :crit, w1, 1995, 2021
-    Near term 2021-2040           :crit, w2, 2021, 2041
-    Mid century 2041-2070         :crit, w3, 2041, 2071
-    End century 2071-2100         :crit, w4, 2071, 2101
-```
+**Versioned, and enough to recompute every number quoted above:**
 
-The four analysis windows tile 1995-2100 with no gaps and no overlaps, which took some care.
+| | What it is |
+|---|---|
+| `chill_all_windows.csv` | Safe Winter Chill per station, model and situation. Every map and every area comes from this |
+| `chill_obs_seasons.csv`, `_1975.csv`, `chill_api_seasons.csv` | The observed record, season by season |
+| `idw_crossval.csv` | Leave-one-out error of the interpolation, station by station |
+| 38 metric tables | One or two kilobytes each, `(metric, value)` pairs. Every figure on every slide is read from one of these at build time rather than typed |
 
-The baseline stops at 2020 rather than 2025 even though the data reaches 2100. If it ran to 2025 it
-would share five years with the 2021-2040 window, and differencing one against the other would
-cancel a quarter of the near-term change by construction, making the first future look artificially
-flat.
-
-There is also an unavoidable seam at 2014/2015: the CMIP6 historical experiment ends on 31 December
-2014 and the scenarios begin the next day, so any window crossing that date does not exist in a
-single file and has to be assembled. The join was verified to produce a continuous series with no
-duplicated or missing days.
-
-### Two observed sources, one record
-
-```mermaid
-flowchart TD
-    A["PNACC archive<br/>3044 stations<br/>1975-2020, complete"] --> C{"Do they agree<br/>on the 8979 seasons<br/>both report?"}
-    B["AEMET OpenData<br/>666 stations<br/>reaches 2025, thin before 2008"] --> C
-    C -->|"bias +0.13 CP<br/>spatial r = 0.987"| D["Splice:<br/>archive to 2020,<br/>API for 2021-2025"]
-    C -->|"73 of 619 stations<br/>with MAE > 3 CP"| E["Flagged, reported<br/>with and without"]
-    D --> F["Observed record<br/>1976-2025, 665 stations"]
-    F --> G["Cross-checked against an<br/>orchard series outside<br/>the AEMET network"]
-```
-
-The archive ends in 2020 and the API reaches 2025, so neither covers the period alone. Joining them
-required showing first that they measure the same thing, which is done season by season rather than
-on Safe Winter Chill, because the two records have very different lengths. They agree to 0.13 chill
-portions with a spatial correlation of 0.987.
-
-That still leaves one dependency: both halves come from the same national network, so a change in
-AEMET's processing around 2021 would look exactly like the anomaly. The check that closes it uses a
-series from an experimental orchard measured by a different institution, published with
-Muñoz-Morales et al. (2025). It shows the same recent drop, 1.66 standard deviations against 1.95
-nationally.
+**Not versioned:** the per-window chill runs, which `22_merge_chill_tables.R` merges into
+`chill_all_windows.csv`; the raw AEMET API download, superseded by the seasonal tables; the figures
+and the GIFs, rebuilt by scripts 19 and 31-43; and the station coordinates compiled by the regional
+agrometeorological services, which came through a third party with no terms of transfer.
 
 ---
 
@@ -251,7 +183,7 @@ carries a header stating what it does, what it needs and what it writes.
 | | Script | Runs on | What it does |
 |---|---|---|---|
 | | `00_paths.R` | — | Resolves every path; sourced by the rest |
-| | `DM_JOSE.R` | — | The chill model. **Not distributed**, see below |
+| | `DM_JOSE.R` | — | The chill model. **Not in this repository**, see below |
 | **Murcia test-run** | `02_pnacc_to_tables.py` | local | NetCDF to tidy per-station tables |
 | | `05_cropland_filter.py`, `07_soil_decision_map.py` | local | Soil criterion by CORINE buffer |
 | | `06_chill_murcia.R`, `08_chill_maps_murcia.Rmd` | local | Regional chill and its report |
@@ -274,79 +206,50 @@ carries a header stating what it does, what it needs and what it writes.
 | | `33`, `34`, `37`, `38`, `39`, `40`, `42`, `43` | local | Talk and method figures, the pipeline diagram, the attrition funnel, the data timeline, the model ranking |
 | **Reporting** | `29_build_deck.R`, `30_build_pptx.py` | local | Working document, HTML and PowerPoint |
 | | `talk_content.py`, `35_build_talk_pptx.py` | local | The talk's content, and the builder that lays it out |
-| | `45_v3_numbers.py`, `46_model_sensitivity.R`, `47_band_and_record_numbers.R` | local | Metrics and the sensitivity figure the review deck quotes |
-| | `44_workflow_sheet.py` | local | The whole pipeline on one A3 page, HTML and PDF |
+| | `45_v3_numbers.py`, `46_model_sensitivity.R`, `47_band_and_record_numbers.R` | local | Metrics the review decks quote |
+| | `44_workflow_sheet.py` | local | The whole pipeline on one A3 page |
 
 `35_build_talk_pptx.py` builds every deck from the one narrative file, so none of them can quote a
-different number from another: the conference talk (no flag), the 15-minute cut of it (`--short`),
-the backup slides (`--annex`), and the review deck a co-author reads (`--v4`, one claim a slide,
-figures at slide size, with a build-time check on how much text each slide carries). `--v3` builds
-the earlier and much wordier form of that review deck, kept so the file already circulated stays
-reproducible. Every figure on every slide is read from a table at build time.
-
-`01_scripts/legacy/` holds one script from an approach the project abandoned; its README explains
-why.
+different number from another, and every figure on every slide is read from a table at build time.
 
 Script 15 carries several protections that exist because of failures that actually happened: a
 checkpoint per model-scenario combination written atomically, a sentinel that refuses to save a
 combination where a parallel worker died, a reader that detects the NetCDF layout instead of
-assuming it, and a mask for undeclared `-999` fill values. A 23-hour run that died at the last step
-is why.
+assuming it, and a mask for undeclared `-999` fill values.
 
 ---
 
-## What is not here
+## What this repository does not contain
 
-**The data.** Gigabytes, third-party licences. [`00_data/README.md`](00_data/README.md) tells you
-how to obtain each source, and [`THIRD_PARTY.md`](THIRD_PARTY.md) records who owns it.
+**The data.** Gigabytes, third-party licences. [`00_data/README.md`](00_data/README.md) says how to
+obtain each source and [`THIRD_PARTY.md`](THIRD_PARTY.md) records who owns it.
 
-**The chill model.** `DM_JOSE.R` implements the Dynamic Model under the Fishman et al. (1987)
-parametrisation and was written by J. A. Egea; this repository has no licence to redistribute it.
-Either request it from the authors or write the equivalent, which is chillR's `Dynamic_Model` with
-the constants from the 1987 paper. **chillR's own defaults will not substitute**: those are the 1988
-parametrisation, and the two differ by 6.94 chill portions on average, half the gap between the two
-cultivars.
+**The chill model.** `DM_JOSE.R` is not mine, so it is not uploaded here. Request it from
+J. A. Egea, jaegea@cebas.csic.es.
 
-**The heavy outputs.** The chill tables run to 153 MB and are regenerable. Only the small summary
-tables that back a specific claim are versioned, listed explicitly in `.gitignore`.
-
-**The figures and the deck.** Rebuilt in two minutes by scripts 19, 26, 27, 29 and 30.
+**The figures and the decks.** Rebuilt from the tables that are here.
 
 ---
 
-## Limitations, stated up front
+## Limitations
 
 - **The cultivar thresholds are the dominant uncertainty.** 47.5 and 33.7 chill portions each carry
-  a standard error of 3.3. Moving them within that error takes the mutant's band from 5.6% to 18.2%
-  of stations. `28_threshold_sweep_cropland.R` sweeps the whole range so the sensitivity is visible
-  rather than asserted. The gap between cultivars, being a paired difference, is far better
-  determined than either threshold.
+  a standard error of 3.3. `28_threshold_sweep_cropland.R` sweeps the whole range so the
+  sensitivity is visible rather than asserted. The gap between them, being a paired difference, is
+  far better determined than either threshold.
 - **Which parametrisation the requirements were measured under needs confirming.** The methods of
-  the source paper cite Fishman 1987, but code published by the same group in 2025 cites 1987 while
-  calling chillR's 1988 default. If the requirements are on the 1988 scale they would need raising
-  by about 7 chill portions to be comparable with the supply computed here.
+  the source paper cite Fishman 1987, but code published by the same group in 2025 calls chillR's
+  1988 default. On the 1988 scale the requirements would need raising by about 7 chill portions to
+  be comparable with the supply computed here.
 - **The model validation is not independent.** Bias against observations is −0.45 chill portions
   with r = 0.984, which is why no bias correction is applied, but the downscaling was calibrated
   against these same stations.
-- **The ensemble median hides real disagreement.** Model spread at a typical station is 24.8 chill
-  portions, nearly twice the gap between cultivars. In the mutant's band only 0.43% of stations have
-  8 of 11 models agreeing, and none has unanimity. On area it is starker still: the land where
-  neither cultivar works ranges from 4,983 to 75,951 km² depending on which of the eleven models is
-  believed, a factor of fifteen. What is *not* a problem is the order of aggregation: mapping the
-  ensemble median, which is what this pipeline does, and classifying each model separately before
-  aggregating give areas within 8.6% of each other and a headline within four tenths of a point.
-- **The record extended to 2025 rests on 666 stations, not 3044**, and the measured offset between
-  the two observed sources could only be checked where they overlap, not in the recent stretch.
-- **The portal serves the projections over two different station sets.** This analysis uses the
-  THREDDS route with 3460 stations; the interactive form returns 3044, and figures from the two do
-  not reconcile.
-
----
-
-## Citing
-
-See [`CITATION.cff`](CITATION.cff). The two cultivar chill requirements come from Ruiz et al.
-(2019), *Scientia Horticulturae* 254:187-192, and carry the entire result, so cite that too.
-
-Code is MIT ([`LICENSE`](LICENSE)). The data keeps the terms of its providers
-([`THIRD_PARTY.md`](THIRD_PARTY.md)).
+- **The ensemble median hides real disagreement.** The land where neither cultivar works ranges
+  from 4,983 to 75,951 km² depending on which of the eleven models is believed, a factor of
+  fifteen. What is *not* a problem is the order of aggregation: mapping the ensemble median and
+  classifying each model separately before aggregating give a headline within four tenths of a
+  point of each other.
+- **The record extended to 2025 rests on 666 stations, not 3044**, and the offset between the two
+  observed sources could only be measured where they overlap.
+- **The portal serves the projections over two station sets.** This analysis uses the THREDDS route
+  with 3460 stations; the interactive form returns 3044, and figures from the two do not reconcile.
