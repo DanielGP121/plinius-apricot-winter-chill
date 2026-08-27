@@ -51,7 +51,7 @@ source(file.path(if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]
 ARCH   <- getarg("--archive",  tab_path("chill_obs_seasons.csv"))
 APIF   <- getarg("--api",      tab_path("chill_api_seasons.csv"))
 AGREE  <- getarg("--agreement",tab_path("api_vs_archive_by_station.csv"))
-OUTDIR <- getarg("--outdir",   OUT_DIR)
+OUTDIR <- getarg("--outdir",   TAB_DIR)
 FIGDIR <- getarg("--figdir",   FIG_DIR)
 
 MIN_PERC   <- as.numeric(getarg("--min-perc", 85))

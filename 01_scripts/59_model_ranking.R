@@ -26,8 +26,8 @@
 #
 # Usage: Rscript 59_model_ranking.R [--scenario ssp370]
 # Writes: 02_outputs/figures_chill/fig54_model_ranking_<scenario>.png
-#         02_outputs/model_ranking_<scenario>.csv
-#         02_outputs/model_ranking_numbers.csv
+#         02_outputs/tables/model_ranking_<scenario>.csv
+#         02_outputs/tables/model_ranking_numbers.csv
 
 suppressPackageStartupMessages({
   library(data.table)
@@ -223,7 +223,7 @@ out <- r[, .(rank_by_mean, rank_by_median, model,
              base_swc_CP = base, far_swc_CP = far, delta_CP = delta,
              base_median_CP = base_med, far_median_CP = far_med,
              far_n_seasons = far_seasons, n_stations = n_base, scenario = SCEN)]
-fwrite(out, out_path(sprintf("model_ranking_%s.csv", SCEN)))
+fwrite(out, tab_path(sprintf("model_ranking_%s.csv", SCEN)))
 
 fwrite(data.table(
   metric = c("rank_worst_model", "rank_best_model",

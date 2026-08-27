@@ -224,7 +224,7 @@ gb <- ggplot(bars, aes(label, pct, fill = clase)) +
   theme_minimal(base_size = 11) + theme(legend.position = "bottom", plot.title = element_text(face = "bold"))
 ggsave(fig_in(FIGS, "fig22_viability_bars.png"), gb, width = 9, height = 5.5, dpi = 200)
 
-fwrite(tab, file.path(ROOT, "02_outputs", "talk_numbers_cropland.csv"))
+fwrite(tab, tab_path("talk_numbers_cropland.csv"))
 cat("\n=== SUMMARY (% of cropland area) ===\n")
 print(tab[match(ord, situation), .(label, pct_both = round(pct_both, 1),
       pct_only_precoz = round(pct_only_precoz, 1), pct_none = round(pct_none, 1))], row.names = FALSE)

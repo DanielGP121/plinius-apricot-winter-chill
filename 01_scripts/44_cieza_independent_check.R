@@ -59,7 +59,7 @@ CIEZA  <- getarg("--cieza",  plinius_data("cieza_cebas", "Cieza11-25.xlsx"))
 ARCH   <- getarg("--archive",tab_path("chill_obs_seasons_1975.csv"))
 APIF   <- getarg("--api",    tab_path("chill_api_seasons.csv"))
 SERIES <- getarg("--series", tab_path("observed_annual_series.csv"))
-OUTDIR <- getarg("--outdir", OUT_DIR)
+OUTDIR <- getarg("--outdir", TAB_DIR)
 FIGDIR <- getarg("--figdir", FIG_DIR)
 
 # Orchard coordinates as stated in the paper (38 deg 16' N, 1 deg 16' W, 241 m). The repository's

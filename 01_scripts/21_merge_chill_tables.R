@@ -26,7 +26,7 @@ suppressWarnings(suppressMessages(library(data.table)))
 .f <- grep("^--file=", commandArgs(FALSE), value = TRUE)
 source(file.path(if (length(.f)) dirname(normalizePath(sub("^--file=", "", .f[1]))) else getwd(), "00_paths.R"))
 
-OUT  <- OUT_DIR
+OUT  <- TAB_DIR
 SRC  <- c("chill_national.csv", "chill_present.csv", "chill_near.csv",
           "chill_obs1995.csv", "chill_current.csv")
 

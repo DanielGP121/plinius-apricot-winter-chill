@@ -91,7 +91,7 @@ THR <- sort(unique(c(THR, CR_B, CR_P, CR_B + SE, CR_B - SE, CR_P + SE, CR_P - SE
 
 CHILL <- tab_path("chill_all_windows.csv")
 CLC   <- plinius_clc()
-OUT   <- OUT_DIR
+OUT   <- TAB_DIR
 REF   <- file.path(OUT, "talk_numbers_cropland.csv")
 
 # --- § 1 - station chill, ensemble median, same pooling as script 30 --------------------------

@@ -22,7 +22,7 @@
 #
 # Usage: Rscript 58_data_timeline.R
 # Writes: 02_outputs/figures_chill/fig53_data_coverage_timeline.png
-#         02_outputs/timeline_numbers.csv
+#         02_outputs/tables/timeline_numbers.csv
 
 suppressPackageStartupMessages({
   library(data.table)

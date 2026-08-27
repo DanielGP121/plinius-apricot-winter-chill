@@ -38,7 +38,7 @@
 # is the real method, since the published surfaces are built on that projected grid.
 #
 # Usage: Rscript 57_idw_crossval.R [--res 1000] [--sits all|base] [--no-check]
-# Writes: 02_outputs/idw_crossval.csv, idw_crossval_summary.csv, fig52_idw_crossval.png
+# Writes: 02_outputs/tables/idw_crossval.csv, idw_crossval_summary.csv, fig52_idw_crossval.png
 # Requires: terra, sf, mapSpain, ggplot2, data.table, patchwork.
 # ---------------------------------------------------------------------------------------
 
